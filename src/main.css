@@ -1,0 +1,9 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+#app x-word-cloud,
+#app x-word-cloud-debug {
+	height: 100dvh;
+}

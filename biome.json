@@ -1,0 +1,33 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"style": {
+				"useConst": "off"
+			}
+		}
+	},
+	"assist": {
+		"enabled": true
+	},
+	"javascript": {
+		"formatter": {
+			"enabled": true,
+			"trailingCommas": "all",
+			"semicolons": "asNeeded",
+			"arrowParentheses": "always"
+		}
+	},
+	"html": {
+		"formatter": {
+			"enabled": true,
+			"indentStyle": "tab",
+			"selfCloseVoidElements": "never"
+		}
+	}
+}
