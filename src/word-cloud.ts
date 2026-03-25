@@ -222,7 +222,7 @@ function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
 }
 
-export class XWordCloudElement extends HTMLElement {
+export class WordCloudHTMLElement extends HTMLElement {
 	#shadowRoot
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
@@ -257,9 +257,9 @@ export class XWordCloudElement extends HTMLElement {
 		this.#engine = Engine.create({ enableSleeping: true })
 		this.#engine.gravity.y = 0
 		this.#runner = Runner.create()
-		const frameThickness = XWordCloudElement.#frameThickness
-		const frameLength = XWordCloudElement.#frameLength
-		const padding = XWordCloudElement.#padding
+		const frameThickness = WordCloudHTMLElement.#frameThickness
+		const frameLength = WordCloudHTMLElement.#frameLength
+		const padding = WordCloudHTMLElement.#padding
 		this.#frameBodies = {
 			left: Bodies.rectangle(
 				-frameThickness / 2 + padding,
@@ -360,7 +360,7 @@ export class XWordCloudElement extends HTMLElement {
 			HTMLInputElement,
 		)
 		checkbox.checked = checked
-		let id = XWordCloudElement.#idGenerator()
+		let id = WordCloudHTMLElement.#idGenerator()
 		label.textContent = word
 		checkbox.id = `${id}-checkbox`
 		deleteButton.id = `${id}-delete`
@@ -468,8 +468,8 @@ export class XWordCloudElement extends HTMLElement {
 	#updateFrameBodies() {
 		const { right, bottom } = this.#frameBodies
 		const { width, height } = this.#container.getBoundingClientRect()
-		const frameThickness = XWordCloudElement.#frameThickness
-		const padding = XWordCloudElement.#padding
+		const frameThickness = WordCloudHTMLElement.#frameThickness
+		const padding = WordCloudHTMLElement.#padding
 		Body.setPosition(right, {
 			x: width + frameThickness / 2 - padding,
 			y: -frameThickness / 2 + padding,
