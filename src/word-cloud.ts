@@ -91,6 +91,7 @@ const stylesheet = css`
 		border-radius: var(--chamfer-radius, 0);
 		opacity: var(--opacity, 1);
 		animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+		will-change: transform;
 	}
 
 	@keyframes word-fade-in {
@@ -198,8 +199,6 @@ interface InternalWordEntry {
 	id: string
 	word: string
 	body: Body
-	width: number
-	height: number
 	element: HTMLElement
 	checkbox: HTMLInputElement
 	deleteButton: HTMLInputElement
@@ -341,26 +340,26 @@ export class WordCloudHTMLElement extends HTMLElement {
 			velocity?: { x: number; y: number }
 		}) {
 		let fragment = wordTemplate.cloneNode(true) as DocumentFragment
-		let newWord = queryStrict(fragment, ".word", HTMLElement)
-		this.#container.appendChild(newWord)
-		if (!(newWord instanceof HTMLElement)) {
+		let element = queryStrict(fragment, ".word", HTMLElement)
+		this.#container.appendChild(element)
+		if (!(element instanceof HTMLElement)) {
 			throw new Error(
 				".word element is not found in the template, or is not an HTMLElement",
 			)
 		}
-		let label = queryStrict(newWord, "label", HTMLLabelElement)
+		let label = queryStrict(element, "label", HTMLLabelElement)
 		let checkbox = queryStrict(
-			newWord,
+			element,
 			'input[name="checked"]',
 			HTMLInputElement,
 		)
 		let deleteButton = queryStrict(
-			newWord,
+			element,
 			'input[name="delete"]',
 			HTMLInputElement,
 		)
-		checkbox.checked = checked
 		let id = WordCloudHTMLElement.#idGenerator()
+		checkbox.checked = checked
 		label.textContent = word
 		checkbox.id = `${id}-checkbox`
 		deleteButton.id = `${id}-delete`
@@ -370,10 +369,9 @@ export class WordCloudHTMLElement extends HTMLElement {
 		deleteButton.addEventListener("click", () => {
 			this.removeWord(id)
 		})
-		let newWordRect = newWord.getBoundingClientRect()
+		let newWordRect = element.getBoundingClientRect()
 		let width = newWordRect.width
 		let height = newWordRect.height
-		newWord.style.transform = `translate(${x - width / 2}px, ${y - height / 2}px) rotate(${angle}rad)`
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			inertia: Infinity,
@@ -381,19 +379,19 @@ export class WordCloudHTMLElement extends HTMLElement {
 			frictionAir: 0.1,
 			restitution: 0.2,
 		})
-		if (velocity) Body.setVelocity(body, velocity)
-		Composite.add(this.#engine.world, body)
-		this.#wordEntries.set(id, {
+		let entry: InternalWordEntry = {
 			id,
 			word,
-			element: newWord,
+			element,
 			body,
-			width,
-			height,
 			checkbox,
 			deleteButton,
 			label,
-		})
+		}
+		element.style.transform = this.#getWordTransform(entry)
+		if (velocity) Body.setVelocity(body, velocity)
+		Composite.add(this.#engine.world, body)
+		this.#wordEntries.set(id, entry)
 		return id
 	}
 
@@ -514,13 +512,22 @@ export class WordCloudHTMLElement extends HTMLElement {
 
 	#updateWordPositions() {
 		for (let entry of this.#wordEntries.values()) {
-			let { body, width, height, element: domElement } = entry
-			let { x, y } = body.position
-			let angle = body.angle
-			let translateX = toPrecision(x - width / 2, PRECISION)
-			let translateY = toPrecision(y - height / 2, PRECISION)
-			domElement.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${angle}rad)`
+			entry.element.style.transform = this.#getWordTransform(entry)
 		}
+	}
+
+	#getWordTransform({ body }: InternalWordEntry) {
+		let angle = body.angle
+		let translateX = toPrecision(body.position.x, PRECISION)
+		let translateY = toPrecision(body.position.y, PRECISION)
+		let transform = "translate(-50%, -50%)"
+		if (translateX !== 0 || translateY !== 0) {
+			transform += ` translate(${translateX}px, ${translateY}px)`
+		}
+		if (angle !== 0) {
+			transform += ` rotate(${angle}rad)`
+		}
+		return transform
 	}
 
 	#updateWordFromMode() {
