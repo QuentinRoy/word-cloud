@@ -6,7 +6,7 @@ import {
 	Events,
 	Mouse,
 	MouseConstraint,
-	type Render as RenderType,
+	Render,
 	Runner,
 } from "matter-js"
 import { css, html } from "./template.ts"
@@ -20,11 +20,6 @@ const FRAME_LENGTH = window.innerHeight * 1000
 const PADDING = 0
 const PRECISION = 1
 
-let Render: typeof RenderType | null = null
-if (DEBUG_MODE) {
-	Render = (await import("matter-js")).Render
-}
-
 const mainTemplate = html`
   <div class="word-cloud">
     ${DEBUG_MODE ? `<div class="word-cloud-debug"></div>` : ""}
@@ -36,139 +31,168 @@ const mainTemplate = html`
 
 const wordTemplate = html`
   <div class="word">
-    <input type="checkbox">
+    <input type="checkbox" name="checked">
+		<input type="button" name="delete" value="Delete">
     <label></label>
   </div>
 `
 
-const stylesheet = css`
-:host {
-	--space-s: 0.5rem;
-	--space-m: 1rem;
-	--line-width: 2px;
-	--font-size: 1.5rem;
-	--font-family: Arial;
-	--input-background: #fff;
-	--input-text-color: #000;
-	--input-background-color: #eee;
-	--input-border-color: #444;
-	--input-focus-text-color: hwb(212 2% 88%);
-	--input-focus-border-color: hwb(212 16% 22%);
-	--input-focus-shadow-color: hwb(212 76% 0%);
-	--input-focus-background-color: hwb(212 95% 0%);
-	--word-text-color: #000;
-	--word-background-color: #fff;
-	--word-border-color: var(--word-background-color);
-	--word-fade-in-duration: 1s;
-	--checked-opacity: 0.5;
-	display: block;
-}
-
-.word-cloud {
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	height: 100%;
-	font-size: var(--font-size);
-}
-
-form {
-	z-index: 2;
-	display: none;
-}
-
-.word {
-	position: absolute;
-	top: 0;
-	left: 0;
-	z-index: 3;
-	padding: var(--space-s) var(--space-m);
-	font-family: var(--font-family);
-	font-size: var(--font-size);
-	color: var(--word-text-color);
-	text-align: center;
-	background-color: var(--word-background-color);
-	border: var(--line-width) solid var(--word-border-color);
-	border-radius: var(--chamfer-radius, 0);
-	opacity: var(--opacity, 1);
-	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
-}
-
-@keyframes word-fade-in {
-	0% {
-		background-color: transparent;
-		border-color: transparent;
-		color: var(--input-focus-color);
-	}
-	100% {
-		background-color: var(--word-background-color);
-		border-color: var(--word-border-color);
-		color: var(--word-text-color);
-	}
-}
-
-.word input[type="checkbox"] {
-	display: none;
-}
-
-.word:has(input[type="checkbox"]:checked) {
-	opacity: var(--checked-opacity);
-
-	label {
-		text-decoration: line-through;
-	}
-}
-
-input[type="text"] {
-	padding: var(--space-s) var(--space-m);
-	font-family: var(--font-family);
-	font-size: var(--font-size);
-	color: var(--input-text-color);
-	text-align: center;
-	background-color: var(--input-background-color);
-	border: var(--line-width) solid var(--input-border-color);
-	border-radius: var(--chamfer-radius, 0);
-	opacity: var(--opacity, 1);
-
-	&:focus,
-	&:focus-visible {
-		color: var(--input-focus-text-color);
-		outline: none;
-		background-color: var(--input-focus-background-color);
-		border-color: var(--input-focus-border-color);
-		border-radius: var(--chamfer-radius, 0);
-		filter: drop-shadow(0px 0px 10px var(--input-focus-shadow-color));
-	}
-}
-
-:host([mode="mark"]) {
-	.word {
-		cursor: pointer;
-	}
-}
-
-:host([mode="input"]) {
-	form {
+const stylesheet = css`	
+	:host {
+		--space-s: 0.5rem;
+		--space-m: 1rem;
+		--line-width: 2px;
+		--font-size: 1.5rem;
+		--font-family: Arial;
+		--input-background: #fff;
+		--input-text-color: #000;
+		--input-background-color: #eee;
+		--input-border-color: #444;
+		--input-focus-text-color: hwb(212 2% 88%);
+		--input-focus-border-color: hwb(212 16% 22%);
+		--input-focus-shadow-color: hwb(212 76% 0%);
+		--input-focus-background-color: hwb(212 95% 0%);
+		--word-text-color: #000;
+		--word-background-color: #fff;
+		--word-border-color: var(--word-background-color);
+		--word-delete-hover-color: hwb(357 45% 11%);
+		--word-fade-in-duration: 1s;
+		--checked-opacity: 0.5;
 		display: block;
 	}
-	.word {
-		user-select: none;
+
+	.word-cloud {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		font-size: var(--font-size);
 	}
-}
+
+	form {
+		z-index: 2;
+		display: none;
+	}
+
+	.word {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 3;
+		padding: var(--space-s) var(--space-m);
+		font-family: var(--font-family);
+		font-size: var(--font-size);
+		color: var(--word-text-color);
+		text-align: center;
+		background-color: var(--word-background-color);
+		border: var(--line-width) solid var(--word-border-color);
+		border-radius: var(--chamfer-radius, 0);
+		opacity: var(--opacity, 1);
+		animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+	}
+
+	@keyframes word-fade-in {
+		0% {
+			background-color: transparent;
+			border-color: transparent;
+			color: var(--input-focus-color);
+		}
+		100% {
+			background-color: var(--word-background-color);
+			border-color: var(--word-border-color);
+			color: var(--word-text-color);
+		}
+	}
+
+	.word input {
+		display: none;
+	}
+
+	input[type="text"] {
+		padding: var(--space-s) var(--space-m);
+		font-family: var(--font-family);
+		font-size: var(--font-size);
+		color: var(--input-text-color);
+		text-align: center;
+		background-color: var(--input-background-color);
+		border: var(--line-width) solid var(--input-border-color);
+		border-radius: var(--chamfer-radius, 0);
+		opacity: var(--opacity, 1);
+
+		&:focus,
+		&:focus-visible {
+			color: var(--input-focus-text-color);
+			outline: none;
+			background-color: var(--input-focus-background-color);
+			border-color: var(--input-focus-border-color);
+			border-radius: var(--chamfer-radius, 0);
+			filter: drop-shadow(0px 0px 10px var(--input-focus-shadow-color));
+		}
+	}
+
+	:host([mode="mark"]) {
+		.word label {
+			cursor: pointer;
+		}
+		.word label:hover {
+			text-decoration: line-through;
+		}
+	}
+
+	:host([mode="delete"]) {
+		.word-cloud {
+			cursor: crosshair;
+		}
+		.word label {
+			cursor: pointer;
+			user-select: none;
+		}
+		.word label:hover {
+			font-style: italic;
+			color: var(--word-delete-hover-color);
+		}
+	}
+
+	:host([mode="input"]) {
+		form {
+			display: block;
+		}
+		.word,
+		.word label {
+			cursor: grab;
+			user-select: none;
+		}
+	}
+
+	:host(:state(active)) {
+		.word-cloud,
+		.word,
+		.word label {
+			cursor: grabbing;
+		}
+	}
+
+	.word:has(input[type="checkbox"]:checked) {
+		opacity: var(--checked-opacity);
+
+		label {
+			text-decoration: line-through;
+		}
+	}
 `
 
 const debugStyles = css`
-  .word-cloud-debug {
-    z-index: 1;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
+	.word-cloud-debug {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 1;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+	}
 `
 
 interface InternalWordEntry {
@@ -189,7 +213,12 @@ interface WordEntry {
 	checked: boolean
 }
 
-const MODES = { INPUT: "input", MARK: "mark", NONE: "none" } as const
+const MODES = Object.freeze({
+	input: "input",
+	mark: "mark",
+	none: "none",
+	delete: "delete",
+})
 
 type Mode = (typeof MODES)[keyof typeof MODES]
 
@@ -211,12 +240,13 @@ export class XWordCloudElement extends HTMLElement {
 	#resizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
 	})
+	#internals = this.attachInternals()
 
 	static #frameThickness = FRAME_THICKNESS
 	static #frameLength = FRAME_LENGTH
 	static #padding = PADDING
 
-	static MODES = Object.freeze(MODES)
+	static MODES = MODES
 
 	constructor() {
 		super()
@@ -269,7 +299,7 @@ export class XWordCloudElement extends HTMLElement {
 		this.#mouse = Mouse.create(this.#container)
 		this.#mouseConstraint = MouseConstraint.create(this.#engine, {
 			mouse: this.#mouse,
-			constraint: { stiffness: 0.2 },
+			constraint: { stiffness: 0.5 },
 		})
 	}
 
@@ -284,7 +314,7 @@ export class XWordCloudElement extends HTMLElement {
 				if (newValue !== null && !isMode(newValue)) {
 					this.removeAttribute("mode")
 				} else {
-					this.#updateWordInputs()
+					this.#updateWordFromMode()
 					this.#updateMouseConstraint()
 				}
 				break
@@ -294,7 +324,7 @@ export class XWordCloudElement extends HTMLElement {
 	get mode() {
 		let value = this.getAttribute("mode")
 		if (value == null || !isMode(value)) {
-			return MODES.NONE
+			return MODES.none
 		}
 		return value
 	}
@@ -323,13 +353,27 @@ export class XWordCloudElement extends HTMLElement {
 			)
 		}
 		let label = queryStrict(newWord, "label", HTMLLabelElement)
-		let input = queryStrict(newWord, "input", HTMLInputElement)
-		input.checked = checked
+		let checkbox = queryStrict(
+			newWord,
+			'input[name="checked"]',
+			HTMLInputElement,
+		)
+		let deleteButton = queryStrict(
+			newWord,
+			'input[name="delete"]',
+			HTMLInputElement,
+		)
+		checkbox.checked = checked
 		let id = XWordCloudElement.#idGenerator()
 		label.textContent = word
-		label.htmlFor = id
-		input.id = id
-		input.disabled = this.mode !== "mark"
+		checkbox.id = `${id}-checkbox`
+		deleteButton.id = `${id}-delete`
+		label.htmlFor = this.mode === "delete" ? deleteButton.id : checkbox.id
+		checkbox.disabled = this.mode !== "mark"
+		deleteButton.disabled = this.mode !== "delete"
+		deleteButton.addEventListener("click", () => {
+			this.removeWord(id)
+		})
 		let newWordRect = newWord.getBoundingClientRect()
 		let width = newWordRect.width
 		let height = newWordRect.height
@@ -385,6 +429,8 @@ export class XWordCloudElement extends HTMLElement {
 	connectedCallback() {
 		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
 		Events.on(this.#runner, "tick", this.#handleTick)
+		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
+		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
 		this.#updateFrameBodies()
 		this.#updateMouseConstraint()
 		this.#resizeObserver.observe(this.#container)
@@ -394,6 +440,8 @@ export class XWordCloudElement extends HTMLElement {
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
 		Events.off(this.#runner, "tick", this.#handleTick)
+		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
+		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
 		this.#resizeObserver.unobserve(this.#container)
 		this.#stop()
 	}
@@ -455,6 +503,14 @@ export class XWordCloudElement extends HTMLElement {
 		this.#wordInput.value = ""
 	}
 
+	#handleStartDragging = () => {
+		this.#internals.states.add("active")
+	}
+
+	#handleEndDragging = () => {
+		this.#internals.states.delete("active")
+	}
+
 	#handleTick = () => {
 		this.#updateWordPositions()
 	}
@@ -470,12 +526,22 @@ export class XWordCloudElement extends HTMLElement {
 		}
 	}
 
-	#updateWordInputs() {
-		let areChecksDisabled = this.mode !== "mark"
-		let checkboxes =
-			this.#container.querySelectorAll<HTMLInputElement>(".word input")
-		for (let checkbox of checkboxes) {
-			checkbox.disabled = areChecksDisabled
+	#updateWordFromMode() {
+		for (let word of this.#wordEntries.values()) {
+			let checkbox = queryStrict(
+				word.domElement,
+				"input[name='checked']",
+				HTMLInputElement,
+			)
+			let deleteButton = queryStrict(
+				word.domElement,
+				"input[name='delete']",
+				HTMLInputElement,
+			)
+			let label = queryStrict(word.domElement, "label", HTMLLabelElement)
+			label.htmlFor = this.mode === "delete" ? deleteButton.id : checkbox.id
+			checkbox.disabled = this.mode !== "mark"
+			deleteButton.disabled = this.mode !== "delete"
 		}
 	}
 
@@ -483,13 +549,13 @@ export class XWordCloudElement extends HTMLElement {
 		if (this.mode === "input") {
 			Composite.add(this.#engine.world, this.#mouseConstraint)
 		} else {
-			Composite.remove(this.#engine.world, this.#mouseConstraint)
+			Composite.remove(this.#engine.world, this.#mouseConstraint, true)
 		}
 	}
 
 	static #idGenerator = createIdGenerator((x) => `word-cloud-${x}`)
 
-	#debugRender: RenderType | null = null
+	#debugRender: Render | null = null
 	#start() {
 		Runner.run(this.#runner, this.#engine)
 		if (DEBUG_MODE) {
