@@ -197,10 +197,13 @@ const debugStyles = css`
 interface InternalWordEntry {
 	id: string
 	word: string
-	domElement: HTMLElement
 	body: Body
 	width: number
 	height: number
+	element: HTMLElement
+	checkbox: HTMLInputElement
+	deleteButton: HTMLInputElement
+	label: HTMLLabelElement
 }
 
 interface WordEntry {
@@ -212,17 +215,11 @@ interface WordEntry {
 	checked: boolean
 }
 
-const MODES = Object.freeze({
-	input: "input",
-	mark: "mark",
-	none: "none",
-	delete: "delete",
-})
-
-type Mode = (typeof MODES)[keyof typeof MODES]
+const MODES = ["none", "mark", "delete", "input"] as const
+type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
-	return (Object.values(MODES) as unknown[]).includes(value)
+	return (MODES as readonly unknown[]).includes(value)
 }
 
 export class XWordCloudElement extends HTMLElement {
@@ -323,7 +320,7 @@ export class XWordCloudElement extends HTMLElement {
 	get mode() {
 		let value = this.getAttribute("mode")
 		if (value == null || !isMode(value)) {
-			return MODES.none
+			return "none"
 		}
 		return value
 	}
@@ -389,10 +386,13 @@ export class XWordCloudElement extends HTMLElement {
 		this.#wordEntries.set(id, {
 			id,
 			word,
-			domElement: newWord,
+			element: newWord,
 			body,
 			width,
 			height,
+			checkbox,
+			deleteButton,
+			label,
 		})
 		return id
 	}
@@ -409,7 +409,7 @@ export class XWordCloudElement extends HTMLElement {
 
 	#removeWordBodyAndDom(entry: InternalWordEntry) {
 		Composite.remove(this.#engine.world, entry.body)
-		this.#container.removeChild(entry.domElement)
+		this.#container.removeChild(entry.element)
 	}
 
 	clear() {
@@ -454,9 +454,7 @@ export class XWordCloudElement extends HTMLElement {
 				x: toPrecision(entry.body.position.x, PRECISION),
 				y: toPrecision(entry.body.position.y, PRECISION),
 				angle: entry.body.angle,
-				checked:
-					entry.domElement.querySelector<HTMLInputElement>("input")?.checked ??
-					false,
+				checked: entry.checkbox.checked,
 			}))
 	}
 
@@ -516,7 +514,7 @@ export class XWordCloudElement extends HTMLElement {
 
 	#updateWordPositions() {
 		for (let entry of this.#wordEntries.values()) {
-			let { body, width, height, domElement } = entry
+			let { body, width, height, element: domElement } = entry
 			let { x, y } = body.position
 			let angle = body.angle
 			let translateX = toPrecision(x - width / 2, PRECISION)
@@ -526,18 +524,7 @@ export class XWordCloudElement extends HTMLElement {
 	}
 
 	#updateWordFromMode() {
-		for (let word of this.#wordEntries.values()) {
-			let checkbox = queryStrict(
-				word.domElement,
-				"input[name='checked']",
-				HTMLInputElement,
-			)
-			let deleteButton = queryStrict(
-				word.domElement,
-				"input[name='delete']",
-				HTMLInputElement,
-			)
-			let label = queryStrict(word.domElement, "label", HTMLLabelElement)
+		for (let { label, checkbox, deleteButton } of this.#wordEntries.values()) {
 			label.htmlFor = this.mode === "delete" ? deleteButton.id : checkbox.id
 			checkbox.disabled = this.mode !== "mark"
 			deleteButton.disabled = this.mode !== "delete"
