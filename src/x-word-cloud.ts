@@ -147,7 +147,6 @@ const stylesheet = css`
 		}
 		.word label {
 			cursor: pointer;
-			user-select: none;
 		}
 		.word label:hover {
 			font-style: italic;
@@ -504,7 +503,7 @@ export class XWordCloudElement extends HTMLElement {
 	}
 
 	#handleStartDragging = () => {
-		this.#internals.states.add("active")
+		if (this.#mouseEnabled) this.#internals.states.add("active")
 	}
 
 	#handleEndDragging = () => {
@@ -545,11 +544,20 @@ export class XWordCloudElement extends HTMLElement {
 		}
 	}
 
+	#mouseEnabled = false
 	#updateMouseConstraint() {
 		if (this.mode === "input") {
+			if (this.#mouseEnabled) return
+			this.#mouseEnabled = true
 			Composite.add(this.#engine.world, this.#mouseConstraint)
 		} else {
-			Composite.remove(this.#engine.world, this.#mouseConstraint, true)
+			this.#mouseEnabled = false
+			Composite.remove(
+				this.#engine.world,
+				this.#mouseConstraint.constraint,
+				true,
+			)
+			this.#internals.states.delete("active")
 		}
 	}
 
