@@ -40,116 +40,121 @@ const wordTemplate = html`
 `
 
 const stylesheet = css`
-  :host {
-    --space-s: .5rem;
-    --space-m: 1rem;
-    --line-width: 2px;
-    --font-size: 1.5rem;
-    --font-family: Arial;
-    --input-background: #fff;
-    --input-color: #000;
-    --input-background-color: #eee;
-    --input-border-color: #444;
-    --input-focus-color: #000;
-    --input-focus-border-color: #2871c7;
-    --input-focus-shadow-color: #C2DEFF;
-    --input-focus-background-color: #fff;
-    --word-background: #fff;
-    --word-border: #fff;
-    --word-fade-in-duration: 1s;
-    --checked-opacity: 0.5;
-    display: block;
-  }
+:host {
+	--space-s: 0.5rem;
+	--space-m: 1rem;
+	--line-width: 2px;
+	--font-size: 1.5rem;
+	--font-family: Arial;
+	--input-background: #fff;
+	--input-text-color: #000;
+	--input-background-color: #eee;
+	--input-border-color: #444;
+	--input-focus-text-color: hwb(212 2% 88%);
+	--input-focus-border-color: hwb(212 16% 22%);
+	--input-focus-shadow-color: hwb(212 76% 0%);
+	--input-focus-background-color: hwb(212 95% 0%);
+	--word-text-color: #000;
+	--word-background-color: #fff;
+	--word-border-color: var(--word-background-color);
+	--word-fade-in-duration: 1s;
+	--checked-opacity: 0.5;
+	display: block;
+}
 
-  .word-cloud {
-    position: relative;
-    font-size: var(--font-size);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
-  }
+.word-cloud {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	font-size: var(--font-size);
+}
 
-  form {
-    display: none;
-    z-index: 2;
-  }
+form {
+	z-index: 2;
+	display: none;
+}
 
-  .word {
-    z-index: 3;
-    border: var(--line-width) solid var(--word-border);
-    border-radius: var(--chamfer-radius, 0);
-    padding: var(--space-s) var(--space-m);
-    font-size: var(--font-size);
-    font-family: var(--font-family);
-    text-align: center;
-    position: absolute;
-    background-color: var(--word-background);
-    top: 0;
-    left: 0;
-    opacity: var(--opacity, 1);
-    animation: word-fade-in var(--word-fade-in-duration, 0.3s);
-  }
+.word {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 3;
+	padding: var(--space-s) var(--space-m);
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+	color: var(--word-text-color);
+	text-align: center;
+	background-color: var(--word-background-color);
+	border: var(--line-width) solid var(--word-border-color);
+	border-radius: var(--chamfer-radius, 0);
+	opacity: var(--opacity, 1);
+	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+}
 
-  @keyframes word-fade-in {
-    0% {
-      background-color: transparent;
-      border-color: transparent;
-      color: var(--input-focus-color);
-    }
-    100% {
-      background-color: var(--word-background);
-      border-color: var(--word-border);
-      color: var(--word-color);
-    }
-  }
+@keyframes word-fade-in {
+	0% {
+		background-color: transparent;
+		border-color: transparent;
+		color: var(--input-focus-color);
+	}
+	100% {
+		background-color: var(--word-background-color);
+		border-color: var(--word-border-color);
+		color: var(--word-text-color);
+	}
+}
 
-  .word input[type="checkbox"] {
-    display: none;
-  }
+.word input[type="checkbox"] {
+	display: none;
+}
 
-  .word:has(input[type="checkbox"]:checked){
-    opacity: var(--checked-opacity);
-    label {
-      text-decoration: line-through;
-    }
-  }
+.word:has(input[type="checkbox"]:checked) {
+	opacity: var(--checked-opacity);
 
-  input[type="text"] {
-    border: var(--line-width) solid var(--input-border-color);
-    color: var(--input-color);
-    font-family: var(--font-family);
-    border-radius: var(--chamfer-radius, 0);
-    background-color: var(--input-background-color);
-    padding: var(--space-s) var(--space-m);
-    font-size: var(--font-size);
-    text-align: center;
-    opacity: var(--opacity, 1);
+	label {
+		text-decoration: line-through;
+	}
+}
 
-    &:focus,
-    &:focus-visible {
-      color: var(--input-focus-color);
-      border-color: var(--input-focus-border-color);
-      background-color: var(--input-focus-background-color);
-      border-radius: var(--chamfer-radius, 0);
-      filter: drop-shadow(0px 0px 10px var(--input-focus-shadow-color));
-      outline: none;
-    }
-  }
-  :host([mode="input"]) {
-    form {
-      display: block;
-    }
-    .word {
-      user-select: none;
-    }
-  }
-  :host([mode="mark"]) {
-    .word label {
-      cursor: pointer;
-    }
-  }
+input[type="text"] {
+	padding: var(--space-s) var(--space-m);
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+	color: var(--input-text-color);
+	text-align: center;
+	background-color: var(--input-background-color);
+	border: var(--line-width) solid var(--input-border-color);
+	border-radius: var(--chamfer-radius, 0);
+	opacity: var(--opacity, 1);
+
+	&:focus,
+	&:focus-visible {
+		color: var(--input-focus-text-color);
+		outline: none;
+		background-color: var(--input-focus-background-color);
+		border-color: var(--input-focus-border-color);
+		border-radius: var(--chamfer-radius, 0);
+		filter: drop-shadow(0px 0px 10px var(--input-focus-shadow-color));
+	}
+}
+
+:host([mode="mark"]) {
+	.word {
+		cursor: pointer;
+	}
+}
+
+:host([mode="input"]) {
+	form {
+		display: block;
+	}
+	.word {
+		user-select: none;
+	}
+}
 `
 
 const debugStyles = css`
@@ -172,11 +177,7 @@ interface WordEntry {
 	height: number
 }
 
-const MODES = {
-	INPUT: "input",
-	MARK: "mark",
-	NONE: "none",
-} as const
+const MODES = { INPUT: "input", MARK: "mark", NONE: "none" } as const
 
 type Mode = (typeof MODES)[keyof typeof MODES]
 
@@ -191,12 +192,7 @@ export class XWordCloudElement extends HTMLElement {
 	#container: HTMLElement
 	#engine: Engine
 	#runner: Runner
-	#frameBodies: {
-		left: Body
-		right: Body
-		top: Body
-		bottom: Body
-	}
+	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
 	#wordEntries: WordEntry[] = []
 	#mouse: Mouse
 	#mouseConstraint: MouseConstraint
@@ -220,9 +216,7 @@ export class XWordCloudElement extends HTMLElement {
 		this.#container = queryStrict(this.#shadowRoot, ".word-cloud", HTMLElement)
 		this.#wordForm = queryStrict(this.#container, "form", HTMLFormElement)
 		this.#wordInput = queryStrict(this.#container, "input", HTMLInputElement)
-		this.#engine = Engine.create({
-			enableSleeping: true,
-		})
+		this.#engine = Engine.create({ enableSleeping: true })
 		this.#engine.gravity.y = 0
 		this.#runner = Runner.create()
 		const frameThickness = XWordCloudElement.#frameThickness
@@ -241,9 +235,7 @@ export class XWordCloudElement extends HTMLElement {
 				-frameThickness / 2 + padding,
 				frameLength,
 				frameThickness,
-				{
-					isStatic: true,
-				},
+				{ isStatic: true },
 			),
 			right: Bodies.rectangle(0, 0, frameThickness, frameLength, {
 				isStatic: true,
@@ -265,12 +257,7 @@ export class XWordCloudElement extends HTMLElement {
 		this.#mouse = Mouse.create(this.#container)
 		this.#mouseConstraint = MouseConstraint.create(this.#engine, {
 			mouse: this.#mouse,
-			constraint: {
-				stiffness: 0.2,
-				render: {
-					visible: false,
-				},
-			},
+			constraint: { stiffness: 0.2 },
 		})
 	}
 
@@ -340,22 +327,13 @@ export class XWordCloudElement extends HTMLElement {
 		})
 		Body.setVelocity(body, this.#pickRandomVelocity())
 		Composite.add(this.#engine.world, body)
-		this.#wordEntries.push({
-			word,
-			domElement: newWord,
-			body,
-			width,
-			height,
-		})
+		this.#wordEntries.push({ word, domElement: newWord, body, width, height })
 	}
 
 	#pickRandomVelocity() {
 		let angle = Math.random() * 2 * Math.PI
 		let speed = Math.random() * 50 + 25
-		return {
-			x: Math.cos(angle) * speed,
-			y: Math.sin(angle) * speed,
-		}
+		return { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
 	}
 
 	connectedCallback() {
@@ -430,7 +408,7 @@ export class XWordCloudElement extends HTMLElement {
 		}
 	}
 
-	static #idGenerator = idGenerator("word-cloud-")
+	static #idGenerator = createIdGenerator((x) => `word-cloud-${x}`)
 
 	#debugRender: RenderType | null = null
 	#start() {
@@ -462,6 +440,14 @@ export class XWordCloudElement extends HTMLElement {
 	}
 }
 
+/**
+ * Queries the DOM for an element matching the specified selector and checks if it is of the expected type.
+ * @param root The root element to query within. Must have a querySelector method.
+ * @param selector The CSS selector to match the desired element.
+ * @param type The expected constructor/type of the element.
+ * @returns The found element.
+ * @throws An error if the element is not found or is not of the expected type.
+ */
 function queryStrict<T extends HTMLElement>(
 	root: { querySelector: (selector: string) => HTMLElement | null },
 	selector: string,
@@ -469,21 +455,33 @@ function queryStrict<T extends HTMLElement>(
 ): T {
 	let element = root.querySelector(selector)
 	if (element instanceof type) {
-		return element as T
+		return element
 	}
 	throw new Error(`Expected ${selector} to be a ${type.constructor.name}`)
 }
 
-function idGenerator(prefix: string) {
+/**
+ * Creates a unique ID generator function that generates IDs based on a provided mapping function.
+ * @param map A function that takes a number and returns a value of type T.
+ * This function is used to generate the ID based on the current count.
+ * @returns A function that, when called, returns a unique ID of type T.
+ */
+function createIdGenerator<T>(map: (x: number) => T): () => T {
 	let last = 0
 	return () => {
 		let current = last + 1
 		last = current
-		return `${prefix}${current}`
+		return map(current)
 	}
 }
 
-function toPrecision(value: number, precision: number) {
+/**
+ * Rounds a number to a given number of digits after the decimal point.
+ * @param value The number to round.
+ * @param precision The number of digits after the decimal point to round to.
+ * @returns The rounded number.
+ */
+function toPrecision(value: number, precision: number): number {
 	let f = 10 ** Math.floor(precision)
 	return Math.round(value * f) / f
 }

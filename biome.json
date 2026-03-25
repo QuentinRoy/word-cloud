@@ -13,14 +13,20 @@
 		}
 	},
 	"assist": {
-		"enabled": true
+		"enabled": true,
+		"actions": {
+			"source": {
+				"useSortedProperties": "on"
+			}
+		}
 	},
 	"javascript": {
 		"formatter": {
 			"enabled": true,
 			"trailingCommas": "all",
 			"semicolons": "asNeeded",
-			"arrowParentheses": "always"
+			"arrowParentheses": "always",
+			"expand": "never"
 		}
 	},
 	"html": {
@@ -28,6 +34,11 @@
 			"enabled": true,
 			"indentStyle": "tab",
 			"selfCloseVoidElements": "never"
+		}
+	},
+	"css": {
+		"formatter": {
+			"enabled": true
 		}
 	}
 }
