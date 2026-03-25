@@ -10,6 +10,7 @@ import {
 	Runner,
 } from "matter-js"
 import { css, html } from "./template.ts"
+import { createIdGenerator, queryStrict, toPrecision } from "./utils.ts"
 
 const DEBUG_MODE = false
 
@@ -17,6 +18,7 @@ const CHAMFER_RADIUS = 8
 const FRAME_THICKNESS = 1000
 const FRAME_LENGTH = window.innerHeight * 1000
 const PADDING = 0
+const PRECISION = 1
 
 let Render: typeof RenderType | null = null
 if (DEBUG_MODE) {
@@ -169,12 +171,22 @@ const debugStyles = css`
   }
 `
 
-interface WordEntry {
+interface InternalWordEntry {
+	id: string
 	word: string
 	domElement: HTMLElement
 	body: Body
 	width: number
 	height: number
+}
+
+interface WordEntry {
+	id: string
+	word: string
+	x: number
+	y: number
+	angle: number
+	checked: boolean
 }
 
 const MODES = { INPUT: "input", MARK: "mark", NONE: "none" } as const
@@ -193,7 +205,7 @@ export class XWordCloudElement extends HTMLElement {
 	#engine: Engine
 	#runner: Runner
 	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
-	#wordEntries: WordEntry[] = []
+	#wordEntries: Map<string, InternalWordEntry> = new Map()
 	#mouse: Mouse
 	#mouseConstraint: MouseConstraint
 	#resizeObserver = new ResizeObserver(() => {
@@ -291,7 +303,17 @@ export class XWordCloudElement extends HTMLElement {
 		this.setAttribute("mode", value)
 	}
 
-	addNewWord(word: string) {
+	addWord({
+		word,
+		x,
+		y,
+		angle = 0,
+		checked = false,
+		velocity,
+	}: Omit<WordEntry, "id" | "angle" | "checked"> &
+		Partial<Pick<WordEntry, "angle" | "checked">> & {
+			velocity?: { x: number; y: number }
+		}) {
 		let fragment = wordTemplate.cloneNode(true) as DocumentFragment
 		let newWord = queryStrict(fragment, ".word", HTMLElement)
 		this.#container.appendChild(newWord)
@@ -302,32 +324,56 @@ export class XWordCloudElement extends HTMLElement {
 		}
 		let label = queryStrict(newWord, "label", HTMLLabelElement)
 		let input = queryStrict(newWord, "input", HTMLInputElement)
+		input.checked = checked
 		let id = XWordCloudElement.#idGenerator()
 		label.textContent = word
 		label.htmlFor = id
 		input.id = id
 		input.disabled = this.mode !== "mark"
 		let newWordRect = newWord.getBoundingClientRect()
-		let containerRect = this.#container.getBoundingClientRect()
-		let inputRect = this.#wordInput.getBoundingClientRect()
 		let width = newWordRect.width
 		let height = newWordRect.height
-		let x =
-			inputRect.left -
-			containerRect.left +
-			inputRect.width / 2 -
-			newWordRect.width / 2
-		let y = inputRect.top
-		newWord.style.transform = `translate(${x}px, ${y}px)`
-		let body = Bodies.rectangle(x + width / 2, y + height / 2, width, height, {
+		newWord.style.transform = `translate(${x - width / 2}px, ${y - height / 2}px) rotate(${angle}rad)`
+		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			inertia: Infinity,
+			angle,
 			frictionAir: 0.1,
 			restitution: 0.2,
 		})
-		Body.setVelocity(body, this.#pickRandomVelocity())
+		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
-		this.#wordEntries.push({ word, domElement: newWord, body, width, height })
+		this.#wordEntries.set(id, {
+			id,
+			word,
+			domElement: newWord,
+			body,
+			width,
+			height,
+		})
+		return id
+	}
+
+	removeWord(id: string) {
+		let entry = this.#wordEntries.get(id)
+		if (entry) {
+			this.#removeWordBodyAndDom(entry)
+			this.#wordEntries.delete(entry.id)
+			return true
+		}
+		return false
+	}
+
+	#removeWordBodyAndDom(entry: InternalWordEntry) {
+		Composite.remove(this.#engine.world, entry.body)
+		this.#container.removeChild(entry.domElement)
+	}
+
+	clear() {
+		for (let entry of this.#wordEntries.values()) {
+			this.#removeWordBodyAndDom(entry)
+		}
+		this.#wordEntries.clear()
 	}
 
 	#pickRandomVelocity() {
@@ -352,6 +398,28 @@ export class XWordCloudElement extends HTMLElement {
 		this.#stop()
 	}
 
+	getWords(): Iterable<WordEntry> {
+		return this.#wordEntries
+			.values()
+			.map((entry) => ({
+				id: entry.id,
+				word: entry.word,
+				x: toPrecision(entry.body.position.x, PRECISION),
+				y: toPrecision(entry.body.position.y, PRECISION),
+				angle: entry.body.angle,
+				checked:
+					entry.domElement.querySelector<HTMLInputElement>("input")?.checked ??
+					false,
+			}))
+	}
+
+	setWords(words: Omit<WordEntry, "id">[]) {
+		this.clear()
+		for (let word of words) {
+			this.addWord(word)
+		}
+	}
+
 	#updateFrameBodies() {
 		const { right, bottom } = this.#frameBodies
 		const { width, height } = this.#container.getBoundingClientRect()
@@ -371,7 +439,18 @@ export class XWordCloudElement extends HTMLElement {
 		e.preventDefault()
 		let newWord = this.#wordInput.value.trim()
 		if (newWord !== "") {
-			this.addNewWord(this.#wordInput.value)
+			let containerRect = this.#container.getBoundingClientRect()
+			let inputRect = this.#wordInput.getBoundingClientRect()
+			let x = inputRect.left - containerRect.left + inputRect.width / 2
+			let y = inputRect.top + inputRect.height / 2
+			this.addWord({
+				word: newWord,
+				x,
+				y,
+				angle: 0,
+				checked: false,
+				velocity: this.#pickRandomVelocity(),
+			})
 		}
 		this.#wordInput.value = ""
 	}
@@ -381,12 +460,12 @@ export class XWordCloudElement extends HTMLElement {
 	}
 
 	#updateWordPositions() {
-		for (let entry of this.#wordEntries) {
+		for (let entry of this.#wordEntries.values()) {
 			let { body, width, height, domElement } = entry
 			let { x, y } = body.position
 			let angle = body.angle
-			let translateX = toPrecision(x - width / 2, 1)
-			let translateY = toPrecision(y - height / 2, 1)
+			let translateX = toPrecision(x - width / 2, PRECISION)
+			let translateY = toPrecision(y - height / 2, PRECISION)
 			domElement.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${angle}rad)`
 		}
 	}
@@ -438,50 +517,4 @@ export class XWordCloudElement extends HTMLElement {
 		Runner.stop(this.#runner)
 		if (this.#debugRender != null) Render?.stop(this.#debugRender)
 	}
-}
-
-/**
- * Queries the DOM for an element matching the specified selector and checks if it is of the expected type.
- * @param root The root element to query within. Must have a querySelector method.
- * @param selector The CSS selector to match the desired element.
- * @param type The expected constructor/type of the element.
- * @returns The found element.
- * @throws An error if the element is not found or is not of the expected type.
- */
-function queryStrict<T extends HTMLElement>(
-	root: { querySelector: (selector: string) => HTMLElement | null },
-	selector: string,
-	type: new () => T,
-): T {
-	let element = root.querySelector(selector)
-	if (element instanceof type) {
-		return element
-	}
-	throw new Error(`Expected ${selector} to be a ${type.constructor.name}`)
-}
-
-/**
- * Creates a unique ID generator function that generates IDs based on a provided mapping function.
- * @param map A function that takes a number and returns a value of type T.
- * This function is used to generate the ID based on the current count.
- * @returns A function that, when called, returns a unique ID of type T.
- */
-function createIdGenerator<T>(map: (x: number) => T): () => T {
-	let last = 0
-	return () => {
-		let current = last + 1
-		last = current
-		return map(current)
-	}
-}
-
-/**
- * Rounds a number to a given number of digits after the decimal point.
- * @param value The number to round.
- * @param precision The number of digits after the decimal point to round to.
- * @returns The rounded number.
- */
-function toPrecision(value: number, precision: number): number {
-	let f = 10 ** Math.floor(precision)
-	return Math.round(value * f) / f
 }

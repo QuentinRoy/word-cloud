@@ -18,6 +18,7 @@
     "vitest": "^4.1.1"
   },
   "dependencies": {
+    "arktype": "^2.2.0",
     "matter-js": "^0.20.0"
   }
 }
