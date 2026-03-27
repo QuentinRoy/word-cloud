@@ -1,13 +1,21 @@
 export function html(...args: Parameters<typeof String.raw>) {
 	let html = String.raw(...args)
+	return createHtmlTemplate(html)
+}
+
+export function createHtmlTemplate(content: string) {
 	let template = document.createElement("template")
-	template.innerHTML = html
+	template.innerHTML = content
 	return template.content
 }
 
 export function css(...args: Parameters<typeof String.raw>) {
 	let css = String.raw(...args)
+	return createCssStylesheet(css)
+}
+
+export function createCssStylesheet(content: string) {
 	const stylesheet = new CSSStyleSheet()
-	stylesheet.replaceSync(css)
+	stylesheet.replaceSync(content)
 	return stylesheet
 }

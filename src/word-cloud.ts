@@ -12,6 +12,10 @@ import {
 } from "matter-js"
 import { css, html } from "./template.ts"
 import { createIdGenerator, queryStrict, toPrecision } from "./utils.ts"
+import mainStylesheetContent from "./word-cloud.css?raw"
+import mainTemplateContent from "./word-cloud.html?raw"
+import debugStylesheetContent from "./word-cloud-debug.css?raw"
+import wordTemplateContent from "./word-cloud-word.html?raw"
 
 const DEBUG_MODE = false
 
@@ -21,180 +25,11 @@ const FRAME_LENGTH = window.innerHeight * 1000
 const PADDING = 0
 const PRECISION = 1
 
-const mainTemplate = html`
-  <div class="word-cloud">
-    ${DEBUG_MODE ? `<div class="word-cloud-debug"></div>` : ""}
-    <form>
-      <input name="word-input" type="text">
-    </form>
-  </div>
-`
+const mainTemplate = html`${mainTemplateContent}`
+const wordTemplate = html`${wordTemplateContent}`
 
-const wordTemplate = html`
-  <div class="word">
-    <input type="checkbox" name="checked">
-		<input type="button" name="delete" value="Delete">
-    <label></label>
-  </div>
-`
-
-const stylesheet = css`	
-	:host {
-		--space-s: 0.5rem;
-		--space-m: 1rem;
-		--line-width: 2px;
-		--font-size: 1.5rem;
-		--font-family: Arial;
-		--input-background: #fff;
-		--input-text-color: #000;
-		--input-background-color: #eee;
-		--input-border-color: #444;
-		--input-focus-text-color: hwb(212 2% 88%);
-		--input-focus-border-color: hwb(212 16% 22%);
-		--input-focus-shadow-color: hwb(212 76% 0%);
-		--input-focus-background-color: hwb(212 95% 0%);
-		--word-text-color: #000;
-		--word-background-color: #fff;
-		--word-border-color: var(--word-background-color);
-		--word-delete-hover-color: hwb(357 45% 11%);
-		--word-fade-in-duration: 1s;
-		--checked-opacity: 0.5;
-		display: block;
-	}
-
-	.word-cloud {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 100%;
-		height: 100%;
-		font-size: var(--font-size);
-	}
-
-	form {
-		z-index: 2;
-		display: none;
-	}
-
-	.word {
-		position: absolute;
-		top: 0;
-		left: 0;
-		z-index: 3;
-		padding: var(--space-s) var(--space-m);
-		font-family: var(--font-family);
-		font-size: var(--font-size);
-		color: var(--word-text-color);
-		text-align: center;
-		background-color: var(--word-background-color);
-		border: var(--line-width) solid var(--word-border-color);
-		border-radius: var(--chamfer-radius, 0);
-		opacity: var(--opacity, 1);
-		animation: word-fade-in var(--word-fade-in-duration, 0.3s);
-		will-change: transform;
-	}
-
-	@keyframes word-fade-in {
-		0% {
-			background-color: transparent;
-			border-color: transparent;
-			color: var(--input-focus-color);
-		}
-		100% {
-			background-color: var(--word-background-color);
-			border-color: var(--word-border-color);
-			color: var(--word-text-color);
-		}
-	}
-
-	.word input {
-		display: none;
-	}
-
-	input[type="text"] {
-		padding: var(--space-s) var(--space-m);
-		font-family: var(--font-family);
-		font-size: var(--font-size);
-		color: var(--input-text-color);
-		text-align: center;
-		background-color: var(--input-background-color);
-		border: var(--line-width) solid var(--input-border-color);
-		border-radius: var(--chamfer-radius, 0);
-		opacity: var(--opacity, 1);
-
-		&:focus,
-		&:focus-visible {
-			color: var(--input-focus-text-color);
-			outline: none;
-			background-color: var(--input-focus-background-color);
-			border-color: var(--input-focus-border-color);
-			border-radius: var(--chamfer-radius, 0);
-			filter: drop-shadow(0px 0px 10px var(--input-focus-shadow-color));
-		}
-	}
-
-	:host([mode="mark"]) {
-		.word label {
-			cursor: pointer;
-		}
-		.word label:hover {
-			text-decoration: line-through;
-		}
-	}
-
-	:host([mode="delete"]) {
-		.word-cloud {
-			cursor: crosshair;
-		}
-		.word label {
-			cursor: pointer;
-		}
-		.word label:hover {
-			font-style: italic;
-			color: var(--word-delete-hover-color);
-		}
-	}
-
-	:host([mode="input"]) {
-		form {
-			display: block;
-		}
-		.word,
-		.word label {
-			cursor: grab;
-			user-select: none;
-		}
-	}
-
-	:host(:state(active)) {
-		.word-cloud,
-		.word,
-		.word label {
-			cursor: grabbing;
-		}
-	}
-
-	.word:has(input[type="checkbox"]:checked) {
-		opacity: var(--checked-opacity);
-
-		label {
-			text-decoration: line-through;
-		}
-	}
-`
-
-const debugStyles = css`
-	.word-cloud-debug {
-		position: absolute;
-		top: 0;
-		left: 0;
-		z-index: 1;
-		width: 100%;
-		height: 100%;
-		pointer-events: none;
-	}
-`
+const stylesheet = css`${mainStylesheetContent}`
+const debugStyles = css`${debugStylesheetContent}`
 
 interface InternalWordEntry {
 	id: string
