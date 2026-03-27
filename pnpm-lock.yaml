@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@quentinroy/custom-element-mixins':
+        specifier: npm:@jsr/quentinroy__custom-element-mixins@^0.3.1
+        version: '@jsr/quentinroy__custom-element-mixins@0.3.1'
       arktype:
         specifier: ^2.2.0
         version: 2.2.0
@@ -113,6 +116,9 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@jsr/quentinroy__custom-element-mixins@0.3.1':
+    resolution: {integrity: sha512-Y1uSOJzlF2ZA2neSsSMnxgtLJXqxfaNiNO1cNtIfZMgFTCedxIOYWSYsQTKo3NboHTX/R32OtI3vC18CK64cWg==, tarball: https://npm.jsr.io/~/11/@jsr/quentinroy__custom-element-mixins/0.3.1.tgz}
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
@@ -608,6 +614,8 @@ snapshots:
     optional: true
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@jsr/quentinroy__custom-element-mixins@0.3.1': {}
 
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:

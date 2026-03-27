@@ -7,7 +7,7 @@
  * @throws An error if the element is not found or is not of the expected type.
  */
 export function queryStrict<T extends HTMLElement>(
-	root: { querySelector: (selector: string) => HTMLElement | null },
+	root: { querySelector: (selector: string) => unknown },
 	selector: string,
 	type: new () => T,
 ): T {
@@ -15,7 +15,9 @@ export function queryStrict<T extends HTMLElement>(
 	if (element instanceof type) {
 		return element
 	}
-	throw new Error(`Expected ${selector} to be a ${type.constructor.name}`)
+	throw new Error(
+		`Expected ${selector} to be a instance of ${type.constructor.name}`,
+	)
 }
 
 /**

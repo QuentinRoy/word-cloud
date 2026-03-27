@@ -1,3 +1,4 @@
+import { pickList, WithAttributeProps } from "@quentinroy/custom-element-mixins"
 import {
 	Bodies,
 	Body,
@@ -214,14 +215,16 @@ interface WordEntry {
 	checked: boolean
 }
 
-const MODES = ["none", "mark", "delete", "input"] as const
+const MODES = ["mark", "delete", "input"] as const
 type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
 }
 
-export class WordCloudHTMLElement extends HTMLElement {
+export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
+	mode: pickList({ values: MODES }),
+}) {
 	#shadowRoot
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
@@ -240,8 +243,6 @@ export class WordCloudHTMLElement extends HTMLElement {
 	static #frameThickness = FRAME_THICKNESS
 	static #frameLength = FRAME_LENGTH
 	static #padding = PADDING
-
-	static MODES = MODES
 
 	constructor() {
 		super()
@@ -314,18 +315,6 @@ export class WordCloudHTMLElement extends HTMLElement {
 				}
 				break
 		}
-	}
-
-	get mode() {
-		let value = this.getAttribute("mode")
-		if (value == null || !isMode(value)) {
-			return "none"
-		}
-		return value
-	}
-
-	set mode(value: Mode) {
-		this.setAttribute("mode", value)
 	}
 
 	addWord({
