@@ -74,7 +74,18 @@ function isMode(value: unknown): value is Mode {
 export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	mode: pickList({ values: MODES }),
 }) {
-	#shadowRoot
+	static #elementActionMaps: Record<Mode, HTMLWordElement["action"]> = {
+		mark: "mark",
+		delete: "delete",
+		input: null,
+	}
+
+	static #idGenerator = createIterativeIdGenerator()
+
+	static #frameThickness = FRAME_THICKNESS
+	static #frameLength = FRAME_LENGTH
+	static #padding = PADDING
+
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
 	#container: HTMLElement
@@ -82,74 +93,29 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#runner: Runner
 	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
 	#wordEntries: Map<InternalWordEntry["id"], InternalWordEntry> = new Map()
-	#mouse: Mouse
 	#mouseConstraint: MouseConstraint
+	#mouseEnabled = false
 	#resizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
 	})
 	#internals = this.attachInternals()
-
-	static #frameThickness = FRAME_THICKNESS
-	static #frameLength = FRAME_LENGTH
-	static #padding = PADDING
+	#debugRender: Render | null = null
 
 	constructor() {
 		super()
-		this.#shadowRoot = this.attachShadow(
-			scopedElementRegistry == null
-				? { mode: "closed" }
-				: { mode: "closed", customElementRegistry: scopedElementRegistry },
-		)
-		this.#shadowRoot.appendChild(mainTemplate.cloneNode(true))
-		let stylesheets = [stylesheet]
-		if (DEBUG_MODE) stylesheets.push(debugStyles)
-		this.#shadowRoot.adoptedStyleSheets = stylesheets
-		this.#container = queryStrict(this.#shadowRoot, ".word-cloud", HTMLElement)
-		this.#wordForm = queryStrict(this.#container, "form", HTMLFormElement)
-		this.#wordInput = queryStrict(this.#container, "input", HTMLInputElement)
-		this.#engine = Engine.create({ enableSleeping: true })
-		this.#engine.gravity.y = 0
-		this.#runner = Runner.create()
-		const frameThickness = HTMLWordCloudElement.#frameThickness
-		const frameLength = HTMLWordCloudElement.#frameLength
-		const padding = HTMLWordCloudElement.#padding
-		this.#frameBodies = {
-			left: Bodies.rectangle(
-				-frameThickness / 2 + padding,
-				-frameThickness / 2 + padding,
-				frameThickness,
-				frameLength,
-				{ isStatic: true },
-			),
-			top: Bodies.rectangle(
-				-frameThickness / 2 + padding,
-				-frameThickness / 2 + padding,
-				frameLength,
-				frameThickness,
-				{ isStatic: true },
-			),
-			right: Bodies.rectangle(0, 0, frameThickness, frameLength, {
-				isStatic: true,
-			}),
-			bottom: Bodies.rectangle(0, 0, frameLength, frameThickness, {
-				isStatic: true,
-			}),
-		}
-		Composite.add(this.#engine.world, [
-			this.#frameBodies.left,
-			this.#frameBodies.right,
-			this.#frameBodies.top,
-			this.#frameBodies.bottom,
-		])
-		this.#container.style.setProperty("--chamfer-radius", `${CHAMFER_RADIUS}px`)
-		if (DEBUG_MODE) {
-			this.#container.style.setProperty("--opacity", "0.2")
-		}
-		this.#mouse = Mouse.create(this)
-		this.#mouseConstraint = MouseConstraint.create(this.#engine, {
-			mouse: this.#mouse,
-			constraint: { stiffness: 0.3, render: { visible: true } },
-		})
+		const { container, wordForm, wordInput } = this.#setupShadowDom()
+		this.#container = container
+		this.#wordForm = wordForm
+		this.#wordInput = wordInput
+
+		const { engine, runner } = this.#setupPhysics()
+		this.#engine = engine
+		this.#runner = runner
+
+		this.#frameBodies = this.#setupFrameBodies(this.#engine)
+		this.#setupContainerStyles()
+
+		this.#mouseConstraint = this.#setupMouseConstraint(this.#engine)
 	}
 
 	static get observedAttributes() {
@@ -166,11 +132,31 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				if (newValue !== null && !isMode(newValue)) {
 					this.removeAttribute("mode")
 				} else {
-					this.#updateWordFromMode()
+					this.#updateWordsActionFromMode()
 					this.#updateMouseConstraint()
 				}
 				break
 		}
+	}
+
+	connectedCallback() {
+		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
+		Events.on(this.#runner, "tick", this.#handleTick)
+		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
+		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
+		this.#updateFrameBodies()
+		this.#updateMouseConstraint()
+		this.#resizeObserver.observe(this.#container)
+		this.#start()
+	}
+
+	disconnectedCallback() {
+		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
+		Events.off(this.#runner, "tick", this.#handleTick)
+		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
+		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
+		this.#resizeObserver.unobserve(this.#container)
+		this.#stop()
 	}
 
 	addWord({
@@ -216,42 +202,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return false
 	}
 
-	#removeWordBodyAndDom(entry: InternalWordEntry) {
-		Composite.remove(this.#engine.world, entry.body)
-		this.#container.removeChild(entry.element)
-	}
-
 	clear() {
 		for (let entry of this.#wordEntries.values()) {
 			this.#removeWordBodyAndDom(entry)
 		}
 		this.#wordEntries.clear()
-	}
-
-	#pickRandomVelocity() {
-		let angle = Math.random() * 2 * Math.PI
-		let speed = Math.random() * 50 + 25
-		return { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
-	}
-
-	connectedCallback() {
-		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
-		Events.on(this.#runner, "tick", this.#handleTick)
-		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
-		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
-		this.#updateFrameBodies()
-		this.#updateMouseConstraint()
-		this.#resizeObserver.observe(this.#container)
-		this.#start()
-	}
-
-	disconnectedCallback() {
-		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
-		Events.off(this.#runner, "tick", this.#handleTick)
-		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
-		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
-		this.#resizeObserver.unobserve(this.#container)
-		this.#stop()
 	}
 
 	getWords(): Iterable<WordEntry> {
@@ -272,6 +227,90 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (let word of words) {
 			this.addWord(word)
 		}
+	}
+
+	#setupShadowDom() {
+		const shadowRoot = this.attachShadow(
+			scopedElementRegistry == null
+				? { mode: "closed" }
+				: { mode: "closed", customElementRegistry: scopedElementRegistry },
+		)
+		shadowRoot.appendChild(mainTemplate.cloneNode(true))
+		let stylesheets = [stylesheet]
+		if (DEBUG_MODE) stylesheets.push(debugStyles)
+		shadowRoot.adoptedStyleSheets = stylesheets
+		const container = queryStrict(shadowRoot, ".word-cloud", HTMLElement)
+		const wordForm = queryStrict(container, "form", HTMLFormElement)
+		const wordInput = queryStrict(container, "input", HTMLInputElement)
+		return { container, wordForm, wordInput }
+	}
+
+	#setupPhysics() {
+		const engine = Engine.create({ enableSleeping: true })
+		engine.gravity.y = 0
+		const runner = Runner.create()
+		return { engine, runner }
+	}
+
+	#setupFrameBodies(engine: Engine) {
+		const frameThickness = HTMLWordCloudElement.#frameThickness
+		const frameLength = HTMLWordCloudElement.#frameLength
+		const padding = HTMLWordCloudElement.#padding
+		const frameBodies = {
+			left: Bodies.rectangle(
+				-frameThickness / 2 + padding,
+				-frameThickness / 2 + padding,
+				frameThickness,
+				frameLength,
+				{ isStatic: true },
+			),
+			top: Bodies.rectangle(
+				-frameThickness / 2 + padding,
+				-frameThickness / 2 + padding,
+				frameLength,
+				frameThickness,
+				{ isStatic: true },
+			),
+			right: Bodies.rectangle(0, 0, frameThickness, frameLength, {
+				isStatic: true,
+			}),
+			bottom: Bodies.rectangle(0, 0, frameLength, frameThickness, {
+				isStatic: true,
+			}),
+		}
+		Composite.add(engine.world, [
+			frameBodies.left,
+			frameBodies.right,
+			frameBodies.top,
+			frameBodies.bottom,
+		])
+		return frameBodies
+	}
+
+	#setupContainerStyles() {
+		this.#container.style.setProperty("--chamfer-radius", `${CHAMFER_RADIUS}px`)
+		if (DEBUG_MODE) {
+			this.#container.style.setProperty("--opacity", "0.2")
+		}
+	}
+
+	#setupMouseConstraint(engine: Engine) {
+		const mouse = Mouse.create(this)
+		return MouseConstraint.create(engine, {
+			mouse,
+			constraint: { stiffness: 0.3, render: { visible: true } },
+		})
+	}
+
+	#removeWordBodyAndDom(entry: InternalWordEntry) {
+		Composite.remove(this.#engine.world, entry.body)
+		this.#container.removeChild(entry.element)
+	}
+
+	#pickRandomVelocity() {
+		let angle = Math.random() * 2 * Math.PI
+		let speed = Math.random() * 50 + 25
+		return { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
 	}
 
 	#updateFrameBodies() {
@@ -341,13 +380,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return transform
 	}
 
-	static #elementActionMaps: Record<Mode, HTMLWordElement["action"]> = {
-		mark: "mark",
-		delete: "delete",
-		input: null,
-	}
-
-	#updateWordFromMode() {
+	#updateWordsActionFromMode() {
 		let action =
 			this.mode == null
 				? null
@@ -357,7 +390,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#mouseEnabled = false
 	#updateMouseConstraint() {
 		if (this.mode === "input") {
 			if (this.#mouseEnabled) return
@@ -374,9 +406,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	static #idGenerator = createIterativeIdGenerator()
-
-	#debugRender: Render | null = null
 	#start() {
 		Runner.run(this.#runner, this.#engine)
 		if (DEBUG_MODE) {
