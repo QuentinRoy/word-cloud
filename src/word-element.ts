@@ -11,9 +11,13 @@ import wordTemplateContent from "./word-element.html?raw"
 const wordTemplate = html`${wordTemplateContent}`
 const wordStylesheet = css`${wordStylesheetContent}`
 
+export const WORD_CHECKED_CHANGE_EVENT = "word-checked-change"
+export const WORD_DELETE_EVENT = "word-delete"
+
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
 	action: pickList({ values: ["mark", "delete"] }),
+	entryAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
 }) {
 	#shadowRoot: ShadowRoot
 	#checkbox: HTMLInputElement
@@ -49,16 +53,25 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		this.#updateChecked()
 		this.#updateAction()
 		this.#checkbox.addEventListener("change", this.#handleCheckboxChange)
+		this.#deleteButton.addEventListener("click", this.#handleDelete)
 	}
 
 	disconnectedCallback() {
 		this.#checkbox.removeEventListener("change", this.#handleCheckboxChange)
+		this.#deleteButton.removeEventListener("click", this.#handleDelete)
 	}
 
-	attributeChangedCallback(name: string) {
+	attributeChangedCallback(
+		name: string,
+		oldValue: string | null,
+		newValue: string | null,
+	) {
 		switch (name) {
 			case "checked":
 				this.#updateChecked()
+				if (oldValue !== newValue && this.isConnected) {
+					this.#dispatchCheckedChangeEvent()
+				}
 				break
 			case "action":
 				this.#updateAction()
@@ -68,6 +81,16 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 
 	#updateChecked() {
 		this.#checkbox.checked = this.checked
+	}
+
+	#dispatchCheckedChangeEvent() {
+		this.dispatchEvent(
+			new CustomEvent(WORD_CHECKED_CHANGE_EVENT, {
+				detail: { checked: this.checked },
+				bubbles: true,
+				composed: true,
+			}),
+		)
 	}
 
 	#updateAction() {
@@ -81,5 +104,11 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		if (this.checked !== this.#checkbox.checked) {
 			this.checked = this.#checkbox.checked
 		}
+	}
+
+	#handleDelete = () => {
+		this.dispatchEvent(
+			new CustomEvent(WORD_DELETE_EVENT, { bubbles: true, composed: true }),
+		)
 	}
 }

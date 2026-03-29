@@ -13,9 +13,10 @@
 	--input-focus-shadow-color: hwb(212 76% 0%);
 	--input-focus-background-color: hwb(212 95% 0%);
 	--word-text-color: #000;
-	--word-background-color: #fff;
+	--word-background-color: #fbf5ff;
 	--word-border-color: var(--word-background-color);
-	--word-delete-hover-color: hwb(357 45% 11%);
+	--word-delete-hover-text-color: hwb(357 45% 11%);
+	--word-delete-hover-background-color: hwb(351 97% 0%);
 	--word-fade-in-duration: 1s;
 	--checked-opacity: 0.5;
 	display: block;
@@ -41,21 +42,7 @@ form {
 	top: 0;
 	left: 0;
 	z-index: 3;
-	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 	will-change: transform;
-}
-
-@keyframes word-fade-in {
-	0% {
-		background-color: transparent;
-		border-color: transparent;
-		color: var(--input-focus-color);
-	}
-	100% {
-		background-color: var(--word-background-color);
-		border-color: var(--word-border-color);
-		color: var(--word-text-color);
-	}
 }
 
 input[type="text"] {

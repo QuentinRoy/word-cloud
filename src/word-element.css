@@ -17,11 +17,25 @@ label {
 	border: var(--line-width) solid var(--word-border-color);
 	border-radius: var(--chamfer-radius, 0);
 	opacity: var(--opacity, 1);
+	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+}
+
+/* biome-ignore lint/correctness/noUnknownProperty: biome doesn't know about squircle */
+@supports (corner-shape: squircle) {
+	label {
+		border-radius: calc(var(--chamfer-radius, 0) * 2);
+		/* biome-ignore lint/correctness/noUnknownProperty: biome doesn't know about squircle */
+		corner-shape: squircle;
+	}
 }
 
 label {
 	display: block;
 	cursor: inherit;
+}
+
+:host([entry-animation="none"]) label {
+	animation: none;
 }
 
 :host([action="mark"]) {
@@ -38,15 +52,18 @@ label {
 		cursor: pointer;
 	}
 	label:hover {
-		color: var(--word-delete-hover-color);
+		color: var(--word-delete-hover-text-color);
+		background-color: var(--word-delete-hover-background-color);
+		border-color: var(--word-delete-hover-background-color);
 	}
 }
 
-:host:has(input[type="checkbox"]:checked) {
+:host([checked]) {
 	opacity: var(--checked-opacity);
 
 	label {
 		text-decoration: line-through;
+		text-decoration-thickness: var(--line-width);
 	}
 }
 
@@ -54,4 +71,17 @@ label {
 	display: block;
 	width: fit-content;
 	height: fit-content;
+}
+
+@keyframes word-fade-in {
+	0% {
+		background-color: transparent;
+		border-color: transparent;
+		color: var(--input-focus-color);
+	}
+	100% {
+		background-color: var(--word-background-color);
+		border-color: var(--word-border-color);
+		color: var(--word-text-color);
+	}
 }

@@ -20,7 +20,7 @@ import {
 import debugStylesheetContent from "./word-cloud-debug.css?raw"
 import mainStylesheetContent from "./word-cloud-element.css?raw"
 import mainTemplateContent from "./word-cloud-element.html?raw"
-import { HTMLWordElement } from "./word-element.ts"
+import { HTMLWordElement, WORD_DELETE_EVENT } from "./word-element.ts"
 
 const DEBUG_MODE = false
 
@@ -166,15 +166,23 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		angle = 0,
 		checked = false,
 		velocity,
+		animateEntry = false,
 	}: Omit<WordEntry, "id" | "angle" | "checked"> &
 		Partial<Pick<WordEntry, "angle" | "checked">> & {
 			velocity?: { x: number; y: number }
+			animateEntry?: boolean
 		}) {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
+		// It seems we need to add element before setting the checked property
+		// otherwise it does not update the attribute properly.
+		this.#container.appendChild(element)
 		element.innerText = word
 		element.checked = checked
+		if (!animateEntry) element.entryAnimation = "none"
 		element.classList.add("word")
-		this.#container.appendChild(element)
+		element.addEventListener(WORD_DELETE_EVENT, () => {
+			this.removeWord(entry.id)
+		})
 		let id = HTMLWordCloudElement.#idGenerator()
 		let { width, height } = element.getBoundingClientRect()
 		let body = Bodies.rectangle(x, y, width, height, {
@@ -343,6 +351,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				angle: 0,
 				checked: false,
 				velocity: this.#pickRandomVelocity(),
+				animateEntry: true,
 			})
 		}
 		this.#wordInput.value = ""
