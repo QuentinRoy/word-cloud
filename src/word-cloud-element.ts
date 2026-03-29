@@ -55,14 +55,36 @@ interface InternalWordEntry {
 	element: HTMLWordElement
 }
 
+/**
+ * A serializable snapshot of a word rendered in the cloud.
+ */
 interface WordEntry {
+	/** The unique identifier assigned by the word cloud. */
 	id: number
+	/** The displayed word content. */
 	word: string
+	/** The horizontal position of the word center in pixels. */
 	x: number
+	/** The vertical position of the word center in pixels. */
 	y: number
+	/** The current body rotation in radians. */
 	angle: number
+	/** Whether the word is currently marked as checked. */
 	checked: boolean
 }
+
+type WordVelocity = { x: number; y: number }
+
+/**
+ * Options used to add a single word to the cloud.
+ */
+type AddWordOptions = Omit<WordEntry, "id" | "angle" | "checked"> &
+	Partial<Pick<WordEntry, "angle" | "checked">> & {
+		/** The initial linear velocity applied to the word body. */
+		velocity?: WordVelocity
+		/** Whether the word element should play its entry animation. */
+		animateEntry?: boolean
+	}
 
 const MODES = ["mark", "delete", "input"] as const
 type Mode = (typeof MODES)[number]
@@ -71,6 +93,13 @@ function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
 }
 
+/**
+ * Custom element that renders an interactive word cloud powered by Matter.js.
+ *
+ * The element manages DOM-backed word items, keeps them synchronized with
+ * physics bodies, and exposes a small API for adding, removing, clearing,
+ * serializing, and restoring words.
+ */
 export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	mode: pickList({ values: MODES }),
 }) {
@@ -101,6 +130,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#internals = this.attachInternals()
 	#debugRender: Render | null = null
 
+	/**
+	 * Creates a word cloud instance and initializes its shadow DOM, physics
+	 * engine, boundary bodies, and mouse interaction.
+	 */
 	constructor() {
 		super()
 		const { container, wordForm, wordInput } = this.#setupShadowDom()
@@ -122,6 +155,14 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return ["mode"]
 	}
 
+	/**
+	 * Reacts to supported attribute changes and keeps the word actions and mouse
+	 * interaction mode in sync with the current state.
+	 *
+	 * @param name The name of the attribute that changed.
+	 * @param _oldValue The previous attribute value.
+	 * @param newValue The new attribute value.
+	 */
 	attributeChangedCallback(
 		name: string,
 		_oldValue: string | null,
@@ -139,6 +180,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
+	/**
+	 * Attaches DOM and physics listeners, updates the frame geometry, and starts
+	 * the physics runner when the element is connected.
+	 */
 	connectedCallback() {
 		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
 		Events.on(this.#runner, "tick", this.#handleTick)
@@ -150,6 +195,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#start()
 	}
 
+	/**
+	 * Removes listeners and stops the physics runner when the element is
+	 * disconnected.
+	 */
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
 		Events.off(this.#runner, "tick", this.#handleTick)
@@ -159,6 +208,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#stop()
 	}
 
+	/**
+	 * Creates a rendered word element and its matching physics body.
+	 *
+	 * @param options The word data and initial placement options.
+	 * @param options.word The text content to display.
+	 * @param options.x The initial horizontal center position in pixels.
+	 * @param options.y The initial vertical center position in pixels.
+	 * @param options.angle The initial body rotation in radians.
+	 * @param options.checked Whether the word starts in the checked state.
+	 * @param options.velocity The initial linear velocity applied to the body.
+	 * @param options.animateEntry Whether the word should play its entry animation.
+	 * @returns The generated identifier for the inserted word.
+	 */
 	addWord({
 		word,
 		x,
@@ -167,11 +229,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		checked = false,
 		velocity,
 		animateEntry = false,
-	}: Omit<WordEntry, "id" | "angle" | "checked"> &
-		Partial<Pick<WordEntry, "angle" | "checked">> & {
-			velocity?: { x: number; y: number }
-			animateEntry?: boolean
-		}) {
+	}: AddWordOptions) {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
 		// It seems we need to add element before setting the checked property
 		// otherwise it does not update the attribute properly.
@@ -200,6 +258,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return id
 	}
 
+	/**
+	 * Removes a word from both the DOM and physics world.
+	 *
+	 * @param id The identifier of the word to remove.
+	 * @returns True when a matching word was found and removed.
+	 */
 	removeWord(id: WordEntry["id"]) {
 		let entry = this.#wordEntries.get(id)
 		if (entry) {
@@ -210,6 +274,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return false
 	}
 
+	/**
+	 * Removes all words currently managed by the cloud.
+	 */
 	clear() {
 		for (let entry of this.#wordEntries.values()) {
 			this.#removeWordBodyAndDom(entry)
@@ -217,6 +284,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#wordEntries.clear()
 	}
 
+	/**
+	 * Returns the current word state as serializable entries.
+	 *
+	 * @returns An iterable snapshot of all managed words.
+	 */
 	getWords(): Iterable<WordEntry> {
 		return this.#wordEntries
 			.values()
@@ -230,6 +302,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			}))
 	}
 
+	/**
+	 * Replaces the current cloud contents with the provided word entries.
+	 *
+	 * @param words The words to insert after clearing the existing cloud.
+	 */
 	setWords(words: Omit<WordEntry, "id">[]) {
 		this.clear()
 		for (let word of words) {
