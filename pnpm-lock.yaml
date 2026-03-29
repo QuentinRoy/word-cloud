@@ -9,11 +9,8 @@ importers:
   .:
     dependencies:
       '@quentinroy/custom-element-mixins':
-        specifier: npm:@jsr/quentinroy__custom-element-mixins@^0.3.1
-        version: '@jsr/quentinroy__custom-element-mixins@0.3.1'
-      arktype:
-        specifier: ^2.2.0
-        version: 2.2.0
+        specifier: npm:@jsr/quentinroy__custom-element-mixins@^0.4.0
+        version: '@jsr/quentinroy__custom-element-mixins@0.4.0'
       matter-js:
         specifier: ^0.20.0
         version: 0.20.0
@@ -24,6 +21,9 @@ importers:
       '@types/matter-js':
         specifier: ^0.20.2
         version: 0.20.2
+      arktype:
+        specifier: ^2.2.0
+        version: 2.2.0
       globals:
         specifier: ^17.4.0
         version: 17.4.0
@@ -117,8 +117,8 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@jsr/quentinroy__custom-element-mixins@0.3.1':
-    resolution: {integrity: sha512-Y1uSOJzlF2ZA2neSsSMnxgtLJXqxfaNiNO1cNtIfZMgFTCedxIOYWSYsQTKo3NboHTX/R32OtI3vC18CK64cWg==, tarball: https://npm.jsr.io/~/11/@jsr/quentinroy__custom-element-mixins/0.3.1.tgz}
+  '@jsr/quentinroy__custom-element-mixins@0.4.0':
+    resolution: {integrity: sha512-OWP5Gjxzl+xia9pgIwrh7Mxfb3F77+hiWIabgabWkaY5D4TTm1wK7SihhqlJQGxT19jQwrQ6V0RL+fVMNj1Kug==, tarball: https://npm.jsr.io/~/11/@jsr/quentinroy__custom-element-mixins/0.4.0.tgz}
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
@@ -615,7 +615,7 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@jsr/quentinroy__custom-element-mixins@0.3.1': {}
+  '@jsr/quentinroy__custom-element-mixins@0.4.0': {}
 
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:

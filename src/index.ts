@@ -1,0 +1,1 @@
+export { HTMLWordCloudElement } from "./word-cloud-element.ts"

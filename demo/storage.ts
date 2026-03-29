@@ -38,8 +38,8 @@ export function saveWords(
 			word,
 			x,
 			y,
-			angle: angle === 0 ? undefined : angle, // Don't save angle if it's 0 to use default on load.
-			checked: checked === false ? undefined : checked, // Don't save checked if it's false to use default on load.
+			angle: angle === 0 ? undefined : angle,
+			checked: checked === false ? undefined : checked,
 		})
 	}
 	window.localStorage.setItem(key, JSON.stringify(wordArray))

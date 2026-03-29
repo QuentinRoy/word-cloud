@@ -1,14 +1,19 @@
 import "./main.css"
+import { HTMLWordCloudElement } from "../src/index.ts"
 import { getSavedWords, saveWords } from "./storage.ts"
-import { queryStrict } from "./utils.ts"
-import { HTMLWordCloudElement } from "./word-cloud-element.ts"
 
 const localStorageKey = "word-cloud-words"
 
-customElements.define("x-word-cloud", HTMLWordCloudElement)
+if (!customElements.get("x-word-cloud")) {
+	customElements.define("x-word-cloud", HTMLWordCloudElement)
+}
 
 let savedWords = getSavedWords(localStorageKey)
-let wordCloud = queryStrict(document, "x-word-cloud", HTMLWordCloudElement)
+let wordCloud = document.querySelector("x-word-cloud")
+
+if (!(wordCloud instanceof HTMLWordCloudElement)) {
+	throw new Error("Expected x-word-cloud demo root element to exist")
+}
 
 wordCloud.setWords(savedWords)
 
@@ -48,7 +53,5 @@ document.addEventListener("keypress", (event) => {
 })
 
 window.addEventListener("beforeunload", () => {
-	// Clean up Matter.js engine to prevent memory leaks
-	let wordCloud = document.querySelector<HTMLWordCloudElement>("x-word-cloud")
-	saveWords(localStorageKey, Array.from(wordCloud?.getWords() ?? []))
+	saveWords(localStorageKey, Array.from(wordCloud.getWords()))
 })
