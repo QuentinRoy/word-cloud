@@ -1,22 +1,24 @@
 import "./main.css"
 import { getSavedWords, saveWords } from "./storage.ts"
 import { queryStrict } from "./utils.ts"
-import { WordCloudHTMLElement } from "./word-cloud.ts"
+import { HTMLWordCloudElement } from "./word-cloud-element.ts"
 
 const localStorageKey = "word-cloud-words"
 
-customElements.define("x-word-cloud", WordCloudHTMLElement)
+customElements.define("x-word-cloud", HTMLWordCloudElement)
 
 let savedWords = getSavedWords(localStorageKey)
-let wordCloud = queryStrict(document, "x-word-cloud", WordCloudHTMLElement)
+let wordCloud = queryStrict(document, "x-word-cloud", HTMLWordCloudElement)
 
 wordCloud.setWords(savedWords)
 
+let lastDeleteKeyPress: number | null = null
+let doubleDeleteThreshold = 500 // milliseconds
 document.addEventListener("keypress", (event) => {
 	if (
 		event.target instanceof HTMLInputElement ||
 		event.target instanceof HTMLTextAreaElement ||
-		event.target instanceof WordCloudHTMLElement
+		event.target instanceof HTMLWordCloudElement
 	) {
 		return
 	}
@@ -24,9 +26,21 @@ document.addEventListener("keypress", (event) => {
 		case "m":
 			wordCloud.mode = "mark"
 			break
-		case "d":
-			wordCloud.mode = "delete"
+		case "d": {
+			let now = Date.now()
+			if (
+				lastDeleteKeyPress !== null &&
+				now - lastDeleteKeyPress < doubleDeleteThreshold
+			) {
+				wordCloud.clear()
+				wordCloud.mode = "input"
+				lastDeleteKeyPress = null
+			} else {
+				lastDeleteKeyPress = now
+				wordCloud.mode = "delete"
+			}
 			break
+		}
 		case "i":
 			wordCloud.mode = "input"
 			break
@@ -35,6 +49,6 @@ document.addEventListener("keypress", (event) => {
 
 window.addEventListener("beforeunload", () => {
 	// Clean up Matter.js engine to prevent memory leaks
-	let wordCloud = document.querySelector<WordCloudHTMLElement>("x-word-cloud")
+	let wordCloud = document.querySelector<HTMLWordCloudElement>("x-word-cloud")
 	saveWords(localStorageKey, Array.from(wordCloud?.getWords() ?? []))
 })

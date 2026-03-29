@@ -1,0 +1,57 @@
+* {
+	padding: 0;
+	margin: 0;
+}
+
+input {
+	display: none;
+}
+
+label {
+	padding: var(--space-s) var(--space-m);
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+	color: var(--word-text-color);
+	text-align: center;
+	background-color: var(--word-background-color);
+	border: var(--line-width) solid var(--word-border-color);
+	border-radius: var(--chamfer-radius, 0);
+	opacity: var(--opacity, 1);
+}
+
+label {
+	display: block;
+	cursor: inherit;
+}
+
+:host([action="mark"]) {
+	label {
+		cursor: pointer;
+	}
+	label:hover {
+		text-decoration: line-through;
+	}
+}
+
+:host([action="delete"]) {
+	label {
+		cursor: pointer;
+	}
+	label:hover {
+		color: var(--word-delete-hover-color);
+	}
+}
+
+:host:has(input[type="checkbox"]:checked) {
+	opacity: var(--checked-opacity);
+
+	label {
+		text-decoration: line-through;
+	}
+}
+
+:host {
+	display: block;
+	width: fit-content;
+	height: fit-content;
+}

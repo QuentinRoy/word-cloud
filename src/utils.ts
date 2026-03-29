@@ -21,17 +21,23 @@ export function queryStrict<T extends HTMLElement>(
 }
 
 /**
+ * Creates a unique ID generator function that generates IDs.
+ * @returns A function that, when called, returns a unique ID of type number.
+ */
+export function createIterativeIdGenerator(): () => number
+/**
  * Creates a unique ID generator function that generates IDs based on a provided mapping function.
  * @param map A function that takes a number and returns a value of type T.
  * This function is used to generate the ID based on the current count.
  * @returns A function that, when called, returns a unique ID of type T.
  */
-export function createIdGenerator<T>(map: (x: number) => T): () => T {
+export function createIterativeIdGenerator<T>(map: (x: number) => T): () => T
+export function createIterativeIdGenerator(map?: (x: number) => unknown) {
 	let last = 0
 	return () => {
 		let current = last + 1
 		last = current
-		return map(current)
+		return map ? map(current) : current
 	}
 }
 
@@ -44,4 +50,8 @@ export function createIdGenerator<T>(map: (x: number) => T): () => T {
 export function toPrecision(value: number, precision: number): number {
 	let f = 10 ** Math.floor(precision)
 	return Math.round(value * f) / f
+}
+
+export function generateRandomId() {
+	return Date.now().toString(36) + Math.random().toString(36).substring(2)
 }

@@ -36,20 +36,11 @@ form {
 	display: none;
 }
 
-.word {
+.word-cloud .word {
 	position: absolute;
 	top: 0;
 	left: 0;
 	z-index: 3;
-	padding: var(--space-s) var(--space-m);
-	font-family: var(--font-family);
-	font-size: var(--font-size);
-	color: var(--word-text-color);
-	text-align: center;
-	background-color: var(--word-background-color);
-	border: var(--line-width) solid var(--word-border-color);
-	border-radius: var(--chamfer-radius, 0);
-	opacity: var(--opacity, 1);
 	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 	will-change: transform;
 }
@@ -65,10 +56,6 @@ form {
 		border-color: var(--word-border-color);
 		color: var(--word-text-color);
 	}
-}
-
-.word input {
-	display: none;
 }
 
 input[type="text"] {
@@ -93,34 +80,11 @@ input[type="text"] {
 	}
 }
 
-:host([mode="mark"]) {
-	.word label {
-		cursor: pointer;
-	}
-	.word label:hover {
-		text-decoration: line-through;
-	}
-}
-
-:host([mode="delete"]) {
-	.word-cloud {
-		cursor: crosshair;
-	}
-	.word label {
-		cursor: pointer;
-	}
-	.word label:hover {
-		font-style: italic;
-		color: var(--word-delete-hover-color);
-	}
-}
-
 :host([mode="input"]) {
 	form {
 		display: block;
 	}
-	.word,
-	.word label {
+	.word {
 		cursor: grab;
 		user-select: none;
 	}
@@ -128,16 +92,7 @@ input[type="text"] {
 
 :host(:state(active)) {
 	.word-cloud,
-	.word,
-	.word label {
+	.word {
 		cursor: grabbing;
-	}
-}
-
-.word:has(input[type="checkbox"]:checked) {
-	opacity: var(--checked-opacity);
-
-	label {
-		text-decoration: line-through;
 	}
 }

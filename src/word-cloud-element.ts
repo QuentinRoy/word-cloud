@@ -11,11 +11,16 @@ import {
 	Runner,
 } from "matter-js"
 import { css, html } from "./template.ts"
-import { createIdGenerator, queryStrict, toPrecision } from "./utils.ts"
-import mainStylesheetContent from "./word-cloud.css?raw"
-import mainTemplateContent from "./word-cloud.html?raw"
+import {
+	createIterativeIdGenerator,
+	generateRandomId,
+	queryStrict,
+	toPrecision,
+} from "./utils.ts"
 import debugStylesheetContent from "./word-cloud-debug.css?raw"
-import wordTemplateContent from "./word-cloud-word.html?raw"
+import mainStylesheetContent from "./word-cloud-element.css?raw"
+import mainTemplateContent from "./word-cloud-element.html?raw"
+import { HTMLWordElement } from "./word-element.ts"
 
 const DEBUG_MODE = false
 
@@ -26,23 +31,32 @@ const PADDING = 0
 const PRECISION = 1
 
 const mainTemplate = html`${mainTemplateContent}`
-const wordTemplate = html`${wordTemplateContent}`
 
 const stylesheet = css`${mainStylesheetContent}`
 const debugStyles = css`${debugStylesheetContent}`
 
+let scopedElementRegistry: CustomElementRegistry | null = null
+let wordElementTagName = "x-word"
+
+try {
+	scopedElementRegistry = new CustomElementRegistry()
+	scopedElementRegistry.define(wordElementTagName, HTMLWordElement)
+} catch {
+	// In case CustomElementRegistry is not supported, fall back to global registry
+	// with a random tag name to avoid conflicts
+	wordElementTagName = `x-word-${generateRandomId()}`
+	customElements.define(wordElementTagName, HTMLWordElement)
+}
+
 interface InternalWordEntry {
-	id: string
+	id: number
 	word: string
 	body: Body
-	element: HTMLElement
-	checkbox: HTMLInputElement
-	deleteButton: HTMLInputElement
-	label: HTMLLabelElement
+	element: HTMLWordElement
 }
 
 interface WordEntry {
-	id: string
+	id: number
 	word: string
 	x: number
 	y: number
@@ -57,7 +71,7 @@ function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
 }
 
-export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
+export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	mode: pickList({ values: MODES }),
 }) {
 	#shadowRoot
@@ -67,7 +81,7 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 	#engine: Engine
 	#runner: Runner
 	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
-	#wordEntries: Map<string, InternalWordEntry> = new Map()
+	#wordEntries: Map<InternalWordEntry["id"], InternalWordEntry> = new Map()
 	#mouse: Mouse
 	#mouseConstraint: MouseConstraint
 	#resizeObserver = new ResizeObserver(() => {
@@ -81,7 +95,11 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 
 	constructor() {
 		super()
-		this.#shadowRoot = this.attachShadow({ mode: "closed" })
+		this.#shadowRoot = this.attachShadow(
+			scopedElementRegistry == null
+				? { mode: "closed" }
+				: { mode: "closed", customElementRegistry: scopedElementRegistry },
+		)
 		this.#shadowRoot.appendChild(mainTemplate.cloneNode(true))
 		let stylesheets = [stylesheet]
 		if (DEBUG_MODE) stylesheets.push(debugStyles)
@@ -92,9 +110,9 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 		this.#engine = Engine.create({ enableSleeping: true })
 		this.#engine.gravity.y = 0
 		this.#runner = Runner.create()
-		const frameThickness = WordCloudHTMLElement.#frameThickness
-		const frameLength = WordCloudHTMLElement.#frameLength
-		const padding = WordCloudHTMLElement.#padding
+		const frameThickness = HTMLWordCloudElement.#frameThickness
+		const frameLength = HTMLWordCloudElement.#frameLength
+		const padding = HTMLWordCloudElement.#padding
 		this.#frameBodies = {
 			left: Bodies.rectangle(
 				-frameThickness / 2 + padding,
@@ -127,14 +145,17 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 		if (DEBUG_MODE) {
 			this.#container.style.setProperty("--opacity", "0.2")
 		}
-		this.#mouse = Mouse.create(this.#container)
+		this.#mouse = Mouse.create(this)
 		this.#mouseConstraint = MouseConstraint.create(this.#engine, {
 			mouse: this.#mouse,
-			constraint: { stiffness: 0.5 },
+			constraint: { stiffness: 0.3, render: { visible: true } },
 		})
 	}
 
-	static observedAttributes = ["mode"]
+	static get observedAttributes() {
+		return ["mode"]
+	}
+
 	attributeChangedCallback(
 		name: string,
 		_oldValue: string | null,
@@ -163,39 +184,13 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 		Partial<Pick<WordEntry, "angle" | "checked">> & {
 			velocity?: { x: number; y: number }
 		}) {
-		let fragment = wordTemplate.cloneNode(true) as DocumentFragment
-		let element = queryStrict(fragment, ".word", HTMLElement)
+		let element = document.createElement(wordElementTagName) as HTMLWordElement
+		element.innerText = word
+		element.checked = checked
+		element.classList.add("word")
 		this.#container.appendChild(element)
-		if (!(element instanceof HTMLElement)) {
-			throw new Error(
-				".word element is not found in the template, or is not an HTMLElement",
-			)
-		}
-		let label = queryStrict(element, "label", HTMLLabelElement)
-		let checkbox = queryStrict(
-			element,
-			'input[name="checked"]',
-			HTMLInputElement,
-		)
-		let deleteButton = queryStrict(
-			element,
-			'input[name="delete"]',
-			HTMLInputElement,
-		)
-		let id = WordCloudHTMLElement.#idGenerator()
-		checkbox.checked = checked
-		label.textContent = word
-		checkbox.id = `${id}-checkbox`
-		deleteButton.id = `${id}-delete`
-		label.htmlFor = this.mode === "delete" ? deleteButton.id : checkbox.id
-		checkbox.disabled = this.mode !== "mark"
-		deleteButton.disabled = this.mode !== "delete"
-		deleteButton.addEventListener("click", () => {
-			this.removeWord(id)
-		})
-		let newWordRect = element.getBoundingClientRect()
-		let width = newWordRect.width
-		let height = newWordRect.height
+		let id = HTMLWordCloudElement.#idGenerator()
+		let { width, height } = element.getBoundingClientRect()
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			inertia: Infinity,
@@ -203,15 +198,7 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 			frictionAir: 0.1,
 			restitution: 0.2,
 		})
-		let entry: InternalWordEntry = {
-			id,
-			word,
-			element,
-			body,
-			checkbox,
-			deleteButton,
-			label,
-		}
+		let entry: InternalWordEntry = { id, word, element, body }
 		element.style.transform = this.#getWordTransform(entry)
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
@@ -219,7 +206,7 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 		return id
 	}
 
-	removeWord(id: string) {
+	removeWord(id: WordEntry["id"]) {
 		let entry = this.#wordEntries.get(id)
 		if (entry) {
 			this.#removeWordBodyAndDom(entry)
@@ -276,7 +263,7 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 				x: toPrecision(entry.body.position.x, PRECISION),
 				y: toPrecision(entry.body.position.y, PRECISION),
 				angle: entry.body.angle,
-				checked: entry.checkbox.checked,
+				checked: entry.element.checked,
 			}))
 	}
 
@@ -290,8 +277,8 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 	#updateFrameBodies() {
 		const { right, bottom } = this.#frameBodies
 		const { width, height } = this.#container.getBoundingClientRect()
-		const frameThickness = WordCloudHTMLElement.#frameThickness
-		const padding = WordCloudHTMLElement.#padding
+		const frameThickness = HTMLWordCloudElement.#frameThickness
+		const padding = HTMLWordCloudElement.#padding
 		Body.setPosition(right, {
 			x: width + frameThickness / 2 - padding,
 			y: -frameThickness / 2 + padding,
@@ -354,11 +341,19 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 		return transform
 	}
 
+	static #elementActionMaps: Record<Mode, HTMLWordElement["action"]> = {
+		mark: "mark",
+		delete: "delete",
+		input: null,
+	}
+
 	#updateWordFromMode() {
-		for (let { label, checkbox, deleteButton } of this.#wordEntries.values()) {
-			label.htmlFor = this.mode === "delete" ? deleteButton.id : checkbox.id
-			checkbox.disabled = this.mode !== "mark"
-			deleteButton.disabled = this.mode !== "delete"
+		let action =
+			this.mode == null
+				? null
+				: HTMLWordCloudElement.#elementActionMaps[this.mode]
+		for (let { element } of this.#wordEntries.values()) {
+			element.action = action
 		}
 	}
 
@@ -379,7 +374,7 @@ export class WordCloudHTMLElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	static #idGenerator = createIdGenerator((x) => `word-cloud-${x}`)
+	static #idGenerator = createIterativeIdGenerator()
 
 	#debugRender: Render | null = null
 	#start() {
