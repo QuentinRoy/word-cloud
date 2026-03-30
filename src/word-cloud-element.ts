@@ -33,7 +33,6 @@ const DEBUG_MODE = false
 
 const CHAMFER_RADIUS = 8
 const FRAME_THICKNESS = 1000
-const FRAME_LENGTH = window.innerHeight * 1000
 const MIN_RANDOM_VELOCITY = 15
 const MAX_RANDOM_VELOCITY = 50
 const PADDING = 0
@@ -124,7 +123,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	static #idGenerator = createIterativeIdGenerator()
 
 	static #frameThickness = FRAME_THICKNESS
-	static #frameLength = FRAME_LENGTH
 	static #padding = PADDING
 
 	#wordForm: HTMLFormElement
@@ -133,6 +131,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#engine: Engine
 	#runner: Runner
 	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
+	#frameBodySize = { horizontalLength: 1, verticalLength: 1 }
 	#inputVolumeBody: Body
 	#inputVolumeBodySize = {
 		width: INPUT_VOLUME_MIN_SIZE,
@@ -424,29 +423,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#setupFrameBodies(engine: Engine) {
 		const frameThickness = HTMLWordCloudElement.#frameThickness
-		const frameLength = HTMLWordCloudElement.#frameLength
-		const padding = HTMLWordCloudElement.#padding
 		const frameBodies = {
-			left: Bodies.rectangle(
-				-frameThickness / 2 + padding,
-				-frameThickness / 2 + padding,
-				frameThickness,
-				frameLength,
-				{ isStatic: true },
-			),
-			top: Bodies.rectangle(
-				-frameThickness / 2 + padding,
-				-frameThickness / 2 + padding,
-				frameLength,
-				frameThickness,
-				{ isStatic: true },
-			),
-			right: Bodies.rectangle(0, 0, frameThickness, frameLength, {
-				isStatic: true,
-			}),
-			bottom: Bodies.rectangle(0, 0, frameLength, frameThickness, {
-				isStatic: true,
-			}),
+			left: Bodies.rectangle(0, 0, frameThickness, 1, { isStatic: true }),
+			right: Bodies.rectangle(0, 0, frameThickness, 1, { isStatic: true }),
+			top: Bodies.rectangle(0, 0, 1, frameThickness, { isStatic: true }),
+			bottom: Bodies.rectangle(0, 0, 1, frameThickness, { isStatic: true }),
 		}
 		Composite.add(engine.world, [
 			frameBodies.left,
@@ -502,16 +483,36 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateFrameBodies() {
-		const { right, bottom } = this.#frameBodies
+		const { left, right, top, bottom } = this.#frameBodies
 		const { width, height } = this.#container.getBoundingClientRect()
 		const frameThickness = HTMLWordCloudElement.#frameThickness
 		const padding = HTMLWordCloudElement.#padding
+		const horizontalLength = Math.max(1, width + frameThickness * 2)
+		const verticalLength = Math.max(1, height + frameThickness * 2)
+
+		const scaleHorizontal =
+			horizontalLength / this.#frameBodySize.horizontalLength
+		const scaleVertical = verticalLength / this.#frameBodySize.verticalLength
+
+		if (scaleVertical !== 1) {
+			Body.scale(left, 1, scaleVertical)
+			Body.scale(right, 1, scaleVertical)
+		}
+		if (scaleHorizontal !== 1) {
+			Body.scale(top, scaleHorizontal, 1)
+			Body.scale(bottom, scaleHorizontal, 1)
+		}
+
+		this.#frameBodySize = { horizontalLength, verticalLength }
+
+		Body.setPosition(left, { x: -frameThickness / 2 + padding, y: height / 2 })
 		Body.setPosition(right, {
 			x: width + frameThickness / 2 - padding,
-			y: -frameThickness / 2 + padding,
+			y: height / 2,
 		})
+		Body.setPosition(top, { x: width / 2, y: -frameThickness / 2 + padding })
 		Body.setPosition(bottom, {
-			x: -frameThickness / 2 + padding,
+			x: width / 2,
 			y: height + frameThickness / 2 - padding,
 		})
 	}
