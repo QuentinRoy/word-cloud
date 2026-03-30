@@ -40,6 +40,8 @@ const INPUT_VOLUME_MIN_SIZE = 1
 const TRANSLATE_PRECISION = 1
 const ROTATE_PRECISION = 4
 const ANGULAR_REST_ANGLE = 0
+const ANGULAR_REST_ANGLE_EPSILON = 0.01
+const ANGULAR_REST_ANGULAR_VELOCITY_EPSILON = 0.01
 const ANGULAR_SPRING_STIFFNESS = 0.0001
 const ANGULAR_DAMPING = 0.001
 const ANGULAR_MAX_FORCE_PER_MASS = 0.005
@@ -272,7 +274,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
 			frictionAir: 0.05,
-			restitution: 0.2,
+			restitution: 0.4,
 			mass: width * height * 0.001,
 			collisionFilter: {
 				category: WORD_COLLISION_CATEGORY,
@@ -416,6 +418,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#setupPhysics() {
 		const engine = Engine.create()
+		engine.gravity.y = 0
 		engine.gravity.scale = 0
 		const runner = Runner.create()
 		return { engine, runner }
@@ -594,8 +597,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#applyAngularRestoringTorque() {
 		for (let { body } of this.#wordEntries.values()) {
-			if (body.isStatic || body.isSleeping) continue
 			let angleError = body.angle - ANGULAR_REST_ANGLE
+			if (
+				Math.abs(angleError) <= ANGULAR_REST_ANGLE_EPSILON &&
+				Math.abs(body.angularVelocity) <= ANGULAR_REST_ANGULAR_VELOCITY_EPSILON
+			)
+				continue
 			if (!Number.isFinite(body.inertia) || body.inertia <= 0) continue
 			const desiredAngularAcceleration =
 				-angleError * ANGULAR_SPRING_STIFFNESS -
