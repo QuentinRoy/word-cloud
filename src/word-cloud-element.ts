@@ -34,12 +34,18 @@ const DEBUG_MODE = false
 const CHAMFER_RADIUS = 8
 const FRAME_THICKNESS = 1000
 const FRAME_LENGTH = window.innerHeight * 1000
+const MIN_RANDOM_VELOCITY = 15
+const MAX_RANDOM_VELOCITY = 50
 const PADDING = 0
+const INPUT_VOLUME_MIN_SIZE = 1
 const PRECISION = 1
 const ANGULAR_REST_ANGLE = 0
 const ANGULAR_SPRING_STIFFNESS = 0.8
 const ANGULAR_DAMPING = 0.5
 const ANGULAR_MAX_FORCE_PER_MASS = 0.001
+const WORD_COLLISION_CATEGORY = 0x0001
+const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
+const DEFAULT_WORD_COLLISION_MASK = -1
 
 const mainTemplate = html`${mainTemplateContent}`
 
@@ -65,6 +71,7 @@ interface InternalWordEntry {
 	body: Body
 	element: HTMLWordElement
 	publicEntry: WordEntry
+	ignoreInputVolumeUntilExit: boolean
 }
 
 type WordVelocity = { x: number; y: number }
@@ -77,6 +84,12 @@ type AddWordOptions = WordData & {
 	velocity?: WordVelocity
 	/** Whether the word element should play its entry animation. */
 	animateEntry?: boolean
+	/**
+	 * Internal behavior used for words spawned by the input form.
+	 * While true, collisions with the input volume stay disabled until the body
+	 * leaves that volume once.
+	 */
+	ignoreInputVolumeUntilExit?: boolean
 }
 
 const MODES = ["mark", "delete", "input"] as const
@@ -125,11 +138,18 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#engine: Engine
 	#runner: Runner
 	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
+	#inputVolumeBody: Body
+	#inputVolumeBodySize = {
+		width: INPUT_VOLUME_MIN_SIZE,
+		height: INPUT_VOLUME_MIN_SIZE,
+	}
+	#inputVolumeEnabled = false
 	#wordEntries: Map<InternalWordEntry["id"], InternalWordEntry> = new Map()
 	#mouseConstraint: MouseConstraint
 	#mouseEnabled = false
 	#resizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
+		this.#updateInputVolumeBody()
 	})
 	#internals = this.attachInternals()
 	#debugRender: Render | null = null
@@ -150,6 +170,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#runner = runner
 
 		this.#frameBodies = this.#setupFrameBodies(this.#engine)
+		this.#inputVolumeBody = this.#setupInputVolumeBody()
 		this.#setupContainerStyles()
 
 		this.#mouseConstraint = this.#setupMouseConstraint(this.#engine)
@@ -178,6 +199,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 					this.removeAttribute("mode")
 				} else {
 					this.#updateWordsActionFromMode()
+					this.#updateInputVolumeFromMode()
 					this.#updateMouseConstraint()
 				}
 				break
@@ -195,6 +217,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
 		this.#updateFrameBodies()
+		this.#updateInputVolumeFromMode()
 		this.#updateMouseConstraint()
 		this.#resizeObserver.observe(this.#container)
 		this.#start()
@@ -235,6 +258,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		checked = false,
 		velocity,
 		animateEntry = false,
+		ignoreInputVolumeUntilExit = false,
 	}: AddWordOptions): WordEntry {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
 		// It seems we need to add element before setting the checked property
@@ -244,13 +268,26 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.checked = checked
 		if (!animateEntry) element.entryAnimation = "none"
 		element.classList.add("word")
+		element.action =
+			this.mode == null
+				? null
+				: HTMLWordCloudElement.#elementActionMaps[this.mode]
 		let id = HTMLWordCloudElement.#idGenerator()
 		let { width, height } = element.getBoundingClientRect()
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
-			frictionAir: 0.1,
+			friction: 0.05,
+			frictionAir: 0.05,
+			frictionStatic: 1,
 			restitution: 0.2,
+			mass: width * height * 0.001,
+			collisionFilter: {
+				category: WORD_COLLISION_CATEGORY,
+				mask: this.#getWordCollisionMask({
+					ignoreInputVolume: ignoreInputVolumeUntilExit,
+				}),
+			},
 		})
 		const deleteWord = () => {
 			if (!this.#wordEntries.has(id)) return
@@ -268,7 +305,14 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			},
 			remove: deleteWord,
 		})
-		let entry: InternalWordEntry = { id, word, element, body, publicEntry }
+		let entry: InternalWordEntry = {
+			id,
+			word,
+			element,
+			body,
+			publicEntry,
+			ignoreInputVolumeUntilExit,
+		}
 		element.addEventListener(WordElementDeleteEvent.type, () => {
 			deleteWord()
 		})
@@ -420,6 +464,22 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return frameBodies
 	}
 
+	#setupInputVolumeBody() {
+		return Bodies.rectangle(
+			0,
+			0,
+			INPUT_VOLUME_MIN_SIZE,
+			INPUT_VOLUME_MIN_SIZE,
+			{
+				isStatic: true,
+				collisionFilter: {
+					category: INPUT_VOLUME_COLLISION_CATEGORY,
+					mask: WORD_COLLISION_CATEGORY,
+				},
+			},
+		)
+	}
+
 	#setupContainerStyles() {
 		this.#container.style.setProperty("--chamfer-radius", `${CHAMFER_RADIUS}px`)
 		if (DEBUG_MODE) {
@@ -442,7 +502,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#pickRandomVelocity() {
 		let angle = Math.random() * 2 * Math.PI
-		let speed = Math.random() * 50 + 25
+		let speed =
+			Math.random() * (MAX_RANDOM_VELOCITY - MIN_RANDOM_VELOCITY) +
+			MIN_RANDOM_VELOCITY
 		return { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
 	}
 
@@ -461,14 +523,50 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		})
 	}
 
+	#updateInputVolumeBody() {
+		const containerRect = this.#container.getBoundingClientRect()
+		const inputRect = this.#wordInput.getBoundingClientRect()
+		const width = Math.max(INPUT_VOLUME_MIN_SIZE, inputRect.width)
+		const height = Math.max(INPUT_VOLUME_MIN_SIZE, inputRect.height)
+		const scaleX = width / this.#inputVolumeBodySize.width
+		const scaleY = height / this.#inputVolumeBodySize.height
+
+		if (scaleX !== 1 || scaleY !== 1) {
+			Body.scale(this.#inputVolumeBody, scaleX, scaleY)
+			this.#inputVolumeBodySize = { width, height }
+		}
+
+		Body.setPosition(this.#inputVolumeBody, {
+			x: inputRect.left - containerRect.left + width / 2,
+			y: inputRect.top - containerRect.top + height / 2,
+		})
+	}
+
+	#getWordCollisionMask({ ignoreInputVolume }: { ignoreInputVolume: boolean }) {
+		if (!ignoreInputVolume) return DEFAULT_WORD_COLLISION_MASK
+		return DEFAULT_WORD_COLLISION_MASK & ~INPUT_VOLUME_COLLISION_CATEGORY
+	}
+
+	#isOverlappingInputVolume(body: Body) {
+		const a = body.bounds
+		const b = this.#inputVolumeBody.bounds
+		return (
+			a.min.x <= b.max.x &&
+			a.max.x >= b.min.x &&
+			a.min.y <= b.max.y &&
+			a.max.y >= b.min.y
+		)
+	}
+
 	#handleFormSubmit = (e: SubmitEvent) => {
 		e.preventDefault()
 		let newWord = this.#wordInput.value.trim()
 		if (newWord !== "") {
+			if (this.#inputVolumeEnabled) this.#updateInputVolumeBody()
 			let containerRect = this.#container.getBoundingClientRect()
 			let inputRect = this.#wordInput.getBoundingClientRect()
 			let x = inputRect.left - containerRect.left + inputRect.width / 2
-			let y = inputRect.top + inputRect.height / 2
+			let y = inputRect.top - containerRect.top + inputRect.height / 2
 			this.addWord({
 				word: newWord,
 				x,
@@ -477,6 +575,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				checked: false,
 				velocity: this.#pickRandomVelocity(),
 				animateEntry: true,
+				ignoreInputVolumeUntilExit: true,
 			})
 		}
 		this.#wordInput.value = ""
@@ -495,6 +594,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#handleTick = () => {
+		this.#updateWordInputCollisions()
 		this.#updateWordPositions()
 	}
 
@@ -541,6 +641,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
+	#updateWordInputCollisions() {
+		if (this.#inputVolumeEnabled) {
+			for (let entry of this.#wordEntries.values()) {
+				if (!entry.ignoreInputVolumeUntilExit) continue
+				if (this.#isOverlappingInputVolume(entry.body)) continue
+				entry.ignoreInputVolumeUntilExit = false
+				entry.body.collisionFilter.mask = this.#getWordCollisionMask({
+					ignoreInputVolume: false,
+				})
+			}
+		}
+	}
+
 	#updateWordPositions() {
 		for (let entry of this.#wordEntries.values()) {
 			entry.element.style.transform = this.#getWordTransform(entry)
@@ -569,6 +682,26 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (let { element } of this.#wordEntries.values()) {
 			element.action = action
 		}
+	}
+
+	#updateInputVolumeFromMode() {
+		if (this.mode === "input") {
+			if (this.#inputVolumeEnabled) return
+			this.#updateInputVolumeBody()
+			Composite.add(this.#engine.world, this.#inputVolumeBody)
+			this.#inputVolumeEnabled = true
+			return
+		}
+		if (!this.#inputVolumeEnabled) return
+		Composite.remove(this.#engine.world, this.#inputVolumeBody)
+		for (let entry of this.#wordEntries.values()) {
+			if (!entry.ignoreInputVolumeUntilExit) continue
+			entry.ignoreInputVolumeUntilExit = false
+			entry.body.collisionFilter.mask = this.#getWordCollisionMask({
+				ignoreInputVolume: false,
+			})
+		}
+		this.#inputVolumeEnabled = false
 	}
 
 	#updateMouseConstraint() {
