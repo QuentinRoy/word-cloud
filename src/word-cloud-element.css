@@ -12,11 +12,11 @@
 	--input-focus-border-color: hwb(212 16% 22%);
 	--input-focus-shadow-color: hwb(212 76% 0%);
 	--input-focus-background-color: hwb(212 95% 0%);
-	--word-text-color: #000;
-	--word-background-color: #fbf5ff;
+	--word-text-color: hwb(274 2% 80%);
+	--word-background-color: hwb(276 96% 0%);
 	--word-border-color: var(--word-background-color);
 	--word-delete-hover-text-color: hwb(357 45% 11%);
-	--word-delete-hover-background-color: hwb(351 97% 0%);
+	--word-delete-hover-background-color: hwb(351 99% 0%);
 	--word-fade-in-duration: 1s;
 	--checked-opacity: 0.5;
 	display: block;

@@ -40,9 +40,9 @@ const PADDING = 0
 const INPUT_VOLUME_MIN_SIZE = 1
 const PRECISION = 1
 const ANGULAR_REST_ANGLE = 0
-const ANGULAR_SPRING_STIFFNESS = 0.8
-const ANGULAR_DAMPING = 0.5
-const ANGULAR_MAX_FORCE_PER_MASS = 0.001
+const ANGULAR_SPRING_STIFFNESS = 0.0001
+const ANGULAR_DAMPING = 0.001
+const ANGULAR_MAX_FORCE_PER_MASS = 0.005
 const WORD_COLLISION_CATEGORY = 0x0001
 const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
 const DEFAULT_WORD_COLLISION_MASK = -1
@@ -97,12 +97,6 @@ type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
-}
-
-function normalizeAngleToPi(angle: number): number {
-	const twoPi = Math.PI * 2
-	let normalized = ((((angle + Math.PI) % twoPi) + twoPi) % twoPi) - Math.PI
-	return normalized === -Math.PI ? Math.PI : normalized
 }
 
 interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
@@ -277,9 +271,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
-			friction: 0.05,
 			frictionAir: 0.05,
-			frictionStatic: 1,
 			restitution: 0.2,
 			mass: width * height * 0.001,
 			collisionFilter: {
@@ -601,7 +593,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#applyAngularRestoringTorque() {
 		for (let { body } of this.#wordEntries.values()) {
 			if (body.isStatic || body.isSleeping) continue
-			let angleError = normalizeAngleToPi(body.angle - ANGULAR_REST_ANGLE)
+			let angleError = body.angle - ANGULAR_REST_ANGLE
 			if (!Number.isFinite(body.inertia) || body.inertia <= 0) continue
 			const desiredAngularAcceleration =
 				-angleError * ANGULAR_SPRING_STIFFNESS -
