@@ -259,7 +259,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		// It seems we need to add element before setting the checked property
 		// otherwise it does not update the attribute properly.
 		this.#container.appendChild(element)
-		element.innerText = word
+		element.value = word
 		element.checked = checked
 		if (!animateEntry) element.entryAnimation = "none"
 		element.classList.add("word")
@@ -657,9 +657,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let angle = toPrecision(body.angle, ROTATE_PRECISION)
 		let translateX = toPrecision(body.position.x, TRANSLATE_PRECISION)
 		let translateY = toPrecision(body.position.y, TRANSLATE_PRECISION)
-		let transform = "translate(-50%, -50%)"
+		let transform = ""
 		if (translateX !== 0 || translateY !== 0) {
-			transform += ` translate(${translateX}px, ${translateY}px)`
+			transform += `translate(${translateX}px, ${translateY}px)`
 		}
 		if (angle !== 0) {
 			transform += ` rotate(${angle}rad)`
