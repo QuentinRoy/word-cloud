@@ -10,6 +10,7 @@ import {
 	Render,
 	Runner,
 } from "matter-js"
+import { WordCheckedChangeEvent, WordDeleteEvent } from "./events.ts"
 import { css, html } from "./template.ts"
 import {
 	createIterativeIdGenerator,
@@ -20,7 +21,12 @@ import {
 import debugStylesheetContent from "./word-cloud-debug.css?raw"
 import mainStylesheetContent from "./word-cloud-element.css?raw"
 import mainTemplateContent from "./word-cloud-element.html?raw"
-import { HTMLWordElement, WORD_DELETE_EVENT } from "./word-element.ts"
+import {
+	HTMLWordElement,
+	WordElementCheckedChangeEvent,
+	WordElementDeleteEvent,
+} from "./word-element.ts"
+import type { WordEntry } from "./word-entry.ts"
 
 const DEBUG_MODE = false
 
@@ -55,24 +61,6 @@ interface InternalWordEntry {
 	element: HTMLWordElement
 }
 
-/**
- * A serializable snapshot of a word rendered in the cloud.
- */
-interface WordEntry {
-	/** The unique identifier assigned by the word cloud. */
-	id: number
-	/** The displayed word content. */
-	word: string
-	/** The horizontal position of the word center in pixels. */
-	x: number
-	/** The vertical position of the word center in pixels. */
-	y: number
-	/** The current body rotation in radians. */
-	angle: number
-	/** Whether the word is currently marked as checked. */
-	checked: boolean
-}
-
 type WordVelocity = { x: number; y: number }
 
 /**
@@ -91,6 +79,11 @@ type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
+}
+
+interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
+	[WordCheckedChangeEvent.type]: WordCheckedChangeEvent
+	[WordDeleteEvent.type]: WordDeleteEvent
 }
 
 /**
@@ -238,8 +231,16 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.checked = checked
 		if (!animateEntry) element.entryAnimation = "none"
 		element.classList.add("word")
-		element.addEventListener(WORD_DELETE_EVENT, () => {
+		element.addEventListener(WordElementDeleteEvent.type, () => {
+			this.dispatchEvent(
+				new WordDeleteEvent({ entry: this.#toWordEntry(entry) }),
+			)
 			this.removeWord(entry.id)
+		})
+		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
+			this.dispatchEvent(
+				new WordCheckedChangeEvent({ entry: this.#toWordEntry(entry) }),
+			)
 		})
 		let id = HTMLWordCloudElement.#idGenerator()
 		let { width, height } = element.getBoundingClientRect()
@@ -290,16 +291,18 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * @returns An iterable snapshot of all managed words.
 	 */
 	getWords(): Iterable<WordEntry> {
-		return this.#wordEntries
-			.values()
-			.map((entry) => ({
-				id: entry.id,
-				word: entry.word,
-				x: toPrecision(entry.body.position.x, PRECISION),
-				y: toPrecision(entry.body.position.y, PRECISION),
-				angle: entry.body.angle,
-				checked: entry.element.checked,
-			}))
+		return this.#wordEntries.values().map((entry) => this.#toWordEntry(entry))
+	}
+
+	#toWordEntry(entry: InternalWordEntry): WordEntry {
+		return {
+			id: entry.id,
+			word: entry.word,
+			x: toPrecision(entry.body.position.x, PRECISION),
+			y: toPrecision(entry.body.position.y, PRECISION),
+			angle: entry.body.angle,
+			checked: entry.element.checked,
+		}
 	}
 
 	/**
@@ -312,6 +315,40 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (let word of words) {
 			this.addWord(word)
 		}
+	}
+
+	addEventListener<K extends keyof HTMLWordCloudElementEventMap>(
+		type: K,
+		listener: (
+			this: HTMLWordCloudElement,
+			ev: HTMLWordCloudElementEventMap[K],
+		) => void,
+		options?: boolean | AddEventListenerOptions,
+	): void
+	addEventListener(
+		type: string,
+		listener: EventListenerOrEventListenerObject | null,
+		options?: boolean | AddEventListenerOptions,
+	): void {
+		if (listener == null) return
+		super.addEventListener(type, listener, options)
+	}
+
+	removeEventListener<K extends keyof HTMLWordCloudElementEventMap>(
+		type: K,
+		listener: (
+			this: HTMLWordCloudElement,
+			ev: HTMLWordCloudElementEventMap[K],
+		) => void,
+		options?: boolean | EventListenerOptions,
+	): void
+	removeEventListener(
+		type: string,
+		listener: EventListenerOrEventListenerObject | null,
+		options?: boolean | EventListenerOptions,
+	): void {
+		if (listener == null) return
+		super.removeEventListener(type, listener, options)
 	}
 
 	#setupShadowDom() {

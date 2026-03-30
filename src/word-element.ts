@@ -8,11 +8,37 @@ import { generateRandomId, queryStrict } from "./utils"
 import wordStylesheetContent from "./word-element.css?raw"
 import wordTemplateContent from "./word-element.html?raw"
 
+export class WordElementCheckedChangeEvent extends Event {
+	static get type() {
+		return "word-element-checked-change" as const
+	}
+	#checked: boolean
+
+	constructor({ checked }: { checked: boolean }) {
+		super(WordElementCheckedChangeEvent.type, {
+			bubbles: false,
+			composed: false,
+		})
+		this.#checked = checked
+	}
+
+	get checked() {
+		return this.#checked
+	}
+}
+
+export class WordElementDeleteEvent extends Event {
+	static get type() {
+		return "word-element-delete" as const
+	}
+
+	constructor() {
+		super(WordElementDeleteEvent.type, { bubbles: false, composed: false })
+	}
+}
+
 const wordTemplate = html`${wordTemplateContent}`
 const wordStylesheet = css`${wordStylesheetContent}`
-
-export const WORD_CHECKED_CHANGE_EVENT = "word-checked-change"
-export const WORD_DELETE_EVENT = "word-delete"
 
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
@@ -85,11 +111,7 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 
 	#dispatchCheckedChangeEvent() {
 		this.dispatchEvent(
-			new CustomEvent(WORD_CHECKED_CHANGE_EVENT, {
-				detail: { checked: this.checked },
-				bubbles: true,
-				composed: true,
-			}),
+			new WordElementCheckedChangeEvent({ checked: this.checked }),
 		)
 	}
 
@@ -107,8 +129,6 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#handleDelete = () => {
-		this.dispatchEvent(
-			new CustomEvent(WORD_DELETE_EVENT, { bubbles: true, composed: true }),
-		)
+		this.dispatchEvent(new WordElementDeleteEvent())
 	}
 }
