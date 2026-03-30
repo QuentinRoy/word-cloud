@@ -35,7 +35,6 @@
     "@biomejs/biome": "2.4.9",
     "@types/matter-js": "^0.20.2",
     "arktype": "^2.2.0",
-    "globals": "^17.4.0",
     "type-fest": "^5.5.0",
     "typescript": "~6.0.2",
     "vite": "^8.0.3",
