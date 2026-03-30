@@ -20,15 +20,6 @@ label {
 	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 }
 
-/* biome-ignore lint/correctness/noUnknownProperty: biome doesn't know about squircle */
-@supports (corner-shape: squircle) {
-	label {
-		border-radius: calc(var(--chamfer-radius, 0) * 2);
-		/* biome-ignore lint/correctness/noUnknownProperty: biome doesn't know about squircle */
-		corner-shape: squircle;
-	}
-}
-
 label {
 	display: block;
 	cursor: inherit;
