@@ -93,7 +93,7 @@ type AddWordOptions = WordData & {
 	ignoreInputVolumeUntilExit?: boolean
 }
 
-const MODES = ["mark", "delete", "input"] as const
+const MODES = ["check", "delete", "input"] as const
 type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
@@ -116,7 +116,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	mode: pickList({ values: MODES }),
 }) {
 	static #elementActionMaps: Record<Mode, HTMLWordElement["action"]> = {
-		mark: "mark",
+		check: "check",
 		delete: "delete",
 		input: null,
 	}

@@ -30,7 +30,7 @@ label {
 	animation: none;
 }
 
-:host([action="mark"]) {
+:host([action="check"]) {
 	label {
 		cursor: pointer;
 	}

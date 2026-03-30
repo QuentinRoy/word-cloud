@@ -43,7 +43,7 @@ const wordStylesheet = css`${wordStylesheetContent}`
 
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
-	action: pickList({ values: ["mark", "delete"] }),
+	action: pickList({ values: ["check", "delete"] }),
 	entryAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
 	value: string(),
 }) {
@@ -114,7 +114,7 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	#updateAction() {
 		this.#label.htmlFor =
 			this.action === "delete" ? this.#deleteButton.id : this.#checkbox.id
-		this.#checkbox.disabled = this.action !== "mark"
+		this.#checkbox.disabled = this.action !== "check"
 		this.#deleteButton.disabled = this.action !== "delete"
 	}
 

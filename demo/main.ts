@@ -28,8 +28,8 @@ document.addEventListener("keypress", (event) => {
 		return
 	}
 	switch (event.key) {
-		case "m":
-			wordCloud.mode = "mark"
+		case "c":
+			wordCloud.mode = "check"
 			break
 		case "d": {
 			let now = Date.now()
