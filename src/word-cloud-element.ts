@@ -38,7 +38,8 @@ const MIN_RANDOM_VELOCITY = 15
 const MAX_RANDOM_VELOCITY = 50
 const PADDING = 0
 const INPUT_VOLUME_MIN_SIZE = 1
-const PRECISION = 1
+const TRANSLATE_PRECISION = 1
+const ROTATE_PRECISION = 4
 const ANGULAR_REST_ANGLE = 0
 const ANGULAR_SPRING_STIFFNESS = 0.0001
 const ANGULAR_DAMPING = 0.001
@@ -288,8 +289,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 		let publicEntry = new WordEntry({
 			word,
-			getX: () => toPrecision(body.position.x, PRECISION),
-			getY: () => toPrecision(body.position.y, PRECISION),
+			getX: () => toPrecision(body.position.x, TRANSLATE_PRECISION),
+			getY: () => toPrecision(body.position.y, TRANSLATE_PRECISION),
 			getAngle: () => body.angle,
 			getChecked: () => element.checked,
 			setChecked: (v) => {
@@ -416,7 +417,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#setupPhysics() {
 		const engine = Engine.create()
-		engine.gravity.y = 0
+		engine.gravity.scale = 0
 		const runner = Runner.create()
 		return { engine, runner }
 	}
@@ -653,9 +654,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#getWordTransform({ body }: InternalWordEntry) {
-		let angle = body.angle
-		let translateX = toPrecision(body.position.x, PRECISION)
-		let translateY = toPrecision(body.position.y, PRECISION)
+		let angle = toPrecision(body.angle, ROTATE_PRECISION)
+		let translateX = toPrecision(body.position.x, TRANSLATE_PRECISION)
+		let translateY = toPrecision(body.position.y, TRANSLATE_PRECISION)
 		let transform = "translate(-50%, -50%)"
 		if (translateX !== 0 || translateY !== 0) {
 			transform += ` translate(${translateX}px, ${translateY}px)`
