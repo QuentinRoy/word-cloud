@@ -41,10 +41,8 @@ const TRANSLATE_PRECISION = 1
 const ROTATE_PRECISION = 4
 const ANGULAR_REST_ANGLE = 0
 const ANGULAR_REST_ANGLE_EPSILON = 0.01
-const ANGULAR_REST_ANGULAR_VELOCITY_EPSILON = 0.01
-const ANGULAR_SPRING_STIFFNESS = 0.0001
-const ANGULAR_DAMPING = 0.001
-const ANGULAR_MAX_FORCE_PER_MASS = 0.005
+const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.25
+const ANGULAR_DAMPING_COEFFICIENT = 0.7
 const WORD_COLLISION_CATEGORY = 0x0001
 const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
 const DEFAULT_WORD_COLLISION_MASK = -1
@@ -274,8 +272,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
 			frictionAir: 0.05,
-			restitution: 0.4,
-			mass: width * height * 0.001,
+			restitution: 0.2,
 			collisionFilter: {
 				category: WORD_COLLISION_CATEGORY,
 				mask: this.#getWordCollisionMask({
@@ -597,29 +594,26 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#applyAngularRestoringTorque() {
 		for (let { body } of this.#wordEntries.values()) {
-			let angleError = body.angle - ANGULAR_REST_ANGLE
+			if (body.isStatic || body.isSleeping) continue
+			const angleError = body.angle - ANGULAR_REST_ANGLE
 			if (
 				Math.abs(angleError) <= ANGULAR_REST_ANGLE_EPSILON &&
-				Math.abs(body.angularVelocity) <= ANGULAR_REST_ANGULAR_VELOCITY_EPSILON
+				Math.abs(body.angularVelocity) < 0.001
 			)
 				continue
-			if (!Number.isFinite(body.inertia) || body.inertia <= 0) continue
-			const desiredAngularAcceleration =
-				-angleError * ANGULAR_SPRING_STIFFNESS -
-				body.angularVelocity * ANGULAR_DAMPING
-			const desiredTorque = desiredAngularAcceleration * body.inertia
 
+			// Spring with light damping: restores to rest angle and dissipates energy
+			const torque =
+				-angleError * ANGULAR_SPRING_TORQUE_STIFFNESS -
+				body.angularVelocity * ANGULAR_DAMPING_COEFFICIENT
+
+			// Convert torque to a pair of opposing forces applied at opposite points
 			const width = body.bounds.max.x - body.bounds.min.x
 			const height = body.bounds.max.y - body.bounds.min.y
-			const arm = Math.max(4, Math.min(width, height) * 0.25)
-			if (!Number.isFinite(arm) || arm <= 0) continue
+			const forceArm = Math.min(width, height) * 0.25
+			if (forceArm <= 0) continue
 
-			const rawForceMagnitude = desiredTorque / (2 * arm)
-			const maxForce = body.mass * ANGULAR_MAX_FORCE_PER_MASS
-			const forceMagnitude = Math.max(
-				-maxForce,
-				Math.min(maxForce, rawForceMagnitude),
-			)
+			const forceMagnitude = torque / (2 * forceArm)
 
 			const ux = Math.cos(body.angle)
 			const uy = Math.sin(body.angle)
@@ -627,18 +621,17 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			const ny = ux
 
 			const pointA = {
-				x: body.position.x + ux * arm,
-				y: body.position.y + uy * arm,
+				x: body.position.x + ux * forceArm,
+				y: body.position.y + uy * forceArm,
 			}
 			const pointB = {
-				x: body.position.x - ux * arm,
-				y: body.position.y - uy * arm,
+				x: body.position.x - ux * forceArm,
+				y: body.position.y - uy * forceArm,
 			}
-			const forceA = { x: nx * forceMagnitude, y: ny * forceMagnitude }
-			const forceB = { x: -forceA.x, y: -forceA.y }
+			const force = { x: nx * forceMagnitude, y: ny * forceMagnitude }
 
-			Body.applyForce(body, pointA, forceA)
-			Body.applyForce(body, pointB, forceB)
+			Body.applyForce(body, pointA, force)
+			Body.applyForce(body, pointB, { x: -force.x, y: -force.y })
 		}
 	}
 
