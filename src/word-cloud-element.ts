@@ -36,6 +36,10 @@ const FRAME_THICKNESS = 1000
 const FRAME_LENGTH = window.innerHeight * 1000
 const PADDING = 0
 const PRECISION = 1
+const ANGULAR_REST_ANGLE = 0
+const ANGULAR_SPRING_STIFFNESS = 0.8
+const ANGULAR_DAMPING = 0.5
+const ANGULAR_MAX_FORCE_PER_MASS = 0.001
 
 const mainTemplate = html`${mainTemplateContent}`
 
@@ -80,6 +84,12 @@ type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
+}
+
+function normalizeAngleToPi(angle: number): number {
+	const twoPi = Math.PI * 2
+	let normalized = ((((angle + Math.PI) % twoPi) + twoPi) % twoPi) - Math.PI
+	return normalized === -Math.PI ? Math.PI : normalized
 }
 
 interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
@@ -180,6 +190,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	connectedCallback() {
 		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
+		Events.on(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
 		Events.on(this.#runner, "tick", this.#handleTick)
 		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
@@ -195,6 +206,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
+		Events.off(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
 		Events.off(this.#runner, "tick", this.#handleTick)
 		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
@@ -236,7 +248,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let { width, height } = element.getBoundingClientRect()
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
-			inertia: Infinity,
 			angle,
 			frictionAir: 0.1,
 			restitution: 0.2,
@@ -368,7 +379,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#setupPhysics() {
-		const engine = Engine.create({ enableSleeping: true })
+		const engine = Engine.create()
 		engine.gravity.y = 0
 		const runner = Runner.create()
 		return { engine, runner }
@@ -479,8 +490,55 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#internals.states.delete("active")
 	}
 
+	#handleBeforeUpdate = () => {
+		this.#applyAngularRestoringTorque()
+	}
+
 	#handleTick = () => {
 		this.#updateWordPositions()
+	}
+
+	#applyAngularRestoringTorque() {
+		for (let { body } of this.#wordEntries.values()) {
+			if (body.isStatic || body.isSleeping) continue
+			let angleError = normalizeAngleToPi(body.angle - ANGULAR_REST_ANGLE)
+			if (!Number.isFinite(body.inertia) || body.inertia <= 0) continue
+			const desiredAngularAcceleration =
+				-angleError * ANGULAR_SPRING_STIFFNESS -
+				body.angularVelocity * ANGULAR_DAMPING
+			const desiredTorque = desiredAngularAcceleration * body.inertia
+
+			const width = body.bounds.max.x - body.bounds.min.x
+			const height = body.bounds.max.y - body.bounds.min.y
+			const arm = Math.max(4, Math.min(width, height) * 0.25)
+			if (!Number.isFinite(arm) || arm <= 0) continue
+
+			const rawForceMagnitude = desiredTorque / (2 * arm)
+			const maxForce = body.mass * ANGULAR_MAX_FORCE_PER_MASS
+			const forceMagnitude = Math.max(
+				-maxForce,
+				Math.min(maxForce, rawForceMagnitude),
+			)
+
+			const ux = Math.cos(body.angle)
+			const uy = Math.sin(body.angle)
+			const nx = -uy
+			const ny = ux
+
+			const pointA = {
+				x: body.position.x + ux * arm,
+				y: body.position.y + uy * arm,
+			}
+			const pointB = {
+				x: body.position.x - ux * arm,
+				y: body.position.y - uy * arm,
+			}
+			const forceA = { x: nx * forceMagnitude, y: ny * forceMagnitude }
+			const forceB = { x: -forceA.x, y: -forceA.y }
+
+			Body.applyForce(body, pointA, forceA)
+			Body.applyForce(body, pointB, forceB)
+		}
 	}
 
 	#updateWordPositions() {
