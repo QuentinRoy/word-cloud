@@ -4,7 +4,9 @@ Interactive word cloud custom element powered by Matter.js. Check out the [demo]
 
 ## Library
 
-This package exports the `HTMLWordCloudElement` class and event classes. It does not auto-register a custom element tag for you.
+This package exports the `HTMLWordCloudElement` class, event classes, and the
+`WordEntry` / `WordData` types. It does not auto-register a custom element tag
+for you.
 
 ## Installation
 
@@ -21,8 +23,6 @@ import { HTMLWordCloudElement } from "word-cloud"
 
 customElements.define("x-word-cloud", HTMLWordCloudElement)
 ```
-
-The package also exports `WordCheckedChangeEvent` and `WordDeleteEvent`.
 
 ## Basic usage
 
@@ -78,12 +78,12 @@ wordCloud.mode = "delete"
 
 ## Public API
 
-### `addWord(options)`
+### `addWord(options)` → `WordEntry`
 
-Adds a single word to the cloud and returns its generated id.
+Adds a word to the cloud and returns a live [`WordEntry`](#wordentry) handle.
 
 ```ts
-const id = wordCloud.addWord({
+const entry = wordCloud.addWord({
   word: "Custom Element",
   x: 200,
   y: 150,
@@ -92,25 +92,20 @@ const id = wordCloud.addWord({
   velocity: { x: 10, y: -15 },
   animateEntry: true,
 })
+
+// Remove it later (fires word-delete):
+entry.remove()
 ```
 
-Supported fields:
+Supported options:
 
 - `word`: displayed text.
 - `x`: initial horizontal position in pixels.
 - `y`: initial vertical position in pixels.
-- `angle`: optional initial rotation in radians.
-- `checked`: optional initial checked state.
-- `velocity`: optional initial physics velocity.
-- `animateEntry`: optional entry animation toggle.
-
-### `removeWord(id)`
-
-Removes a word by id and returns `true` when it existed.
-
-```ts
-wordCloud.removeWord(id)
-```
+- `angle` _(optional)_: initial rotation in radians. Defaults to `0`.
+- `checked` _(optional)_: initial checked state. Defaults to `false`.
+- `velocity` _(optional)_: initial physics velocity `{ x, y }`.
+- `animateEntry` _(optional)_: play a fade-in entry animation. Defaults to `false`.
 
 ### `clear()`
 
@@ -120,57 +115,116 @@ Removes all words from the cloud.
 wordCloud.clear()
 ```
 
-### `getWords()`
+### `getWords()` → `Iterable<WordEntry>`
 
-Returns an iterable snapshot of the current words, including their current position, angle, and checked state.
+Returns live [`WordEntry`](#wordentry) handles for all words currently in the
+cloud. Each property read reflects the real-time state (position, angle,
+checked). Useful for persistence:
 
 ```ts
-const words = Array.from(wordCloud.getWords())
+const snapshot = Array.from(wordCloud.getWords())
 ```
-
-This is useful for persistence.
 
 ### `setWords(words)`
 
-Replaces the current contents with a new set of words.
+Clears the cloud and populates it from an array of [`WordData`](#worddata)
+objects. Because `WordEntry` is structurally compatible with `WordData`, you can
+pass the output of `getWords()` directly:
 
 ```ts
 wordCloud.setWords([
   { word: "Saved", x: 120, y: 100, angle: 0, checked: false },
   { word: "State", x: 280, y: 220, angle: 0.2, checked: true },
 ])
+
+// Restore a previously obtained snapshot:
+wordCloud.setWords(Array.from(wordCloud.getWords()))
+```
+
+## WordEntry
+
+A `WordEntry` is a live handle to a word in the cloud, returned by `addWord`
+and `getWords`. Its properties are always up to date — they read directly from
+the underlying physics body and DOM element.
+
+| Property / method | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `entry.word`      | The displayed text (read-only).                          |
+| `entry.x`         | Current horizontal center position in pixels.            |
+| `entry.y`         | Current vertical center position in pixels.              |
+| `entry.angle`     | Current rotation in radians.                             |
+| `entry.checked`   | Checked state — readable and writable.                   |
+| `entry.remove()`  | Removes the word from the cloud and fires `word-delete`. |
+
+```ts
+const entry = wordCloud.addWord({ word: "Hello", x: 100, y: 100 })
+
+// Read live state:
+console.log(entry.x, entry.y, entry.checked)
+
+// Toggle checked programmatically (fires word-checked-change):
+entry.checked = !entry.checked
+
+// Remove it:
+entry.remove()
+```
+
+## WordData
+
+Plain serializable object describing a word. Accepted by `addWord` and
+`setWords`. `WordEntry` is structurally compatible with `WordData`, so entries
+obtained from `getWords()` can be passed directly to `setWords()`.
+
+```ts
+interface WordData {
+  word: string
+  x: number
+  y: number
+  angle?: number
+  checked?: boolean
+}
 ```
 
 ## Persisting state
 
-The simplest persistence flow is:
+```ts
+// Save
+const saved = Array.from(wordCloud.getWords()).map(({ word, x, y, angle, checked }) => ({
+  word, x, y, angle, checked,
+}))
+localStorage.setItem("words", JSON.stringify(saved))
 
-1. Read the current state with `Array.from(wordCloud.getWords())`.
-2. Store it in local storage, IndexedDB, or your backend.
-3. Restore it later with `wordCloud.setWords(savedWords)`.
+// Restore
+const saved = JSON.parse(localStorage.getItem("words") ?? "[]")
+wordCloud.setWords(saved)
+```
 
 ## Events
 
-Word items dispatch bubbling `Event` subclasses from the component tree:
+`HTMLWordCloudElement` dispatches the following bubbling events:
 
-- `word-checked-change`: fired when a word changes checked state.
-- `word-delete`: fired when a word delete action is triggered.
+- **`word-checked-change`** — fired when a word's checked state changes (user
+  interaction in `mark` mode, or programmatic assignment to `entry.checked`).
+- **`word-delete`** — fired when the user deletes a word in `delete` mode,
+  just before the word is removed.
 
-You can listen using either `"word-checked-change"` / `"word-delete"`, or `WordCheckedChangeEvent.type` / `WordDeleteEvent.type`.
+Both events extend `WordCloudEvent` and carry an `entry` property — a live
+[`WordEntry`](#wordentry) for the affected word.
 
-Example with `instanceof`:
+Listen using the string literal or the static `.type` property:
 
 ```ts
-wordCloud.addEventListener("word-checked-change", (event) => {
-  console.log("checked:", event.checked)
+import { WordCheckedChangeEvent, WordDeleteEvent } from "word-cloud"
+
+wordCloud.addEventListener(WordCheckedChangeEvent.type, (event) => {
+  console.log("new checked state:", event.checked)
+  console.log("word:", event.entry.word)
 })
 
-wordCloud.addEventListener("word-delete", (event) => {
-  console.log("word deleted:", event.word)
+wordCloud.addEventListener(WordDeleteEvent.type, (event) => {
+  console.log("deleted:", event.entry.word, "at", event.entry.x, event.entry.y)
 })
 ```
-
-`word-delete` is also used internally by the cloud to remove words in delete mode.
 
 ## Styling
 

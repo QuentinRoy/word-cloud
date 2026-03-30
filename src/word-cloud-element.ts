@@ -26,7 +26,8 @@ import {
 	WordElementCheckedChangeEvent,
 	WordElementDeleteEvent,
 } from "./word-element.ts"
-import type { WordEntry } from "./word-entry.ts"
+import type { WordData } from "./word-entry.ts"
+import { WordEntry } from "./word-entry.ts"
 
 const DEBUG_MODE = false
 
@@ -59,6 +60,7 @@ interface InternalWordEntry {
 	word: string
 	body: Body
 	element: HTMLWordElement
+	publicEntry: WordEntry
 }
 
 type WordVelocity = { x: number; y: number }
@@ -66,13 +68,12 @@ type WordVelocity = { x: number; y: number }
 /**
  * Options used to add a single word to the cloud.
  */
-type AddWordOptions = Omit<WordEntry, "id" | "angle" | "checked"> &
-	Partial<Pick<WordEntry, "angle" | "checked">> & {
-		/** The initial linear velocity applied to the word body. */
-		velocity?: WordVelocity
-		/** Whether the word element should play its entry animation. */
-		animateEntry?: boolean
-	}
+type AddWordOptions = WordData & {
+	/** The initial linear velocity applied to the word body. */
+	velocity?: WordVelocity
+	/** Whether the word element should play its entry animation. */
+	animateEntry?: boolean
+}
 
 const MODES = ["mark", "delete", "input"] as const
 type Mode = (typeof MODES)[number]
@@ -202,17 +203,17 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Creates a rendered word element and its matching physics body.
+	 * Creates a rendered word element and its matching physics body, and returns
+	 * a live {@link WordEntry} handle.
 	 *
-	 * @param options The word data and initial placement options.
 	 * @param options.word The text content to display.
 	 * @param options.x The initial horizontal center position in pixels.
 	 * @param options.y The initial vertical center position in pixels.
-	 * @param options.angle The initial body rotation in radians.
-	 * @param options.checked Whether the word starts in the checked state.
+	 * @param options.angle The initial body rotation in radians. Defaults to `0`.
+	 * @param options.checked Whether the word starts in the checked state. Defaults to `false`.
 	 * @param options.velocity The initial linear velocity applied to the body.
-	 * @param options.animateEntry Whether the word should play its entry animation.
-	 * @returns The generated identifier for the inserted word.
+	 * @param options.animateEntry Whether the word should play its entry animation. Defaults to `false`.
+	 * @returns A live {@link WordEntry} for the newly created word.
 	 */
 	addWord({
 		word,
@@ -222,7 +223,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		checked = false,
 		velocity,
 		animateEntry = false,
-	}: AddWordOptions) {
+	}: AddWordOptions): WordEntry {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
 		// It seems we need to add element before setting the checked property
 		// otherwise it does not update the attribute properly.
@@ -231,17 +232,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.checked = checked
 		if (!animateEntry) element.entryAnimation = "none"
 		element.classList.add("word")
-		element.addEventListener(WordElementDeleteEvent.type, () => {
-			this.dispatchEvent(
-				new WordDeleteEvent({ entry: this.#toWordEntry(entry) }),
-			)
-			this.removeWord(entry.id)
-		})
-		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
-			this.dispatchEvent(
-				new WordCheckedChangeEvent({ entry: this.#toWordEntry(entry) }),
-			)
-		})
 		let id = HTMLWordCloudElement.#idGenerator()
 		let { width, height } = element.getBoundingClientRect()
 		let body = Bodies.rectangle(x, y, width, height, {
@@ -251,28 +241,47 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			frictionAir: 0.1,
 			restitution: 0.2,
 		})
-		let entry: InternalWordEntry = { id, word, element, body }
+		const deleteWord = () => {
+			if (!this.#wordEntries.has(id)) return
+			this.dispatchEvent(new WordDeleteEvent({ entry: publicEntry }))
+			this.#removeById(id)
+		}
+		let publicEntry = new WordEntry({
+			word,
+			getX: () => toPrecision(body.position.x, PRECISION),
+			getY: () => toPrecision(body.position.y, PRECISION),
+			getAngle: () => body.angle,
+			getChecked: () => element.checked,
+			setChecked: (v) => {
+				element.checked = v
+			},
+			remove: deleteWord,
+		})
+		let entry: InternalWordEntry = { id, word, element, body, publicEntry }
+		element.addEventListener(WordElementDeleteEvent.type, () => {
+			deleteWord()
+		})
+		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
+			this.dispatchEvent(
+				new WordCheckedChangeEvent({
+					entry: publicEntry,
+					checked: element.checked,
+				}),
+			)
+		})
 		element.style.transform = this.#getWordTransform(entry)
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
-		return id
+		return publicEntry
 	}
 
-	/**
-	 * Removes a word from both the DOM and physics world.
-	 *
-	 * @param id The identifier of the word to remove.
-	 * @returns True when a matching word was found and removed.
-	 */
-	removeWord(id: WordEntry["id"]) {
+	#removeById(id: number) {
 		let entry = this.#wordEntries.get(id)
 		if (entry) {
 			this.#removeWordBodyAndDom(entry)
 			this.#wordEntries.delete(entry.id)
-			return true
 		}
-		return false
 	}
 
 	/**
@@ -286,31 +295,22 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Returns the current word state as serializable entries.
-	 *
-	 * @returns An iterable snapshot of all managed words.
+	 * Returns live {@link WordEntry} handles for all words currently in the cloud.
+	 * Property reads on each entry always reflect the current state.
+	 * Useful for persistence — pass the result to {@link setWords} to restore.
 	 */
 	getWords(): Iterable<WordEntry> {
-		return this.#wordEntries.values().map((entry) => this.#toWordEntry(entry))
-	}
-
-	#toWordEntry(entry: InternalWordEntry): WordEntry {
-		return {
-			id: entry.id,
-			word: entry.word,
-			x: toPrecision(entry.body.position.x, PRECISION),
-			y: toPrecision(entry.body.position.y, PRECISION),
-			angle: entry.body.angle,
-			checked: entry.element.checked,
-		}
+		return this.#wordEntries.values().map((entry) => entry.publicEntry)
 	}
 
 	/**
-	 * Replaces the current cloud contents with the provided word entries.
+	 * Replaces the current cloud contents with the provided word data.
+	 * Accepts plain {@link WordData} objects or previously obtained
+	 * {@link WordEntry} handles (which are structurally compatible).
 	 *
 	 * @param words The words to insert after clearing the existing cloud.
 	 */
-	setWords(words: Omit<WordEntry, "id">[]) {
+	setWords(words: Iterable<WordData>) {
 		this.clear()
 		for (let word of words) {
 			this.addWord(word)
