@@ -1,4 +1,5 @@
 import { type } from "arktype"
+import { toPrecision } from "../src/utils"
 
 let wordSchema = type({
 	word: "string",
@@ -34,10 +35,11 @@ export function saveWords(
 ) {
 	let wordArray: typeof wordSchema.inferIn = []
 	for (let { word, x, y, angle, checked } of words) {
+		angle = toPrecision(angle ?? 0, 4)
 		wordArray.push({
 			word,
-			x,
-			y,
+			x: toPrecision(x, 1),
+			y: toPrecision(y, 1),
 			angle: angle === 0 ? undefined : angle,
 			checked: checked === false ? undefined : checked,
 		})

@@ -289,8 +289,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 		let publicEntry = new WordEntry({
 			word,
-			getX: () => toPrecision(body.position.x, TRANSLATE_PRECISION),
-			getY: () => toPrecision(body.position.y, TRANSLATE_PRECISION),
+			getX: () => body.position.x,
+			getY: () => body.position.y,
 			getAngle: () => body.angle,
 			getChecked: () => element.checked,
 			setChecked: (v) => {
