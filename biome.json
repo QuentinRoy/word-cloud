@@ -20,6 +20,11 @@
 			}
 		}
 	},
+	"json": {
+		"formatter": {
+			"enabled": true
+		}
+	},
 	"javascript": {
 		"formatter": {
 			"enabled": true,
