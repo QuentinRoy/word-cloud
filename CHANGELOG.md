@@ -1,5 +1,12 @@
 # @quentinroy/word-cloud
 
+## 0.4.0
+
+### Minor Changes
+
+- 35fb8db: Lock word rotation while dragging.
+- 0ac80f9: Make angular restoration torque proportional to word width so larger words receive stronger restoring torque.
+
 ## 0.3.0
 
 ### Minor Changes
