@@ -17,6 +17,8 @@
 	--word-border-color: var(--word-background-color);
 	--word-delete-hover-text-color: hwb(357 45% 11%);
 	--word-delete-hover-background-color: hwb(351 99% 0%);
+	--word-dragged-background-color: hwb(210 90% 0%);
+	--word-dragged-border-color: hwb(210 85% 0%);
 	--word-fade-in-duration: 1s;
 	--checked-opacity: 0.5;
 	display: block;
@@ -75,6 +77,10 @@ input[type="text"] {
 	.word {
 		cursor: grab;
 		user-select: none;
+	}
+	.word[dragged] {
+		z-index: 4;
+		cursor: grabbing;
 	}
 }
 

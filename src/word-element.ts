@@ -43,6 +43,7 @@ const wordStylesheet = css`${wordStylesheetContent}`
 
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
+	dragged: boolean(),
 	action: pickList({ values: ["check", "delete"] }),
 	entryAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
 	value: string(),

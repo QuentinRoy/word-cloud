@@ -8,12 +8,14 @@ input {
 }
 
 label {
+	display: block;
 	padding: var(--space-s) var(--space-m);
 	font-family: var(--font-family);
 	font-size: var(--font-size);
 	color: var(--word-text-color);
 	text-align: center;
 	text-decoration-thickness: var(--line-width);
+	cursor: inherit;
 	background-color: var(--word-background-color);
 	border: var(--line-width) solid var(--word-border-color);
 	border-radius: var(--chamfer-radius, 0);
@@ -21,13 +23,13 @@ label {
 	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 }
 
-label {
-	display: block;
-	cursor: inherit;
-}
-
 :host([entry-animation="none"]) label {
 	animation: none;
+}
+
+:host([dragged]) label {
+	background-color: var(--word-dragged-background-color);
+	border-color: var(--word-dragged-border-color);
 }
 
 :host([action="check"]) {

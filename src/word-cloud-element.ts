@@ -5,6 +5,7 @@ import {
 	Composite,
 	Engine,
 	Events,
+	type IEvent,
 	Mouse,
 	MouseConstraint,
 	Render,
@@ -19,7 +20,6 @@ import {
 } from "./events.ts"
 import { css, html } from "./template.ts"
 import {
-	createIterativeIdGenerator,
 	generateRandomId,
 	normalizeAngle,
 	queryStrict,
@@ -79,6 +79,7 @@ interface InternalWordEntry {
 	element: HTMLWordElement
 	publicEntry: WordEntry
 	ignoreInputVolumeUntilExit: boolean
+	dragLock: { initialInertia: number } | null
 }
 
 type WordVelocity = { x: number; y: number }
@@ -127,8 +128,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		delete: "delete",
 		input: null,
 	}
-
-	static #idGenerator = createIterativeIdGenerator()
 
 	static #frameThickness = FRAME_THICKNESS
 	static #padding = PADDING
@@ -280,7 +279,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			this.mode == null
 				? null
 				: HTMLWordCloudElement.#elementActionMaps[this.mode]
-		let id = HTMLWordCloudElement.#idGenerator()
 		let { width, height } = element.getBoundingClientRect()
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
@@ -294,6 +292,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}),
 			},
 		})
+		let id = body.id
 		const deleteWord = () => {
 			if (!this.#wordEntries.has(id)) return
 			this.dispatchEvent(new WordDeleteEvent({ entry: publicEntry }))
@@ -317,6 +316,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			body,
 			publicEntry,
 			ignoreInputVolumeUntilExit,
+			dragLock: null,
 		}
 		element.addEventListener(WordElementDeleteEvent.type, () => {
 			deleteWord()
@@ -484,6 +484,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#removeWordBodyAndDom(entry: InternalWordEntry) {
+		this.#unlockDraggedEntry(entry)
 		Composite.remove(this.#engine.world, entry.body)
 		this.#container.removeChild(entry.element)
 	}
@@ -589,11 +590,25 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#wordInput.value = ""
 	}
 
-	#handleStartDragging = () => {
-		if (this.#mouseEnabled) this.#internals.states.add("active")
+	#handleStartDragging = (event: IEvent<MouseConstraint>) => {
+		if (!this.#mouseEnabled) return
+		const body = event.source.body
+		if (body != null) {
+			const entry = this.#wordEntries.get(body.id)
+			if (entry != null) this.#lockDraggedEntry(entry)
+		}
+		this.#internals.states.add("active")
 	}
 
-	#handleEndDragging = () => {
+	#handleEndDragging = (event: IEvent<MouseConstraint>) => {
+		if (!this.#mouseEnabled) return
+		const body = event.source.body
+		if (body != null) {
+			const entry = this.#wordEntries.get(body.id)
+			if (entry != null) this.#unlockDraggedEntry(entry)
+		} else {
+			this.#unlockAllDraggedBodies()
+		}
 		this.#internals.states.delete("active")
 	}
 
@@ -668,6 +683,29 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
+	#lockDraggedEntry(entry: InternalWordEntry) {
+		if (entry.dragLock != null) return
+		console.log("inertia", entry.body.inertia)
+		entry.dragLock = { initialInertia: entry.body.inertia }
+		Body.setInertia(entry.body, Infinity)
+		Body.setAngularVelocity(entry.body, 0)
+		entry.element.dragged = true
+	}
+
+	#unlockDraggedEntry(entry: InternalWordEntry) {
+		if (entry.dragLock == null) return
+		Body.setInertia(entry.body, entry.dragLock.initialInertia)
+		Body.setAngularVelocity(entry.body, 0)
+		entry.dragLock = null
+		entry.element.dragged = false
+	}
+
+	#unlockAllDraggedBodies() {
+		for (const entry of this.#wordEntries.values()) {
+			this.#unlockDraggedEntry(entry)
+		}
+	}
+
 	#getWordTransform({ body }: InternalWordEntry) {
 		let angle = toPrecision(body.angle, ROTATE_PRECISION)
 		let translateX = toPrecision(body.position.x, TRANSLATE_PRECISION)
@@ -719,6 +757,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			Composite.add(this.#engine.world, this.#mouseConstraint)
 		} else {
 			this.#mouseEnabled = false
+			this.#unlockAllDraggedBodies()
 			Composite.remove(
 				this.#engine.world,
 				this.#mouseConstraint.constraint,
@@ -752,6 +791,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#stop() {
+		this.#unlockAllDraggedBodies()
 		Runner.stop(this.#runner)
 		if (this.#debugRender != null) Render?.stop(this.#debugRender)
 	}
