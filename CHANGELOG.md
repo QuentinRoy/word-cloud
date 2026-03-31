@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.4.2
+
+### Patch Changes
+
+- 570b042: Attempt at fixing automatic release.
+
 ## 0.4.1
 
 ### Patch Changes
