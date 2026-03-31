@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.4.1
+
+### Patch Changes
+
+- e909f67: Dummy changeset to test CI
+
 ## 0.4.0
 
 ### Minor Changes
