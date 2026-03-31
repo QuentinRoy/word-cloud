@@ -8,6 +8,27 @@
 		<script type="module" src="/demo/main.ts"></script>
 	</head>
 	<body>
-		<div id="app"><x-word-cloud mode="input"></x-word-cloud></div>
+		<x-word-cloud mode="input"></x-word-cloud>
+		<form id="controls">
+			<div class="control-group">
+				<div>
+					<input type="radio" name="mode" value="input" id="input-mode" checked>
+					<label for="input-mode">Input Mode (<kbd>I</kbd>)</label>
+				</div>
+				<div>
+					<input type="radio" name="mode" value="check" id="check-mode">
+					<label for="check-mode">Check Mode (<kbd>C</kbd>)</label>
+				</div>
+				<div>
+					<input type="radio" name="mode" value="delete" id="delete-mode">
+					<label for="delete-mode">Delete Mode (<kbd>D</kbd>)</label>
+				</div>
+			</div>
+			<div>
+				<button type="button" id="clear" value="Clear">
+					Clear (<kbd>D</kbd>, <kbd>D</kbd>)
+				</button>
+			</div>
+		</form>
 	</body>
 </html>
