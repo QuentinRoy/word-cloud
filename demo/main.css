@@ -19,10 +19,30 @@ x-word-cloud {
 	border-radius: 0.5rem;
 }
 
+footer {
+	display: grid;
+	grid-template-areas: "none controls github-link";
+	grid-template-columns: 2rem 1fr 2rem;
+	align-items: center;
+	justify-content: center;
+}
+
+#github-link {
+	grid-area: github-link;
+	justify-self: end;
+
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+}
+
 #controls {
 	--border-radius: 0.25rem;
 
 	display: flex;
+	grid-area: controls;
 	gap: 1rem;
 	justify-content: center;
 
