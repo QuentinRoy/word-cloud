@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.4.3
+
+### Patch Changes
+
+- 8952d9d: Remove @changesets/cli from dependencies.
+
 ## 0.4.2
 
 ### Patch Changes
