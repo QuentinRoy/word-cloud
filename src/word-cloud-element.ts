@@ -10,7 +10,13 @@ import {
 	Render,
 	Runner,
 } from "matter-js"
-import { WordCheckedChangeEvent, WordDeleteEvent } from "./events.ts"
+import {
+	WORD_CLOUD_MODES,
+	WordCheckedChangeEvent,
+	type WordCloudMode,
+	WordCloudModeChangeEvent,
+	WordDeleteEvent,
+} from "./events.ts"
 import { css, html } from "./template.ts"
 import {
 	createIterativeIdGenerator,
@@ -93,8 +99,8 @@ type AddWordOptions = WordData & {
 	ignoreInputVolumeUntilExit?: boolean
 }
 
-const MODES = ["check", "delete", "input"] as const
-type Mode = (typeof MODES)[number]
+const MODES = WORD_CLOUD_MODES
+type Mode = WordCloudMode
 
 function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)
@@ -103,6 +109,7 @@ function isMode(value: unknown): value is Mode {
 interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
 	[WordCheckedChangeEvent.type]: WordCheckedChangeEvent
 	[WordDeleteEvent.type]: WordDeleteEvent
+	[WordCloudModeChangeEvent.type]: WordCloudModeChangeEvent
 }
 
 /**
@@ -180,12 +187,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * interaction mode in sync with the current state.
 	 *
 	 * @param name The name of the attribute that changed.
-	 * @param _oldValue The previous attribute value.
+	 * @param oldValue The previous attribute value.
 	 * @param newValue The new attribute value.
 	 */
 	attributeChangedCallback(
 		name: string,
-		_oldValue: string | null,
+		oldValue: string | null,
 		newValue: string | null,
 	) {
 		switch (name) {
@@ -193,9 +200,15 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				if (newValue !== null && !isMode(newValue)) {
 					this.removeAttribute("mode")
 				} else {
+					const oldMode =
+						oldValue !== null && isMode(oldValue) ? oldValue : null
+					const mode = newValue !== null && isMode(newValue) ? newValue : null
 					this.#updateWordsActionFromMode()
 					this.#updateInputVolumeFromMode()
 					this.#updateMouseConstraint()
+					if (oldMode !== mode) {
+						this.dispatchEvent(new WordCloudModeChangeEvent({ oldMode, mode }))
+					}
 				}
 				break
 		}

@@ -4,9 +4,9 @@ Interactive word cloud custom element powered by Matter.js. Check out the [demo]
 
 ## Library
 
-This package exports the `HTMLWordCloudElement` class, event classes, and the
-`WordEntry` / `WordData` types. It does not auto-register a custom element tag
-for you.
+This package exports the `HTMLWordCloudElement` class, event classes,
+`WORD_CLOUD_MODES`, and the `WordEntry` / `WordData` / `WordCloudMode` types.
+It does not auto-register a custom element tag for you.
 
 ## Installation
 
@@ -63,13 +63,13 @@ wordCloud.setWords([
 The `mode` attribute controls how the cloud behaves.
 
 - `input`: shows the input field and enables dragging.
-- `mark`: clicking a word toggles its checked state.
+- `check`: clicking a word toggles its checked state.
 - `delete`: clicking a word removes it.
 
 You can switch modes either declaratively or imperatively:
 
 ```html
-<x-word-cloud mode="mark"></x-word-cloud>
+<x-word-cloud mode="check"></x-word-cloud>
 ```
 
 ```ts
@@ -204,9 +204,11 @@ wordCloud.setWords(saved)
 `HTMLWordCloudElement` dispatches the following bubbling events:
 
 - **`word-checked-change`** — fired when a word's checked state changes (user
-  interaction in `mark` mode, or programmatic assignment to `entry.checked`).
+  interaction in `check` mode, or programmatic assignment to `entry.checked`).
 - **`word-delete`** — fired when the user deletes a word in `delete` mode,
   just before the word is removed.
+- **`mode-change`** — fired when the element mode changes. Includes `mode`
+  (new mode) and `oldMode` (previous mode).
 
 Both events extend `WordCloudEvent` and carry an `entry` property — a live
 [`WordEntry`](#wordentry) for the affected word.
@@ -214,7 +216,11 @@ Both events extend `WordCloudEvent` and carry an `entry` property — a live
 Listen using the string literal or the static `.type` property:
 
 ```ts
-import { WordCheckedChangeEvent, WordDeleteEvent } from "word-cloud"
+import {
+  WordCheckedChangeEvent,
+  WordDeleteEvent,
+  WordCloudModeChangeEvent,
+} from "word-cloud"
 
 wordCloud.addEventListener(WordCheckedChangeEvent.type, (event) => {
   console.log("new checked state:", event.checked)
@@ -223,6 +229,10 @@ wordCloud.addEventListener(WordCheckedChangeEvent.type, (event) => {
 
 wordCloud.addEventListener(WordDeleteEvent.type, (event) => {
   console.log("deleted:", event.entry.word, "at", event.entry.x, event.entry.y)
+})
+
+wordCloud.addEventListener(WordCloudModeChangeEvent.type, (event) => {
+  console.log("mode:", event.oldMode, "->", event.mode)
 })
 ```
 

@@ -1,5 +1,8 @@
 import type { WordEntry } from "./word-entry.ts"
 
+export const WORD_CLOUD_MODES = ["check", "delete", "input"] as const
+export type WordCloudMode = (typeof WORD_CLOUD_MODES)[number]
+
 /**
  * Base class for all events dispatched by {@link HTMLWordCloudElement}.
  * Events bubble and are composed.
@@ -82,5 +85,43 @@ export class WordDeleteEvent extends WordCloudEvent {
 	 */
 	constructor({ entry }: { entry: WordEntry }) {
 		super({ type: WordDeleteEvent.type, entry })
+	}
+}
+
+/**
+ * Fired by {@link HTMLWordCloudElement} when its `mode` changes.
+ *
+ * Listen with `"mode-change"` or {@link WordCloudModeChangeEvent.type}.
+ */
+export class WordCloudModeChangeEvent extends Event {
+	#mode: WordCloudMode | null
+	#oldMode: WordCloudMode | null
+
+	/** Event type string for mode changes. */
+	static get type() {
+		return "mode-change" as const
+	}
+
+	/**
+	 * @param data.mode The new mode after the change.
+	 * @param data.oldMode The previous mode before the change.
+	 */
+	constructor({
+		mode,
+		oldMode,
+	}: { mode: WordCloudMode | null; oldMode: WordCloudMode | null }) {
+		super(WordCloudModeChangeEvent.type, { bubbles: true, composed: true })
+		this.#mode = mode
+		this.#oldMode = oldMode
+	}
+
+	/** The new mode after the change. */
+	get mode(): WordCloudMode | null {
+		return this.#mode
+	}
+
+	/** The previous mode before the change. */
+	get oldMode(): WordCloudMode | null {
+		return this.#oldMode
 	}
 }
