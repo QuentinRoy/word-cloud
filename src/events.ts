@@ -1,7 +1,5 @@
+import type { Mode as WordCloudMode } from "./word-cloud-element.ts"
 import type { WordEntry } from "./word-entry.ts"
-
-export const WORD_CLOUD_MODES = ["check", "delete", "input"] as const
-export type WordCloudMode = (typeof WORD_CLOUD_MODES)[number]
 
 /**
  * Base class for all events dispatched by {@link HTMLWordCloudElement}.

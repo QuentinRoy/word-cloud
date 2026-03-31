@@ -12,9 +12,7 @@ import {
 	Runner,
 } from "matter-js"
 import {
-	WORD_CLOUD_MODES,
 	WordCheckedChangeEvent,
-	type WordCloudMode,
 	WordCloudModeChangeEvent,
 	WordDeleteEvent,
 } from "./events.ts"
@@ -101,8 +99,8 @@ type AddWordOptions = WordData & {
 	ignoreInputVolumeUntilExit?: boolean
 }
 
-const MODES = WORD_CLOUD_MODES
-type Mode = WordCloudMode
+export const MODES = ["check", "delete", "input"] as const
+export type Mode = (typeof MODES)[number]
 
 function isMode(value: unknown): value is Mode {
 	return (MODES as readonly unknown[]).includes(value)

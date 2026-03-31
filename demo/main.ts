@@ -1,9 +1,5 @@
 import "./main.css"
-import {
-	HTMLWordCloudElement,
-	WORD_CLOUD_MODES,
-	type WordCloudMode,
-} from "../src/index.ts"
+import { HTMLWordCloudElement, type WordCloudMode } from "../src/index.ts"
 import { getSavedWords, saveWords } from "./storage.ts"
 
 const localStorageKey = "word-cloud-words"
@@ -30,6 +26,8 @@ if (!(controls instanceof HTMLFormElement)) {
 if (!(clearButton instanceof HTMLButtonElement)) {
 	throw new Error("Expected clear button to exist")
 }
+
+const WORD_CLOUD_MODES: WordCloudMode[] = ["check", "delete", "input"]
 
 function isMode(value: unknown): value is WordCloudMode {
 	return (WORD_CLOUD_MODES as readonly unknown[]).includes(value)
