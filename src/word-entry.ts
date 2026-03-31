@@ -32,7 +32,7 @@ interface WordEntryConfig {
  * there is no stale snapshot. Obtain instances via
  * {@link HTMLWordCloudElement.addWord} or {@link HTMLWordCloudElement.getWords}.
  */
-export class WordEntry {
+export class WordEntry implements WordData {
 	#config: WordEntryConfig
 
 	/** @internal */
