@@ -40,8 +40,8 @@ const DEBUG_MODE = false
 
 const CHAMFER_RADIUS = 8
 const FRAME_THICKNESS = 1000
-const MIN_RANDOM_VELOCITY = 15
-const MAX_RANDOM_VELOCITY = 50
+const MIN_RANDOM_VELOCITY = 10
+const MAX_RANDOM_VELOCITY = 40
 const PADDING = 0
 const INPUT_VOLUME_MIN_SIZE = 1
 const TRANSLATE_PRECISION = 1
@@ -50,6 +50,7 @@ const ANGULAR_REST_ANGLE = 0
 const ANGULAR_REST_ANGLE_EPSILON = 0.01
 const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.25
 const ANGULAR_DAMPING_COEFFICIENT = 0.7
+const ANGULAR_SPRING_WIDTH_REFERENCE = 150
 const WORD_COLLISION_CATEGORY = 0x0001
 const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
 const DEFAULT_WORD_COLLISION_MASK = -1
@@ -631,14 +632,16 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			)
 				continue
 
-			// Spring with light damping: restores to rest angle and dissipates energy
-			const torque =
-				-angleError * ANGULAR_SPRING_TORQUE_STIFFNESS -
-				body.angularVelocity * ANGULAR_DAMPING_COEFFICIENT
-
 			// Convert torque to a pair of opposing forces applied at opposite points
 			const width = body.bounds.max.x - body.bounds.min.x
 			const height = body.bounds.max.y - body.bounds.min.y
+
+			// Spring with light damping: restores to rest angle and dissipates energy.
+			// Scale by word width so larger words receive proportionally stronger torque.
+			const torque =
+				(-angleError * ANGULAR_SPRING_TORQUE_STIFFNESS -
+					body.angularVelocity * ANGULAR_DAMPING_COEFFICIENT) *
+				(width / ANGULAR_SPRING_WIDTH_REFERENCE)
 			const forceArm = Math.min(width, height) * 0.25
 			if (forceArm <= 0) continue
 
