@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.5.0
+
+### Minor Changes
+
+- c2655cd: Stop exporting WORD_CLOUD_MODES.
+
 ## 0.4.3
 
 ### Patch Changes
