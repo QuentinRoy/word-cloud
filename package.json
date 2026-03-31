@@ -28,7 +28,8 @@
     "release": "pnpm run build && changeset publish"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.4.10",
+    "@changesets/cli": "^2.30.0",
     "@types/matter-js": "^0.20.2",
     "arktype": "^2.2.0",
     "type-fest": "^5.5.0",
@@ -37,7 +38,6 @@
     "vitest": "^4.1.2"
   },
   "dependencies": {
-    "@changesets/cli": "^2.30.0",
     "@quentinroy/custom-element-mixins": "npm:@jsr/quentinroy__custom-element-mixins@^0.4.1",
     "matter-js": "^0.20.0"
   }
