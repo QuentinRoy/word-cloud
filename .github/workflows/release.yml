@@ -42,3 +42,6 @@ jobs:
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm publish
+          createGithubReleases: true
+          commit: version packages
+          commitMode: github-api
