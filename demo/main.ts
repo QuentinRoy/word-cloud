@@ -3,7 +3,6 @@ import {
 	HTMLWordCloudElement,
 	WORD_CLOUD_MODES,
 	type WordCloudMode,
-	WordCloudModeChangeEvent,
 } from "../src/index.ts"
 import { getSavedWords, saveWords } from "./storage.ts"
 
@@ -58,15 +57,12 @@ controls.addEventListener("change", (event) => {
 
 clearButton.addEventListener("click", () => {
 	wordCloud.clear()
-	wordCloud.mode = "input"
 })
 
-wordCloud.addEventListener(WordCloudModeChangeEvent.type, (event) => {
+wordCloud.addEventListener("mode-change", (event) => {
 	syncModeControls(event.mode)
 })
 
-let lastDeleteKeyPress: number | null = null
-const doubleDeleteThreshold = 500 // milliseconds
 document.addEventListener("keypress", (event) => {
 	if (
 		event.target instanceof HTMLInputElement ||
@@ -80,18 +76,7 @@ document.addEventListener("keypress", (event) => {
 			wordCloud.mode = "check"
 			break
 		case "d": {
-			let now = Date.now()
-			if (
-				lastDeleteKeyPress !== null &&
-				now - lastDeleteKeyPress < doubleDeleteThreshold
-			) {
-				wordCloud.clear()
-				wordCloud.mode = "input"
-				lastDeleteKeyPress = null
-			} else {
-				lastDeleteKeyPress = now
-				wordCloud.mode = "delete"
-			}
+			wordCloud.mode = "delete"
 			break
 		}
 		case "i":
