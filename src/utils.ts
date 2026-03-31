@@ -55,3 +55,19 @@ export function toPrecision(value: number, precision: number): number {
 export function generateRandomId() {
 	return Date.now().toString(36) + Math.random().toString(36).substring(2)
 }
+
+/**
+ * Normalizes an angle in radians to the range [-π, π].
+ *
+ * @param angle An angle in radians.
+ * @returns The normalized angle in radians within the range [-π, π].
+ */
+export function normalizeAngle(angle: number) {
+	angle = angle % (2 * Math.PI)
+	if (angle < -Math.PI) {
+		angle += 2 * Math.PI
+	} else if (angle > Math.PI) {
+		angle -= 2 * Math.PI
+	}
+	return angle
+}

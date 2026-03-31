@@ -15,6 +15,7 @@ import { css, html } from "./template.ts"
 import {
 	createIterativeIdGenerator,
 	generateRandomId,
+	normalizeAngle,
 	queryStrict,
 	toPrecision,
 } from "./utils.ts"
@@ -595,7 +596,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#applyAngularRestoringTorque() {
 		for (let { body } of this.#wordEntries.values()) {
 			if (body.isStatic || body.isSleeping) continue
-			const angleError = body.angle - ANGULAR_REST_ANGLE
+			const angleError = normalizeAngle(body.angle) - ANGULAR_REST_ANGLE
 			if (
 				Math.abs(angleError) <= ANGULAR_REST_ANGLE_EPSILON &&
 				Math.abs(body.angularVelocity) < 0.001
