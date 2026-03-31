@@ -25,7 +25,7 @@
     "build": "vite build && tsc -p tsconfig.lib.json",
     "build:demo": "vite build --mode demo",
     "preview": "vite preview --mode demo",
-    "publish": "pnpm run build && changeset publish"
+    "release": "pnpm run build && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",

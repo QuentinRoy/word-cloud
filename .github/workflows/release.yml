@@ -33,15 +33,14 @@ jobs:
           cache: pnpm
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm publish
+          publish: pnpm release
           createGithubReleases: true
           commit: version packages
           commitMode: github-api
