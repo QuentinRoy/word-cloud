@@ -20,10 +20,6 @@
     "type": "git",
     "url": "git+https://github.com/QuentinRoy/word-cloud.git"
   },
-  "bugs": {
-    "url": "https://github.com/QuentinRoy/word-cloud/issues"
-  },
-  "homepage": "https://github.com/QuentinRoy/word-cloud",
   "scripts": {
     "dev": "vite",
     "build": "vite build && tsc -p tsconfig.lib.json",
