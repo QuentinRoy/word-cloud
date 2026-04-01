@@ -4,14 +4,14 @@ Interactive word cloud custom element powered by Matter.js. Check out the [demo]
 
 ## Library
 
-This package exports the `HTMLWordCloudElement` class, event classes,
-`WORD_CLOUD_MODES`, and the `WordEntry` / `WordData` / `WordCloudMode` types.
-It does not auto-register a custom element tag for you.
+This package exports the `HTMLWordCloudElement` class, the public event
+classes, and the `WordEntry` / `WordData` / `WordCloudMode` types. It does
+not auto-register a custom element tag for you.
 
 ## Installation
 
 ```sh
-npm install word-cloud
+npm install @quentinroy/word-cloud
 ```
 
 ## Register the element
@@ -19,7 +19,7 @@ npm install word-cloud
 Consumers are expected to register their own custom element tag:
 
 ```ts
-import { HTMLWordCloudElement } from "word-cloud"
+import { HTMLWordCloudElement } from "@quentinroy/word-cloud"
 
 customElements.define("x-word-cloud", HTMLWordCloudElement)
 ```
@@ -41,7 +41,7 @@ The component fills the size of its host element, so give it an explicit width a
 ```
 
 ```ts
-import { HTMLWordCloudElement } from "word-cloud"
+import { HTMLWordCloudElement } from "@quentinroy/word-cloud"
 
 customElements.define("x-word-cloud", HTMLWordCloudElement)
 
@@ -210,8 +210,9 @@ wordCloud.setWords(saved)
 - **`mode-change`** — fired when the element mode changes. Includes `mode`
   (new mode) and `oldMode` (previous mode).
 
-Both events extend `WordCloudEvent` and carry an `entry` property — a live
-[`WordEntry`](#wordentry) for the affected word.
+The word-specific events carry an `entry` property — a live
+[`WordEntry`](#wordentry) for the affected word. `mode-change` instead carries
+`mode` and `oldMode`.
 
 Listen using the string literal or the static `.type` property:
 
@@ -220,7 +221,7 @@ import {
   WordCheckedChangeEvent,
   WordDeleteEvent,
   WordCloudModeChangeEvent,
-} from "word-cloud"
+} from "@quentinroy/word-cloud"
 
 wordCloud.addEventListener(WordCheckedChangeEvent.type, (event) => {
   console.log("new checked state:", event.checked)
@@ -238,38 +239,67 @@ wordCloud.addEventListener(WordCloudModeChangeEvent.type, (event) => {
 
 ## Styling
 
-The component exposes a number of CSS custom properties on the host. Example:
+The component exposes CSS custom properties on the host. Example:
 
 ```css
 x-word-cloud {
   --font-family: "Georgia", serif;
   --font-size: 1.25rem;
+  --line-width: 3px;
   --word-text-color: #1f2937;
   --word-background-color: #f3f4f6;
   --word-border-color: #d1d5db;
+  --word-checked-text-color: #6b7280;
+  --word-checked-background-color: #e5e7eb;
+  --word-delete-hover-text-color: #991b1b;
+  --word-delete-hover-background-color: #fee2e2;
+  --word-dragged-background-color: #dbeafe;
+  --word-dragged-border-color: #bfdbfe;
   --input-background-color: #ffffff;
+  --input-text-color: #111827;
   --input-border-color: #9ca3af;
-  --checked-opacity: 0.35;
+  --input-focus-text-color: #0f172a;
+  --input-focus-border-color: #2563eb;
+  --input-focus-background-color: #eff6ff;
+  --input-focus-shadow-color: #93c5fd;
+  --word-focus-outline-color: #2563eb;
+  --word-fade-in-duration: 0.5s;
   width: 100%;
   height: 70vh;
 }
 ```
 
-Useful variables include:
+Supported variables:
 
-- `--font-family`
-- `--font-size`
-- `--word-text-color`
-- `--word-background-color`
-- `--word-border-color`
-- `--input-text-color`
-- `--input-background-color`
-- `--input-border-color`
-- `--checked-opacity`
+| Variable                               | Default                           | Used for                                                         |
+| -------------------------------------- | --------------------------------- | ---------------------------------------------------------------- |
+| `--space-s`                            | `0.5rem`                          | Small horizontal / vertical padding.                             |
+| `--space-m`                            | `1rem`                            | Medium horizontal / vertical padding.                            |
+| `--line-width`                         | `2px`                             | Border width and strike-through thickness.                       |
+| `--font-size`                          | `1.5rem`                          | Input and word font size.                                        |
+| `--font-family`                        | `Arial`                           | Input and word font family.                                      |
+| `--input-text-color`                   | `black`                           | Input text color.                                                |
+| `--input-background-color`             | `hwb(0 93% 7%)`                   | Input background in `input` mode.                                |
+| `--input-border-color`                 | `hwb(0 27% 73%)`                  | Input border color.                                              |
+| `--input-focus-text-color`             | `hwb(212 2% 88%)`                 | Input text color while focused.                                  |
+| `--input-focus-border-color`           | `hwb(212 16% 22%)`                | Input border and default word focus outline color while focused. |
+| `--input-focus-shadow-color`           | `hwb(212 76% 0%)`                 | Input focus drop-shadow color.                                   |
+| `--input-focus-background-color`       | `hwb(212 95% 0%)`                 | Input background while focused.                                  |
+| `--word-focus-outline-color`           | `var(--input-focus-border-color)` | Keyboard focus outline for words.                                |
+| `--word-text-color`                    | `hwb(276 2% 80%)`                 | Default word text color.                                         |
+| `--word-background-color`              | `hwb(276 96% 0%)`                 | Default word background.                                         |
+| `--word-border-color`                  | `var(--word-background-color)`    | Default word border color.                                       |
+| `--word-delete-hover-text-color`       | `hwb(357 45% 11%)`                | Word text color on delete hover.                                 |
+| `--word-delete-hover-background-color` | `hwb(351 99% 0%)`                 | Word background and border on delete hover.                      |
+| `--word-checked-text-color`            | `hwb(276 52% 40%)`                | Checked word text color.                                         |
+| `--word-checked-background-color`      | `hwb(276 98% 0%)`                 | Checked word background and border color.                        |
+| `--word-dragged-background-color`      | `hwb(210 90% 0%)`                 | Dragged word background.                                         |
+| `--word-dragged-border-color`          | `hwb(210 85% 0%)`                 | Dragged word border.                                             |
+| `--word-fade-in-duration`              | `1s`                              | Entry animation duration for newly created words.                |
 
 ## Notes
 
-- The library exports only the class, not a pre-registered tag name.
+- The library exports constructors and types, not a pre-registered tag name.
 - The host element needs a real size; if its height is `0`, nothing useful will render.
 - Words are positioned using the host element’s content box, so restoring saved coordinates works best when the element has a stable size.
 
