@@ -75,6 +75,7 @@ interface InternalWordEntry {
 	id: number
 	word: string
 	body: Body
+	bodySize: { width: number; height: number }
 	element: HTMLWordElement
 	publicEntry: WordEntry
 	ignoreInputVolumeUntilExit: boolean
@@ -145,11 +146,23 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 	#inputVolumeEnabled = false
 	#wordEntries: Map<InternalWordEntry["id"], InternalWordEntry> = new Map()
+	#wordEntriesByElement: WeakMap<HTMLWordElement, InternalWordEntry> =
+		new WeakMap()
 	#mouseConstraint: MouseConstraint
 	#mouseEnabled = false
-	#resizeObserver = new ResizeObserver(() => {
+	#containerResizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
 		this.#updateInputVolumeBody()
+	})
+	#inputResizeObserver = new ResizeObserver(() => {
+		this.#updateInputVolumeBody()
+	})
+	#wordResizeObserver = new ResizeObserver((entries) => {
+		for (const { target } of entries) {
+			if (!(target instanceof HTMLWordElement)) continue
+			const entry = this.#wordEntriesByElement.get(target)
+			if (entry != null) this.#updateWordBodySize(entry)
+		}
 	})
 	#internals = this.attachInternals()
 	#debugRender: Render | null = null
@@ -225,7 +238,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#updateFrameBodies()
 		this.#updateInputVolumeFromMode()
 		this.#updateMouseConstraint()
-		this.#resizeObserver.observe(this.#container)
+		this.#containerResizeObserver.observe(this.#container)
+		this.#inputResizeObserver.observe(this.#wordInput)
+		for (const entry of this.#wordEntries.values()) {
+			this.#wordResizeObserver.observe(entry.element)
+			this.#updateWordBodySize(entry)
+		}
 		this.#start()
 	}
 
@@ -239,7 +257,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Events.off(this.#runner, "tick", this.#handleTick)
 		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
-		this.#resizeObserver.unobserve(this.#container)
+		this.#containerResizeObserver.unobserve(this.#container)
+		this.#inputResizeObserver.unobserve(this.#wordInput)
+		for (const { element } of this.#wordEntries.values()) {
+			this.#wordResizeObserver.unobserve(element)
+		}
 		this.#stop()
 	}
 
@@ -278,7 +300,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			this.mode == null
 				? null
 				: HTMLWordCloudElement.#elementActionMaps[this.mode]
-		let { width, height } = element.getBoundingClientRect()
+		let width = element.offsetWidth
+		let height = element.offsetHeight
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
@@ -313,10 +336,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			word,
 			element,
 			body,
+			bodySize: { width, height },
 			publicEntry,
 			ignoreInputVolumeUntilExit,
 			dragLock: null,
 		}
+		this.#wordEntriesByElement.set(element, entry)
 		element.addEventListener(WordElementDeleteEvent.type, () => {
 			deleteWord()
 		})
@@ -332,6 +357,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
+		this.#wordResizeObserver.observe(element)
 		return publicEntry
 	}
 
@@ -484,8 +510,41 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#removeWordBodyAndDom(entry: InternalWordEntry) {
 		this.#unlockDraggedEntry(entry)
+		this.#wordResizeObserver.unobserve(entry.element)
 		Composite.remove(this.#engine.world, entry.body)
 		this.#container.removeChild(entry.element)
+	}
+
+	#updateWordBodySize(entry: InternalWordEntry) {
+		const nextSize = {
+			width: entry.element.offsetWidth,
+			height: entry.element.offsetHeight,
+		}
+		const { width: previousWidth, height: previousHeight } = entry.bodySize
+		if (
+			nextSize.width === previousWidth &&
+			nextSize.height === previousHeight
+		) {
+			return
+		}
+
+		const dragLock = entry.dragLock
+		if (dragLock != null) {
+			Body.setInertia(entry.body, dragLock.initialInertia)
+		}
+
+		Body.scale(
+			entry.body,
+			nextSize.width / previousWidth,
+			nextSize.height / previousHeight,
+		)
+		entry.bodySize = nextSize
+
+		if (dragLock != null) {
+			dragLock.initialInertia = entry.body.inertia
+			Body.setInertia(entry.body, Infinity)
+			Body.setAngularVelocity(entry.body, 0)
+		}
 	}
 
 	#pickRandomVelocity() {
