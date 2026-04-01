@@ -8,32 +8,50 @@
 		<script type="module" src="/demo/main.ts"></script>
 	</head>
 	<body>
-		<x-word-cloud mode="input"></x-word-cloud>
+		<x-word-cloud word-action="drag" has-input></x-word-cloud>
 		<footer>
 			<form id="controls">
 				<div class="control-group">
 					<div>
 						<input
 							type="radio"
-							name="mode"
-							value="input"
-							id="input-mode"
+							name="word-action"
+							value="drag"
+							id="word-action-drag"
 							checked
 						>
-						<label for="input-mode"
-							>Input <span class="hotkey"><kbd>I</kbd></span></label
+						<label for="word-action-drag"
+							>Drag <span class="hotkey"><kbd>G</kbd></span></label
 						>
 					</div>
 					<div>
-						<input type="radio" name="mode" value="check" id="check-mode">
-						<label for="check-mode"
+						<input
+							type="radio"
+							name="word-action"
+							value="check"
+							id="word-action-check"
+						>
+						<label for="word-action-check"
 							>Check <span class="hotkey"><kbd>C</kbd></span></label
 						>
 					</div>
 					<div>
-						<input type="radio" name="mode" value="delete" id="delete-mode">
-						<label for="delete-mode"
+						<input
+							type="radio"
+							name="word-action"
+							value="delete"
+							id="word-action-delete"
+						>
+						<label for="word-action-delete"
 							>Delete <span class="hotkey"><kbd>D</kbd></span></label
+						>
+					</div>
+				</div>
+				<div class="control-group">
+					<div>
+						<input type="checkbox" name="has-input" id="has-input" checked>
+						<label for="has-input"
+							>Input <span class="hotkey"><kbd>I</kbd></span></label
 						>
 					</div>
 				</div>

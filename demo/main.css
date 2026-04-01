@@ -41,6 +41,9 @@ footer {
 
 #controls {
 	--border-radius: 0.25rem;
+	--selected-color: hwb(212 16% 22%);
+	--hover-color: var(--selected-color);
+	--transition-speed: 150ms;
 
 	display: flex;
 	grid-area: controls;
@@ -48,6 +51,19 @@ footer {
 	justify-content: center;
 
 	input[type="radio"] {
+		position: absolute;
+		top: -1000px;
+		z-index: -1000;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		border: 0;
+		clip: rect(0 0 0 0);
+	}
+
+	input[type="checkbox"] {
 		position: absolute;
 		top: -1000px;
 		z-index: -1000;
@@ -74,7 +90,9 @@ footer {
 		border: none;
 		border-radius: var(--border-radius);
 		filter: drop-shadow(0 0 0.25rem hwb(0 0% 100% / 0.2));
-
+		transition:
+			background-color var(--transition-speed) ease,
+			color var(--transition-speed) ease;
 		/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 		@supports (corner-shape: squircle) {
 			border-radius: calc(var(--border-radius) * 2);
@@ -83,7 +101,7 @@ footer {
 		}
 
 		&:hover {
-			color: hwb(212 16% 22%);
+			color: var(--hover-color);
 		}
 		&:active {
 			background: hwb(208 94% 0%);
@@ -141,8 +159,58 @@ footer {
 
 		:checked + label {
 			color: white;
-			background: hwb(212 16% 22%);
+			background: var(--selected-color);
 		}
+	}
+
+	input[type="checkbox"] + label {
+		position: relative;
+		gap: 0.25rem;
+		padding-right: 0.65rem;
+		padding-left: 2.85rem;
+		background: white;
+		transition: background-color var(--transition-speed) ease;
+	}
+
+	input[type="checkbox"] + label::before {
+		position: absolute;
+		top: 50%;
+		left: 0.6rem;
+		width: 1.85rem;
+		height: 1.05rem;
+		content: "";
+		background: hwb(0 57% 43%);
+		border-radius: 999px;
+		transform: translateY(-50%);
+		transition: background-color var(--transition-speed) ease;
+	}
+
+	input[type="checkbox"] + label::after {
+		position: absolute;
+		top: 50%;
+		left: 0.72rem;
+		width: 0.8rem;
+		height: 0.8rem;
+		content: "";
+		background: white;
+		border-radius: 50%;
+		transform: translateY(-50%);
+		transition:
+			left var(--transition-speed) ease,
+			background-color var(--transition-speed) ease;
+	}
+
+	input[type="checkbox"]:checked + label {
+		background: var(--selected-color);
+	}
+
+	input[type="checkbox"]:checked + label::before {
+		background: white;
+	}
+
+	input[type="checkbox"]:checked + label::after {
+		left: 1.5rem;
+		background: hwb(212 16% 22%);
 	}
 }
 

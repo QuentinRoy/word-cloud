@@ -1,4 +1,4 @@
-import type { Mode as WordCloudMode } from "./word-cloud-element.ts"
+import type { WordAction as WordCloudWordAction } from "./word-cloud-element.ts"
 import type { WordHandle } from "./word-handle.ts"
 
 /**
@@ -56,8 +56,8 @@ export class WordAddEvent extends WordCloudEvent {
 
 /**
  * Fired by {@link HTMLWordCloudElement} when a word's checked state changes —
- * either through user interaction (in `mark` mode) or programmatically via
- * {@link WordHandle.checked}.
+ * either through user interaction while `wordAction` is `check` or
+ * programmatically via {@link WordHandle.checked}.
  *
  * Listen with `"word-checked-change"` or {@link WordCheckedChangeEvent.type}.
  */
@@ -130,8 +130,8 @@ export class WordValueChangeEvent extends WordCloudEvent {
 }
 
 /**
- * Fired by {@link HTMLWordCloudElement} when the user deletes a word in
- * `delete` mode. The word is removed from the cloud immediately after all
+ * Fired by {@link HTMLWordCloudElement} when the user deletes a word while
+ * `wordAction` is `delete`. The word is removed from the cloud immediately after all
  * event listeners have run.
  *
  * Listen with `"word-delete"` or {@link WordDeleteEvent.type}.
@@ -151,39 +151,81 @@ export class WordDeleteEvent extends WordCloudEvent {
 }
 
 /**
- * Fired by {@link HTMLWordCloudElement} when its `mode` changes.
+ * Fired by {@link HTMLWordCloudElement} when its `wordAction` changes.
  *
- * Listen with `"mode-change"` or {@link WordCloudModeChangeEvent.type}.
+ * Listen with `"word-action-change"` or
+ * {@link WordCloudWordActionChangeEvent.type}.
  */
-export class WordCloudModeChangeEvent extends Event {
-	#mode: WordCloudMode | null
-	#oldMode: WordCloudMode | null
+export class WordCloudWordActionChangeEvent extends Event {
+	#wordAction: WordCloudWordAction
+	#oldWordAction: WordCloudWordAction
 
-	/** Event type string for mode changes. */
+	/** Event type string for word-action changes. */
 	static get type() {
-		return "mode-change" as const
+		return "word-action-change" as const
 	}
 
 	/**
-	 * @param data.mode The new mode after the change.
-	 * @param data.oldMode The previous mode before the change.
+	 * @param data.wordAction The new word action after the change.
+	 * @param data.oldWordAction The previous word action before the change.
 	 */
 	constructor({
-		mode,
-		oldMode,
-	}: { mode: WordCloudMode | null; oldMode: WordCloudMode | null }) {
-		super(WordCloudModeChangeEvent.type, { bubbles: true, composed: true })
-		this.#mode = mode
-		this.#oldMode = oldMode
+		wordAction,
+		oldWordAction,
+	}: { wordAction: WordCloudWordAction; oldWordAction: WordCloudWordAction }) {
+		super(WordCloudWordActionChangeEvent.type, {
+			bubbles: true,
+			composed: true,
+		})
+		this.#wordAction = wordAction
+		this.#oldWordAction = oldWordAction
 	}
 
-	/** The new mode after the change. */
-	get mode(): WordCloudMode | null {
-		return this.#mode
+	/** The new word action after the change. */
+	get wordAction(): WordCloudWordAction {
+		return this.#wordAction
 	}
 
-	/** The previous mode before the change. */
-	get oldMode(): WordCloudMode | null {
-		return this.#oldMode
+	/** The previous word action before the change. */
+	get oldWordAction(): WordCloudWordAction {
+		return this.#oldWordAction
+	}
+}
+
+/**
+ * Fired by {@link HTMLWordCloudElement} when its `hasInput` setting changes.
+ *
+ * Listen with `"has-input-change"` or {@link WordCloudInputChangeEvent.type}.
+ */
+export class WordCloudInputChangeEvent extends Event {
+	#hasInput: boolean
+	#oldHasInput: boolean
+
+	/** Event type string for has-input-setting changes. */
+	static get type() {
+		return "has-input-change" as const
+	}
+
+	/**
+	 * @param data.hasInput The new hasInput setting after the change.
+	 * @param data.oldHasInput The previous hasInput setting before the change.
+	 */
+	constructor({
+		hasInput,
+		oldHasInput,
+	}: { hasInput: boolean; oldHasInput: boolean }) {
+		super(WordCloudInputChangeEvent.type, { bubbles: true, composed: true })
+		this.#hasInput = hasInput
+		this.#oldHasInput = oldHasInput
+	}
+
+	/** The new hasInput setting after the change. */
+	get hasInput(): boolean {
+		return this.#hasInput
+	}
+
+	/** The previous hasInput setting before the change. */
+	get oldHasInput(): boolean {
+		return this.#oldHasInput
 	}
 }

@@ -5,8 +5,7 @@ Interactive word cloud custom element powered by Matter.js. Check out the [demo]
 ## Library
 
 This package exports the `HTMLWordCloudElement` class, the public event
-classes, and the `WordHandle` / `WordData` / `WordCloudMode` types. It does
-not auto-register a custom element tag for you.
+classes, and the `WordHandle` / `WordData` / `WordCloudWordAction` types. It does not auto-register a custom element tag for you.
 
 ## Installation
 
@@ -37,7 +36,7 @@ The component fills the size of its host element, so give it an explicit width a
   }
 </style>
 
-<x-word-cloud mode="input"></x-word-cloud>
+<x-word-cloud word-action="drag" has-input></x-word-cloud>
 ```
 
 ```ts
@@ -58,22 +57,29 @@ wordCloud.setWords([
 ])
 ```
 
-## Modes
+## Interaction Settings
 
-The `mode` attribute controls how the cloud behaves.
+The element uses two independent attributes:
 
-- `input`: shows the input field and enables dragging.
+- `word-action`: controls how words react to user interaction.
+- `has-input`: boolean, controls whether the built-in input form is shown and active.
+
+Supported `word-action` values:
+
+- `none`: default, words are passive.
+- `drag`: words can be dragged.
 - `check`: clicking a word toggles its checked state.
 - `delete`: clicking a word removes it.
 
-You can switch modes either declaratively or imperatively:
+Set `has-input` to show the built-in input form:
 
 ```html
-<x-word-cloud mode="check"></x-word-cloud>
+<x-word-cloud word-action="check" has-input></x-word-cloud>
 ```
 
 ```ts
-wordCloud.mode = "delete"
+wordCloud.wordAction = "delete"
+wordCloud.hasInput = true
 ```
 
 ## Public API
@@ -213,15 +219,19 @@ wordCloud.setWords(saved)
 - **`word-value-change`** — fired when a word's text changes, including
   programmatic assignment to `handle.word`.
 - **`word-checked-change`** — fired when a word's checked state changes (user
-  interaction in `check` mode, or programmatic assignment to `handle.checked`).
-- **`word-delete`** — fired when the user deletes a word in `delete` mode,
+  interaction while `wordAction` is `check`, or programmatic assignment to
+  `handle.checked`).
+- **`word-delete`** — fired when the user deletes a word while `wordAction` is
+  `delete`,
   just before the word is removed.
-- **`mode-change`** — fired when the element mode changes. Includes `mode`
-  (new mode) and `oldMode` (previous mode).
+- **`word-action-change`** — fired when the element `wordAction` changes.
+  Includes `wordAction` and `oldWordAction`.
+- **`has-input-change`** — fired when the element `hasInput` setting changes.
+  Includes `hasInput` and `oldHasInput`.
 
 The word-specific events carry a `handle` property: a live
-[`WordHandle`](#wordhandle) for the affected word. `mode-change` instead carries
-`mode` and `oldMode`.
+[`WordHandle`](#wordhandle) for the affected word. The setting-change events
+instead carry their old and new values.
 
 Listen using the string literal or the static `.type` property of the event classes:
 
@@ -242,8 +252,12 @@ wordCloud.addEventListener("word-delete", (event) => {
   console.log(`deleted word: "${event.handle.word}"`)
 })
 
-wordCloud.addEventListener("mode-change", (event) => {
-  console.log(`mode: ${event.oldMode} -> ${event.mode}`)
+wordCloud.addEventListener("word-action-change", (event) => {
+  console.log(`word action: ${event.oldWordAction} -> ${event.wordAction}`)
+})
+
+wordCloud.addEventListener("has-input-change", (event) => {
+  console.log(`has-input: ${event.oldHasInput} -> ${event.hasInput}`)
 })
 ```
 
@@ -297,7 +311,7 @@ Supported variables:
 | `--font-size`                          | `1.5rem`                          | Input and word font size.                                        |
 | `--font-family`                        | `Arial`                           | Input and word font family.                                      |
 | `--input-text-color`                   | `black`                           | Input text color.                                                |
-| `--input-background-color`             | `hwb(0 93% 7%)`                   | Input background in `input` mode.                                |
+| `--input-background-color`             | `hwb(0 93% 7%)`                   | Input background while the built-in input is enabled.            |
 | `--input-border-color`                 | `hwb(0 27% 73%)`                  | Input border color.                                              |
 | `--input-focus-text-color`             | `hwb(212 2% 88%)`                 | Input text color while focused.                                  |
 | `--input-focus-border-color`           | `hwb(212 16% 22%)`                | Input border and default word focus outline color while focused. |

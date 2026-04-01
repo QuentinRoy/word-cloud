@@ -1,12 +1,13 @@
 export {
 	WordAddEvent,
 	WordCheckedChangeEvent,
-	WordCloudModeChangeEvent,
+	WordCloudInputChangeEvent,
+	WordCloudWordActionChangeEvent,
 	WordDeleteEvent,
 	WordValueChangeEvent,
 } from "./events.ts"
 export {
 	HTMLWordCloudElement,
-	type Mode as WordCloudMode,
+	type WordAction as WordCloudWordAction,
 } from "./word-cloud-element.ts"
 export { type WordData, WordHandle } from "./word-handle.ts"
