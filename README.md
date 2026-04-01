@@ -245,6 +245,10 @@ The component exposes CSS custom properties on the host. Example:
 x-word-cloud {
   --font-family: "Georgia", serif;
   --font-size: 1.25rem;
+  --input-padding-y: 0.4rem;
+  --input-padding-x: 1rem;
+  --word-padding-y: 0.35rem;
+  --word-padding-x: 0.9rem;
   --line-width: 3px;
   --word-text-color: #1f2937;
   --word-background-color: #f3f4f6;
@@ -273,8 +277,12 @@ Supported variables:
 
 | Variable                               | Default                           | Used for                                                         |
 | -------------------------------------- | --------------------------------- | ---------------------------------------------------------------- |
-| `--space-s`                            | `0.5rem`                          | Small horizontal / vertical padding.                             |
-| `--space-m`                            | `1rem`                            | Medium horizontal / vertical padding.                            |
+| `--space-s`                            | `0.5rem`                          | Shared compact spacing token used by the default padding vars.   |
+| `--space-m`                            | `1rem`                            | Shared roomy spacing token used by the default padding vars.     |
+| `--input-padding-y`                    | `var(--space-s)`                  | Input vertical padding.                                          |
+| `--input-padding-x`                    | `var(--space-m)`                  | Input horizontal padding.                                        |
+| `--word-padding-y`                     | `var(--space-s)`                  | Word vertical padding.                                           |
+| `--word-padding-x`                     | `var(--space-m)`                  | Word horizontal padding.                                         |
 | `--line-width`                         | `2px`                             | Border width and strike-through thickness.                       |
 | `--font-size`                          | `1.5rem`                          | Input and word font size.                                        |
 | `--font-family`                        | `Arial`                           | Input and word font family.                                      |

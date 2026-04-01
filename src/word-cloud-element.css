@@ -1,6 +1,10 @@
 :host {
 	--space-s: 0.5rem;
 	--space-m: 1rem;
+	--input-padding-y: var(--space-s);
+	--input-padding-x: var(--space-m);
+	--word-padding-y: var(--space-s);
+	--word-padding-x: var(--space-m);
 	--line-width: 2px;
 	--font-size: 1.5rem;
 	--font-family: Arial;
@@ -50,7 +54,7 @@ form {
 }
 
 input[type="text"] {
-	padding: var(--space-s) var(--space-m);
+	padding: var(--input-padding-y) var(--input-padding-x);
 	font-family: var(--font-family);
 	font-size: var(--font-size);
 	color: var(--input-text-color);
