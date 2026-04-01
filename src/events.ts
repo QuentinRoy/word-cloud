@@ -1,22 +1,22 @@
 import type { Mode as WordCloudMode } from "./word-cloud-element.ts"
-import type { WordEntry } from "./word-entry.ts"
+import type { WordHandle } from "./word-handle.ts"
 
 /**
  * Base class for all events dispatched by {@link HTMLWordCloudElement}.
  * Events bubble and are composed.
  */
 export class WordCloudEvent extends Event {
-	#entry: WordEntry
+	#entry: WordHandle
 
 	/**
 	 * Creates a new word-cloud event.
 	 *
 	 * @param data.type The event type.
-	 * @param data.entry The live word entry associated with this event.
+	 * @param data.entry The live word handle associated with this event.
 	 * @param init Additional event init options.
 	 */
 	constructor(
-		{ type, entry }: { type: string; entry: WordEntry },
+		{ type, entry }: { type: string; entry: WordHandle },
 		init?: EventInit,
 	) {
 		super(type, { bubbles: true, composed: true, ...init })
@@ -24,10 +24,10 @@ export class WordCloudEvent extends Event {
 	}
 
 	/**
-	 * The live {@link WordEntry} for the word that triggered this event.
-	 * Property reads on the entry always reflect the current state of the word.
+	 * The live {@link WordHandle} for the word that triggered this event.
+	 * Property reads on the handle always reflect the current state of the word.
 	 */
-	get entry(): WordEntry {
+	get entry(): WordHandle {
 		return this.#entry
 	}
 }
@@ -49,7 +49,7 @@ export class WordAddEvent extends WordCloudEvent {
 	/**
 	 * @param data.entry The live entry that was just added.
 	 */
-	constructor({ entry }: { entry: WordEntry }) {
+	constructor({ entry }: { entry: WordHandle }) {
 		super({ type: WordAddEvent.type, entry })
 	}
 }
@@ -57,7 +57,7 @@ export class WordAddEvent extends WordCloudEvent {
 /**
  * Fired by {@link HTMLWordCloudElement} when a word's checked state changes —
  * either through user interaction (in `mark` mode) or programmatically via
- * {@link WordEntry.checked}.
+ * {@link WordHandle.checked}.
  *
  * Listen with `"word-checked-change"` or {@link WordCheckedChangeEvent.type}.
  */
@@ -70,10 +70,10 @@ export class WordCheckedChangeEvent extends WordCloudEvent {
 	}
 
 	/**
-	 * @param data.entry The live entry whose checked state changed.
+	 * @param data.entry The live handle whose checked state changed.
 	 * @param data.checked The new checked state at dispatch time.
 	 */
-	constructor({ entry, checked }: { entry: WordEntry; checked: boolean }) {
+	constructor({ entry, checked }: { entry: WordHandle; checked: boolean }) {
 		super({ type: WordCheckedChangeEvent.type, entry })
 		this.#checked = checked
 	}
@@ -90,7 +90,7 @@ export class WordCheckedChangeEvent extends WordCloudEvent {
 /**
  * Fired by {@link HTMLWordCloudElement} when a word's text changes — either
  * through direct updates to the underlying word element or programmatically via
- * {@link WordEntry.word}.
+ * {@link WordHandle.word}.
  *
  * Listen with `"word-value-change"` or {@link WordValueChangeEvent.type}.
  */
@@ -112,7 +112,7 @@ export class WordValueChangeEvent extends WordCloudEvent {
 		entry,
 		value,
 		oldValue,
-	}: { entry: WordEntry; value: string; oldValue: string }) {
+	}: { entry: WordHandle; value: string; oldValue: string }) {
 		super({ type: WordValueChangeEvent.type, entry })
 		this.#value = value
 		this.#oldValue = oldValue
@@ -145,7 +145,7 @@ export class WordDeleteEvent extends WordCloudEvent {
 	/**
 	 * @param data.entry The live entry that is about to be deleted.
 	 */
-	constructor({ entry }: { entry: WordEntry }) {
+	constructor({ entry }: { entry: WordHandle }) {
 		super({ type: WordDeleteEvent.type, entry })
 	}
 }

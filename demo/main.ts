@@ -59,7 +59,7 @@ clearButton.addEventListener("click", () => {
 
 wordCloud.addEventListener("word-add", (event) => {
 	console.log(
-		`[word-cloud] added word: "${event.entry.word}" at ${event.entry.x}, ${event.entry.y}`,
+		`[word-cloud] added word: "${event.entry.value}" at ${event.entry.x}, ${event.entry.y}`,
 	)
 })
 
@@ -70,11 +70,11 @@ wordCloud.addEventListener("word-value-change", (event) => {
 })
 
 wordCloud.addEventListener("word-checked-change", (event) => {
-	console.log(`[word-cloud] "${event.entry.word}" checked: ${event.checked}`)
+	console.log(`[word-cloud] "${event.entry.value}" checked: ${event.checked}`)
 })
 
 wordCloud.addEventListener("word-delete", (event) => {
-	console.log(`[word-cloud] deleted word: "${event.entry.word}"`)
+	console.log(`[word-cloud] deleted word: "${event.entry.value}"`)
 })
 
 wordCloud.addEventListener("mode-change", (event) => {
@@ -104,5 +104,14 @@ document.addEventListener("keypress", (event) => {
 })
 
 window.addEventListener("beforeunload", () => {
-	saveWords(localStorageKey, Array.from(wordCloud.getWords()))
+	const words = Array.from(wordCloud.getWords()).map(
+		({ value, x, y, angle, checked }) => ({
+			word: value,
+			x,
+			y,
+			angle,
+			checked,
+		}),
+	)
+	saveWords(localStorageKey, words)
 })

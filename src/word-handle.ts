@@ -15,7 +15,7 @@ export interface WordData {
 	checked?: boolean
 }
 
-interface WordEntryConfig {
+interface WordHandleConfig {
 	getX: () => number
 	getY: () => number
 	getWord: () => string
@@ -33,11 +33,11 @@ interface WordEntryConfig {
  * there is no stale snapshot. Obtain instances via
  * {@link HTMLWordCloudElement.addWord} or {@link HTMLWordCloudElement.getWords}.
  */
-export class WordEntry implements Readonly<WordData> {
-	#config: WordEntryConfig
+export class WordHandle implements Readonly<WordData> {
+	#config: WordHandleConfig
 
 	/** @internal */
-	constructor(data: WordEntryConfig) {
+	constructor(data: WordHandleConfig) {
 		this.#config = data
 	}
 

@@ -9,4 +9,4 @@ export {
 	HTMLWordCloudElement,
 	type Mode as WordCloudMode,
 } from "./word-cloud-element.ts"
-export { type WordData, WordEntry } from "./word-entry.ts"
+export { type WordData, WordHandle } from "./word-handle.ts"

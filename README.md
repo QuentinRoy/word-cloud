@@ -5,7 +5,7 @@ Interactive word cloud custom element powered by Matter.js. Check out the [demo]
 ## Library
 
 This package exports the `HTMLWordCloudElement` class, the public event
-classes, and the `WordEntry` / `WordData` / `WordCloudMode` types. It does
+classes, and the `WordHandle` / `WordData` / `WordCloudMode` types. It does
 not auto-register a custom element tag for you.
 
 ## Installation
@@ -78,9 +78,9 @@ wordCloud.mode = "delete"
 
 ## Public API
 
-### `addWord(options)` → `WordEntry`
+### `addWord(options)` → `WordHandle`
 
-Adds a word to the cloud and returns a live [`WordEntry`](#wordentry) handle.
+Adds a word to the cloud and returns a live [`WordHandle`](#wordhandle) handle.
 
 ```ts
 const entry = wordCloud.addWord({
@@ -97,7 +97,7 @@ const entry = wordCloud.addWord({
 entry.remove()
 ```
 
-Adding a word also fires `word-add` with the created `WordEntry`.
+Adding a word also fires `word-add` with the created `WordHandle`.
 
 Supported options:
 
@@ -117,9 +117,9 @@ Removes all words from the cloud.
 wordCloud.clear()
 ```
 
-### `getWords()` → `Iterable<WordEntry>`
+### `getWords()` → `Iterable<WordHandle>`
 
-Returns live [`WordEntry`](#wordentry) handles for all words currently in the
+Returns live [`WordHandle`](#wordhandle) handles for all words currently in the
 cloud. Each property read reflects the real-time state (position, angle,
 checked). Useful for persistence:
 
@@ -130,8 +130,7 @@ const snapshot = Array.from(wordCloud.getWords())
 ### `setWords(words)`
 
 Clears the cloud and populates it from an array of [`WordData`](#worddata)
-objects. Because `WordEntry` is structurally compatible with `WordData`, you can
-pass the output of `getWords()` directly:
+objects.
 
 ```ts
 wordCloud.setWords([
@@ -143,9 +142,9 @@ wordCloud.setWords([
 wordCloud.setWords(Array.from(wordCloud.getWords()))
 ```
 
-## WordEntry
+## WordHandle
 
-A `WordEntry` is a live handle to a word in the cloud, returned by `addWord`
+A `WordHandle` is a live handle to a word in the cloud, returned by `addWord`
 and `getWords`. Its properties are always up to date — they read directly from
 the underlying physics body and DOM element.
 
@@ -220,7 +219,7 @@ wordCloud.setWords(saved)
   (new mode) and `oldMode` (previous mode).
 
 The word-specific events carry an `entry` property: a live
-[`WordEntry`](#wordentry) for the affected word. `mode-change` instead carries
+[`WordHandle`](#wordhandle) for the affected word. `mode-change` instead carries
 `mode` and `oldMode`.
 
 Listen using the string literal or the static `.type` property of the event classes:

@@ -34,8 +34,8 @@ import {
 	WordElementDeleteEvent,
 	WordElementValueChangeEvent,
 } from "./word-element.ts"
-import type { WordData } from "./word-entry.ts"
-import { WordEntry } from "./word-entry.ts"
+import type { WordData } from "./word-handle.ts"
+import { WordHandle } from "./word-handle.ts"
 
 const DEBUG_MODE = false
 
@@ -79,7 +79,7 @@ interface InternalWordEntry {
 	body: Body
 	bodySize: { width: number; height: number }
 	element: HTMLWordElement
-	publicEntry: WordEntry
+	publicHandle: WordHandle
 	ignoreInputVolumeUntilExit: boolean
 	dragLock: { initialInertia: number } | null
 }
@@ -271,7 +271,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	/**
 	 * Creates a rendered word element and its matching physics body, and returns
-	 * a live {@link WordEntry} handle.
+	 * a live {@link WordHandle} handle.
 	 *
 	 * @param options.word The text content to display.
 	 * @param options.x The initial horizontal center position in pixels.
@@ -280,7 +280,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * @param options.checked Whether the word starts in the checked state. Defaults to `false`.
 	 * @param options.velocity The initial linear velocity applied to the body.
 	 * @param options.animateEntry Whether the word should play its entry animation. Defaults to `false`.
-	 * @returns A live {@link WordEntry} for the newly created word.
+	 * @returns A live {@link WordHandle} for the newly created word.
 	 */
 	addWord({
 		word,
@@ -291,7 +291,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		velocity,
 		animateEntry = false,
 		ignoreInputVolumeUntilExit = false,
-	}: AddWordOptions): WordEntry {
+	}: AddWordOptions): WordHandle {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
 		// It seems we need to add element before setting the checked property
 		// otherwise it does not update the attribute properly.
@@ -321,12 +321,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let id = body.id
 		const deleteWord = () => {
 			if (!this.#wordEntries.has(id)) return
-			this.dispatchEvent(new WordDeleteEvent({ entry: publicEntry }))
+			this.dispatchEvent(new WordDeleteEvent({ entry: publicHandle }))
 			this.#removeById(id)
 		}
-		let publicEntry = new WordEntry({
-			getWord: () => element.value ?? "",
-			setWord: (v) => {
+		let publicHandle = new WordHandle({
+			getValue: () => element.value ?? "",
+			setValue: (v) => {
 				element.value = v
 			},
 			getX: () => body.position.x,
@@ -343,7 +343,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			element,
 			body,
 			bodySize: { width, height },
-			publicEntry,
+			publicHandle,
 			ignoreInputVolumeUntilExit,
 			dragLock: null,
 		}
@@ -354,7 +354,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
 				new WordCheckedChangeEvent({
-					entry: publicEntry,
+					entry: publicHandle,
 					checked: element.checked,
 				}),
 			)
@@ -363,7 +363,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			const valueChangeEvent = event as WordElementValueChangeEvent
 			this.dispatchEvent(
 				new WordValueChangeEvent({
-					entry: publicEntry,
+					entry: publicHandle,
 					value: valueChangeEvent.value,
 					oldValue: valueChangeEvent.oldValue,
 				}),
@@ -374,8 +374,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
 		this.#wordResizeObserver.observe(element)
-		this.dispatchEvent(new WordAddEvent({ entry: publicEntry }))
-		return publicEntry
+		this.dispatchEvent(new WordAddEvent({ entry: publicHandle }))
+		return publicHandle
 	}
 
 	#removeById(id: number) {
@@ -397,18 +397,20 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Returns live {@link WordEntry} handles for all words currently in the cloud.
-	 * Property reads on each entry always reflect the current state.
+	 * Returns live {@link WordHandle} handles for all words currently in the cloud.
+	 * Property reads on each handle always reflect the current state.
 	 * Useful for persistence — pass the result to {@link setWords} to restore.
 	 */
-	getWords(): Iterable<WordEntry> {
-		return this.#wordEntries.values().map((entry) => entry.publicEntry)
+	getWords(): Iterable<WordHandle> {
+		return this.#wordEntries.values().map((entry) => entry.publicHandle)
 	}
 
 	/**
 	 * Replaces the current cloud contents with the provided word data.
-	 * Accepts plain {@link WordData} objects or previously obtained
-	 * {@link WordEntry} handles (which are structurally compatible).
+	 * Accepts plain {@link WordData} objects.
+	 *
+	 * To restore from {@link WordHandle} values returned by {@link getWords}, map
+	 * each handle's `value` property to a `word` field.
 	 *
 	 * @param words The words to insert after clearing the existing cloud.
 	 */
