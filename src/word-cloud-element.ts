@@ -1,4 +1,5 @@
 import {
+	boolean,
 	number,
 	pickList,
 	WithAttributeProps,
@@ -18,7 +19,8 @@ import {
 import {
 	WordAddEvent,
 	WordCheckedChangeEvent,
-	WordCloudModeChangeEvent,
+	WordCloudInputChangeEvent,
+	WordCloudWordActionChangeEvent,
 	WordDeleteEvent,
 	WordValueChangeEvent,
 } from "./events.ts"
@@ -108,18 +110,19 @@ type AddWordOptions = WordData & {
 	ignoreInputVolumeUntilExit?: boolean
 }
 
-export const MODES = ["check", "delete", "input"] as const
-export type Mode = (typeof MODES)[number]
+export const WORD_ACTIONS = ["none", "drag", "check", "delete"] as const
+export type WordAction = (typeof WORD_ACTIONS)[number]
 
-function isMode(value: unknown): value is Mode {
-	return (MODES as readonly unknown[]).includes(value)
+function isWordAction(value: unknown): value is WordAction {
+	return (WORD_ACTIONS as readonly unknown[]).includes(value)
 }
 
 interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
 	[WordAddEvent.type]: WordAddEvent
 	[WordCheckedChangeEvent.type]: WordCheckedChangeEvent
 	[WordDeleteEvent.type]: WordDeleteEvent
-	[WordCloudModeChangeEvent.type]: WordCloudModeChangeEvent
+	[WordCloudInputChangeEvent.type]: WordCloudInputChangeEvent
+	[WordCloudWordActionChangeEvent.type]: WordCloudWordActionChangeEvent
 	[WordValueChangeEvent.type]: WordValueChangeEvent
 }
 
@@ -131,15 +134,17 @@ interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
  * serializing, and restoring words.
  */
 export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
-	mode: pickList({ values: MODES }),
+	wordAction: pickList({ values: WORD_ACTIONS, default: "none" }),
+	hasInput: boolean(),
 	wordRepulsion: number({ default: REPULSION_MARGIN }),
 	edgeRepulsion: number({ default: REPULSION_MARGIN }),
 	inputRepulsion: number({ default: REPULSION_MARGIN }),
 }) {
-	static #elementActionMaps: Record<Mode, HTMLWordElement["action"]> = {
+	static #elementActionMaps: Record<WordAction, HTMLWordElement["action"]> = {
+		none: null,
+		drag: null,
 		check: "check",
 		delete: "delete",
-		input: null,
 	}
 
 	static #frameThickness = FRAME_THICKNESS
@@ -203,12 +208,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	static get observedAttributes() {
-		return ["mode"]
+		return ["word-action", "has-input"]
 	}
 
 	/**
-	 * Reacts to supported attribute changes and keeps the word actions and mouse
-	 * interaction mode in sync with the current state.
+	 * Reacts to supported attribute changes and keeps the word actions, input
+	 * behavior, and dragging state in sync with the current state.
 	 *
 	 * @param name The name of the attribute that changed.
 	 * @param oldValue The previous attribute value.
@@ -220,21 +225,34 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		newValue: string | null,
 	) {
 		switch (name) {
-			case "mode":
-				if (newValue !== null && !isMode(newValue)) {
-					this.removeAttribute("mode")
+			case "word-action":
+				if (newValue !== null && !isWordAction(newValue)) {
+					this.removeAttribute("word-action")
 				} else {
-					const oldMode =
-						oldValue !== null && isMode(oldValue) ? oldValue : null
-					const mode = newValue !== null && isMode(newValue) ? newValue : null
-					this.#updateWordsActionFromMode()
-					this.#updateInputVolumeFromMode()
+					const oldWordAction =
+						oldValue !== null && isWordAction(oldValue) ? oldValue : "none"
+					const wordAction =
+						newValue !== null && isWordAction(newValue) ? newValue : "none"
+					this.#updateWordsActionFromWordAction()
 					this.#updateMouseConstraint()
-					if (oldMode !== mode) {
-						this.dispatchEvent(new WordCloudModeChangeEvent({ oldMode, mode }))
+					if (oldWordAction !== wordAction) {
+						this.dispatchEvent(
+							new WordCloudWordActionChangeEvent({ oldWordAction, wordAction }),
+						)
 					}
 				}
 				break
+			case "has-input": {
+				const oldHasInput = oldValue !== null
+				const hasInput = newValue !== null
+				this.#updateInputVolumeFromInput()
+				if (oldHasInput !== hasInput) {
+					this.dispatchEvent(
+						new WordCloudInputChangeEvent({ oldHasInput, hasInput }),
+					)
+				}
+				break
+			}
 		}
 	}
 
@@ -249,7 +267,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
 		this.#updateFrameBodies()
-		this.#updateInputVolumeFromMode()
+		this.#updateWordsActionFromWordAction()
+		this.#updateInputVolumeFromInput()
 		this.#updateMouseConstraint()
 		this.#containerResizeObserver.observe(this.#container)
 		this.#inputResizeObserver.observe(this.#wordInput)
@@ -309,10 +328,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.checked = checked
 		if (!animateEntry) element.entryAnimation = "none"
 		element.classList.add("word")
-		element.action =
-			this.mode == null
-				? null
-				: HTMLWordCloudElement.#elementActionMaps[this.mode]
+		element.action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
 		let width = element.offsetWidth
 		let height = element.offsetHeight
 		let body = Bodies.rectangle(x, y, width, height, {
@@ -957,18 +973,15 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return transform
 	}
 
-	#updateWordsActionFromMode() {
-		let action =
-			this.mode == null
-				? null
-				: HTMLWordCloudElement.#elementActionMaps[this.mode]
+	#updateWordsActionFromWordAction() {
+		let action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
 		for (let { element } of this.#wordEntries.values()) {
 			element.action = action
 		}
 	}
 
-	#updateInputVolumeFromMode() {
-		if (this.mode === "input") {
+	#updateInputVolumeFromInput() {
+		if (this.hasInput) {
 			if (this.#inputVolumeEnabled) return
 			this.#updateInputVolumeBody()
 			Composite.add(this.#engine.world, this.#inputVolumeBody)
@@ -988,7 +1001,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateMouseConstraint() {
-		if (this.mode === "input") {
+		if (this.wordAction === "drag") {
 			if (this.#mouseEnabled) return
 			this.#mouseEnabled = true
 			Composite.add(this.#engine.world, this.#mouseConstraint)

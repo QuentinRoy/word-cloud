@@ -1,5 +1,5 @@
 import "./main.css"
-import { HTMLWordCloudElement, type WordCloudMode } from "../src/index.ts"
+import { HTMLWordCloudElement, type WordCloudWordAction } from "../src/index.ts"
 import { getSavedWords, saveWords } from "./storage.ts"
 
 const localStorageKey = "word-cloud-words"
@@ -27,30 +27,39 @@ if (!(clearButton instanceof HTMLButtonElement)) {
 	throw new Error("Expected clear button to exist")
 }
 
-const WORD_CLOUD_MODES: WordCloudMode[] = ["check", "delete", "input"]
+const WORD_ACTIONS: WordCloudWordAction[] = ["drag", "check", "delete"]
 
-function isMode(value: unknown): value is WordCloudMode {
-	return (WORD_CLOUD_MODES as readonly unknown[]).includes(value)
+function isWordAction(value: unknown): value is WordCloudWordAction {
+	return (WORD_ACTIONS as readonly unknown[]).includes(value)
 }
 
-const syncModeControls = (mode: WordCloudMode | null) => {
-	let activeMode = mode ?? "input"
-	for (let input of controls.elements ?? []) {
-		if (!(input instanceof HTMLInputElement)) continue
-		if (input.name !== "mode") continue
-		input.checked = input.value === activeMode
+const syncControls = () => {
+	for (let control of controls.elements ?? []) {
+		if (!(control instanceof HTMLInputElement)) continue
+		if (control.name === "word-action") {
+			control.checked = control.value === wordCloud.wordAction
+			continue
+		}
+		if (control.name === "has-input") {
+			control.checked = wordCloud.hasInput
+		}
 	}
 }
 
 wordCloud.setWords(savedWords)
-syncModeControls(wordCloud.mode)
+syncControls()
 
 controls.addEventListener("change", (event) => {
 	let { target } = event
 	if (!(target instanceof HTMLInputElement)) return
-	if (target.name !== "mode") return
-	if (!isMode(target.value)) return
-	wordCloud.mode = target.value
+	if (target.name === "word-action") {
+		if (!isWordAction(target.value)) return
+		wordCloud.wordAction = target.value
+		return
+	}
+	if (target.name === "has-input") {
+		wordCloud.hasInput = target.checked
+	}
 })
 
 clearButton.addEventListener("click", () => {
@@ -75,9 +84,18 @@ wordCloud.addEventListener("word-delete", (event) => {
 	console.log(`[word-cloud] deleted word: "${event.handle.word}"`)
 })
 
-wordCloud.addEventListener("mode-change", (event) => {
-	console.log(`[word-cloud] mode: ${event.oldMode} -> ${event.mode}`)
-	syncModeControls(event.mode)
+wordCloud.addEventListener("word-action-change", (event) => {
+	console.log(
+		`[word-cloud] word action: ${event.oldWordAction} -> ${event.wordAction}`,
+	)
+	syncControls()
+})
+
+wordCloud.addEventListener("has-input-change", (event) => {
+	console.log(
+		`[word-cloud] has-input: ${event.oldHasInput} -> ${event.hasInput}`,
+	)
+	syncControls()
 })
 
 document.addEventListener("keypress", (event) => {
@@ -88,15 +106,18 @@ document.addEventListener("keypress", (event) => {
 		return
 	}
 	switch (event.key) {
+		case "g":
+			wordCloud.wordAction = "drag"
+			break
 		case "c":
-			wordCloud.mode = "check"
+			wordCloud.wordAction = "check"
 			break
 		case "d": {
-			wordCloud.mode = "delete"
+			wordCloud.wordAction = "delete"
 			break
 		}
 		case "i":
-			wordCloud.mode = "input"
+			wordCloud.hasInput = !wordCloud.hasInput
 			break
 	}
 })

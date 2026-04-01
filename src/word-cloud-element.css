@@ -75,10 +75,13 @@ input[type="text"] {
 	}
 }
 
-:host([mode="input"]) {
+:host([has-input]) {
 	form {
 		display: block;
 	}
+}
+
+:host([word-action="drag"]) {
 	.word {
 		cursor: grab;
 		user-select: none;
