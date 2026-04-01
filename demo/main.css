@@ -30,6 +30,7 @@ footer {
 #github-link {
 	grid-area: github-link;
 	justify-self: end;
+	border-radius: 50%;
 
 	img {
 		display: block;
@@ -47,7 +48,16 @@ footer {
 	justify-content: center;
 
 	input[type="radio"] {
-		display: none;
+		position: absolute;
+		top: -1000px;
+		z-index: -1000;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		border: 0;
+		clip: rect(0 0 0 0);
 	}
 
 	[type="button"],
@@ -96,26 +106,32 @@ footer {
 		display: flex;
 		filter: drop-shadow(0 0 0.25rem hwb(0 0% 100% / 0.2));
 
+		label {
+			position: relative;
+			z-index: 2;
+			border-radius: 0;
+			filter: none;
+		}
+
 		& > :first-child label {
 			border-top-left-radius: var(--border-radius);
 			border-bottom-left-radius: var(--border-radius);
-		}
 
-		& > :last-child label {
-			border-top-right-radius: var(--border-radius);
-			border-bottom-right-radius: var(--border-radius);
-		}
-
-		/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
-		@supports (corner-shape: squircle) {
-			& > :first-child label {
+			/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
+			@supports (corner-shape: squircle) {
 				border-top-left-radius: calc(var(--border-radius) * 2);
 				border-bottom-left-radius: calc(var(--border-radius) * 2);
 				/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 				corner-shape: squircle;
 			}
+		}
 
-			& > :last-child label {
+		& > :last-child label {
+			border-top-right-radius: var(--border-radius);
+			border-bottom-right-radius: var(--border-radius);
+
+			/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
+			@supports (corner-shape: squircle) {
 				border-top-right-radius: calc(var(--border-radius) * 2);
 				border-bottom-right-radius: calc(var(--border-radius) * 2);
 				/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
@@ -127,10 +143,13 @@ footer {
 			color: white;
 			background: hwb(212 16% 22%);
 		}
-
-		label {
-			border-radius: 0;
-			filter: none;
-		}
 	}
+}
+
+#controls .control-group [type="radio"]:focus-visible + label,
+#controls *[type="button"]:focus-visible,
+#github-link:focus-visible {
+	z-index: 3;
+	outline: 2px solid hwb(212 32% 22%);
+	outline-offset: 2px;
 }

@@ -63,7 +63,6 @@ wordCloud.addEventListener("mode-change", (event) => {
 
 document.addEventListener("keypress", (event) => {
 	if (
-		event.target instanceof HTMLInputElement ||
 		event.target instanceof HTMLTextAreaElement ||
 		event.target instanceof HTMLWordCloudElement
 	) {
