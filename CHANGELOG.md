@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.5.1
+
+### Patch Changes
+
+- 5083ac8: Fix unfocusable words in check and delete mode.
+
 ## 0.5.0
 
 ### Minor Changes
