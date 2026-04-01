@@ -1,4 +1,8 @@
-import { pickList, WithAttributeProps } from "@quentinroy/custom-element-mixins"
+import {
+	number,
+	pickList,
+	WithAttributeProps,
+} from "@quentinroy/custom-element-mixins"
 import {
 	Bodies,
 	Body,
@@ -52,6 +56,8 @@ const ANGULAR_REST_ANGLE_EPSILON = 0.01
 const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.25
 const ANGULAR_DAMPING_COEFFICIENT = 0.7
 const ANGULAR_SPRING_WIDTH_REFERENCE = 150
+const REPULSION_MARGIN = 5
+const REPULSION_FORCE = 0.0003
 const WORD_COLLISION_CATEGORY = 0x0001
 const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
 const DEFAULT_WORD_COLLISION_MASK = -1
@@ -126,6 +132,9 @@ interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
  */
 export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	mode: pickList({ values: MODES }),
+	wordRepulsion: number({ default: REPULSION_MARGIN }),
+	edgeRepulsion: number({ default: REPULSION_MARGIN }),
+	inputRepulsion: number({ default: REPULSION_MARGIN }),
 }) {
 	static #elementActionMaps: Record<Mode, HTMLWordElement["action"]> = {
 		check: "check",
@@ -689,6 +698,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#handleBeforeUpdate = () => {
 		this.#applyAngularRestoringTorque()
+		const wordRepulsion = this.wordRepulsion
+		if (wordRepulsion > 0) this.#applyWordRepulsionForces(wordRepulsion)
+		const edgeRepulsion = this.edgeRepulsion
+		if (edgeRepulsion > 0) this.#applyEdgeRepulsionForces(edgeRepulsion)
+		const inputRepulsion = this.inputRepulsion
+		if (inputRepulsion > 0) this.#applyInputRepulsionForces(inputRepulsion)
 	}
 
 	#handleTick = () => {
@@ -738,6 +753,152 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 			Body.applyForce(body, pointA, force)
 			Body.applyForce(body, pointB, { x: -force.x, y: -force.y })
+		}
+	}
+
+	#applyWordRepulsionForces(margin: number) {
+		const entries = [...this.#wordEntries.values()]
+		for (let i = 0; i < entries.length; i++) {
+			const entryA = entries[i]
+			if (entryA.body.isStatic || entryA.body.isSleeping) continue
+			for (let j = i + 1; j < entries.length; j++) {
+				const entryB = entries[j]
+				if (entryB.body.isStatic || entryB.body.isSleeping) continue
+
+				const boundsA = entryA.body.bounds
+				const boundsB = entryB.body.bounds
+
+				// Compute AABB gap: positive = separated, negative = overlapping
+				const gapX =
+					-Math.min(boundsA.max.x, boundsB.max.x) +
+					Math.max(boundsA.min.x, boundsB.min.x)
+				const gapY =
+					-Math.min(boundsA.max.y, boundsB.max.y) +
+					Math.max(boundsA.min.y, boundsB.min.y)
+
+				// Minimum separation distance between the two AABBs
+				let gap: number
+				if (gapX > 0 && gapY > 0) {
+					gap = Math.sqrt(gapX * gapX + gapY * gapY)
+				} else if (gapX > 0) {
+					gap = gapX
+				} else if (gapY > 0) {
+					gap = gapY
+				} else {
+					// Overlapping in both axes; use the shallowest overlap as gap
+					gap = Math.max(gapX, gapY)
+				}
+
+				if (gap >= margin) continue
+
+				const dx = entryB.body.position.x - entryA.body.position.x
+				const dy = entryB.body.position.y - entryA.body.position.y
+				const dist = Math.sqrt(dx * dx + dy * dy)
+				if (dist === 0) continue
+
+				const strength = Math.min(1, (margin - gap) / margin)
+				const forceMagnitude = strength * REPULSION_FORCE
+				const nx = (dx / dist) * forceMagnitude
+				const ny = (dy / dist) * forceMagnitude
+
+				Body.applyForce(entryA.body, entryA.body.position, { x: -nx, y: -ny })
+				Body.applyForce(entryB.body, entryB.body.position, { x: nx, y: ny })
+			}
+		}
+	}
+
+	#applyEdgeRepulsionForces(margin: number) {
+		const { left, right, top, bottom } = this.#frameBodies
+		const edgeLeft = left.position.x + FRAME_THICKNESS / 2
+		const edgeRight = right.position.x - FRAME_THICKNESS / 2
+		const edgeTop = top.position.y + FRAME_THICKNESS / 2
+		const edgeBottom = bottom.position.y - FRAME_THICKNESS / 2
+
+		for (const { body } of this.#wordEntries.values()) {
+			if (body.isStatic || body.isSleeping) continue
+			const bounds = body.bounds
+
+			const gapLeft = bounds.min.x - edgeLeft
+			if (gapLeft < margin) {
+				const strength = Math.min(1, (margin - gapLeft) / margin)
+				Body.applyForce(body, body.position, {
+					x: strength * REPULSION_FORCE,
+					y: 0,
+				})
+			}
+
+			const gapRight = edgeRight - bounds.max.x
+			if (gapRight < margin) {
+				const strength = Math.min(1, (margin - gapRight) / margin)
+				Body.applyForce(body, body.position, {
+					x: -strength * REPULSION_FORCE,
+					y: 0,
+				})
+			}
+
+			const gapTop = bounds.min.y - edgeTop
+			if (gapTop < margin) {
+				const strength = Math.min(1, (margin - gapTop) / margin)
+				Body.applyForce(body, body.position, {
+					x: 0,
+					y: strength * REPULSION_FORCE,
+				})
+			}
+
+			const gapBottom = edgeBottom - bounds.max.y
+			if (gapBottom < margin) {
+				const strength = Math.min(1, (margin - gapBottom) / margin)
+				Body.applyForce(body, body.position, {
+					x: 0,
+					y: -strength * REPULSION_FORCE,
+				})
+			}
+		}
+	}
+
+	#applyInputRepulsionForces(margin: number) {
+		if (!this.#inputVolumeEnabled) return
+		const inputBounds = this.#inputVolumeBody.bounds
+		const inputPos = this.#inputVolumeBody.position
+
+		for (const entry of this.#wordEntries.values()) {
+			const { body } = entry
+			if (body.isStatic || body.isSleeping) continue
+			if (entry.ignoreInputVolumeUntilExit) continue
+
+			const boundsA = body.bounds
+
+			const gapX =
+				-Math.min(boundsA.max.x, inputBounds.max.x) +
+				Math.max(boundsA.min.x, inputBounds.min.x)
+			const gapY =
+				-Math.min(boundsA.max.y, inputBounds.max.y) +
+				Math.max(boundsA.min.y, inputBounds.min.y)
+
+			let gap: number
+			if (gapX > 0 && gapY > 0) {
+				gap = Math.sqrt(gapX * gapX + gapY * gapY)
+			} else if (gapX > 0) {
+				gap = gapX
+			} else if (gapY > 0) {
+				gap = gapY
+			} else {
+				gap = Math.max(gapX, gapY)
+			}
+
+			if (gap >= margin) continue
+
+			const dx = body.position.x - inputPos.x
+			const dy = body.position.y - inputPos.y
+			const dist = Math.sqrt(dx * dx + dy * dy)
+			if (dist === 0) continue
+
+			const strength = Math.min(1, (margin - gap) / margin)
+			const forceMagnitude = strength * REPULSION_FORCE
+			Body.applyForce(body, body.position, {
+				x: (dx / dist) * forceMagnitude,
+				y: (dy / dist) * forceMagnitude,
+			})
 		}
 	}
 
