@@ -83,11 +83,13 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		this.#updateAction()
 		this.#updateLabel()
 		this.#checkbox.addEventListener("change", this.#handleCheckboxChange)
+		this.#checkbox.addEventListener("keydown", this.#handleCheckboxKeypress)
 		this.#deleteButton.addEventListener("click", this.#handleDelete)
 	}
 
 	disconnectedCallback() {
 		this.#checkbox.removeEventListener("change", this.#handleCheckboxChange)
+		this.#checkbox.removeEventListener("keydown", this.#handleCheckboxKeypress)
 		this.#deleteButton.removeEventListener("click", this.#handleDelete)
 	}
 
@@ -136,6 +138,12 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	#handleCheckboxChange = () => {
 		if (this.checked !== this.#checkbox.checked) {
 			this.checked = this.#checkbox.checked
+		}
+	}
+
+	#handleCheckboxKeypress = (event: KeyboardEvent) => {
+		if (event.key === "Enter") {
+			this.#checkbox.click()
 		}
 	}
 

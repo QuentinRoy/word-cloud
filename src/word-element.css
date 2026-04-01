@@ -65,8 +65,10 @@ input:focus-visible ~ label {
 
 :host([checked]) {
 	label {
+		color: var(--word-checked-text-color);
 		text-decoration: line-through;
-		opacity: var(--checked-opacity);
+		background-color: var(--word-checked-background-color);
+		border-color: var(--word-checked-background-color);
 	}
 }
 

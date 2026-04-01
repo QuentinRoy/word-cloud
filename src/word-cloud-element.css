@@ -13,15 +13,16 @@
 	--input-focus-shadow-color: hwb(212 76% 0%);
 	--input-focus-background-color: hwb(212 95% 0%);
 	--word-focus-outline-color: var(--input-focus-border-color);
-	--word-text-color: hwb(274 2% 80%);
+	--word-text-color: hwb(276 2% 80%);
 	--word-background-color: hwb(276 96% 0%);
 	--word-border-color: var(--word-background-color);
 	--word-delete-hover-text-color: hwb(357 45% 11%);
 	--word-delete-hover-background-color: hwb(351 99% 0%);
+	--word-checked-text-color: hwb(276 52% 40%);
+	--word-checked-background-color: hwb(276 98% 0%);
 	--word-dragged-background-color: hwb(210 90% 0%);
 	--word-dragged-border-color: hwb(210 85% 0%);
 	--word-fade-in-duration: 1s;
-	--checked-opacity: 0.5;
 	display: block;
 }
 
