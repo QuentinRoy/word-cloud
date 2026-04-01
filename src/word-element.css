@@ -4,7 +4,16 @@
 }
 
 input {
-	display: none;
+	position: absolute;
+	top: -1000px;
+	z-index: -1000;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	border: 0;
+	clip: rect(0 0 0 0);
 }
 
 label {
@@ -21,6 +30,11 @@ label {
 	border-radius: var(--chamfer-radius, 0);
 	opacity: var(--opacity, 1);
 	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+}
+
+input:focus-visible ~ label {
+	outline: 2px solid var(--word-focus-outline-color);
+	outline-offset: 2px;
 }
 
 :host([entry-animation="none"]) label {
