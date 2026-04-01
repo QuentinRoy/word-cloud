@@ -28,6 +28,28 @@ export class WordElementCheckedChangeEvent extends Event {
 	}
 }
 
+export class WordElementValueChangeEvent extends Event {
+	static get type() {
+		return "word-element-value-change" as const
+	}
+	#value: string
+	#oldValue: string
+
+	constructor({ value, oldValue }: { value: string; oldValue: string }) {
+		super(WordElementValueChangeEvent.type, { bubbles: false, composed: false })
+		this.#value = value
+		this.#oldValue = oldValue
+	}
+
+	get value() {
+		return this.#value
+	}
+
+	get oldValue() {
+		return this.#oldValue
+	}
+}
+
 export class WordElementDeleteEvent extends Event {
 	static get type() {
 		return "word-element-delete" as const
@@ -46,7 +68,7 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	dragged: boolean(),
 	action: pickList({ values: ["check", "delete"] }),
 	entryAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
-	value: string(),
+	value: string({ default: "" }),
 }) {
 	#shadowRoot: ShadowRoot
 	#checkbox: HTMLInputElement
@@ -110,6 +132,12 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 				break
 			case "value":
 				this.#updateLabel()
+				if (oldValue !== newValue && this.isConnected) {
+					this.#dispatchValueChangeEvent({
+						oldValue: oldValue ?? "",
+						value: newValue ?? "",
+					})
+				}
 				break
 		}
 	}
@@ -133,6 +161,16 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		this.dispatchEvent(
 			new WordElementCheckedChangeEvent({ checked: this.checked }),
 		)
+	}
+
+	#dispatchValueChangeEvent({
+		oldValue,
+		value,
+	}: {
+		oldValue: string
+		value: string
+	}) {
+		this.dispatchEvent(new WordElementValueChangeEvent({ oldValue, value }))
 	}
 
 	#handleCheckboxChange = () => {

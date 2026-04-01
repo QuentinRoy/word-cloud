@@ -1,7 +1,9 @@
 export {
+	WordAddEvent,
 	WordCheckedChangeEvent,
 	WordCloudModeChangeEvent,
 	WordDeleteEvent,
+	WordValueChangeEvent,
 } from "./events.ts"
 export {
 	HTMLWordCloudElement,

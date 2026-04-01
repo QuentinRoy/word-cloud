@@ -97,6 +97,8 @@ const entry = wordCloud.addWord({
 entry.remove()
 ```
 
+Adding a word also fires `word-add` with the created `WordEntry`.
+
 Supported options:
 
 - `word`: displayed text.
@@ -149,7 +151,7 @@ the underlying physics body and DOM element.
 
 | Property / method | Description                                              |
 | ----------------- | -------------------------------------------------------- |
-| `entry.word`      | The displayed text (read-only).                          |
+| `entry.word`      | The displayed text, readable and writable.               |
 | `entry.x`         | Current horizontal center position in pixels.            |
 | `entry.y`         | Current vertical center position in pixels.              |
 | `entry.angle`     | Current rotation in radians.                             |
@@ -161,6 +163,9 @@ const entry = wordCloud.addWord({ word: "Hello", x: 100, y: 100 })
 
 // Read live state:
 console.log(entry.x, entry.y, entry.checked)
+
+// Rename the word (fires word-value-change):
+entry.word = "Hello again"
 
 // Toggle checked programmatically (fires word-checked-change):
 entry.checked = !entry.checked
@@ -203,6 +208,10 @@ wordCloud.setWords(saved)
 
 `HTMLWordCloudElement` dispatches the following bubbling events:
 
+- **`word-add`** — fired when a word is added to the cloud, including through
+  `addWord()`, `setWords()`, or the built-in input form.
+- **`word-value-change`** — fired when a word's text changes, including
+  programmatic assignment to `entry.word`.
 - **`word-checked-change`** — fired when a word's checked state changes (user
   interaction in `check` mode, or programmatic assignment to `entry.checked`).
 - **`word-delete`** — fired when the user deletes a word in `delete` mode,
@@ -210,30 +219,31 @@ wordCloud.setWords(saved)
 - **`mode-change`** — fired when the element mode changes. Includes `mode`
   (new mode) and `oldMode` (previous mode).
 
-The word-specific events carry an `entry` property — a live
+The word-specific events carry an `entry` property: a live
 [`WordEntry`](#wordentry) for the affected word. `mode-change` instead carries
 `mode` and `oldMode`.
 
-Listen using the string literal or the static `.type` property:
+Listen using the string literal or the static `.type` property of the event classes:
 
 ```ts
-import {
-  WordCheckedChangeEvent,
-  WordDeleteEvent,
-  WordCloudModeChangeEvent,
-} from "@quentinroy/word-cloud"
-
-wordCloud.addEventListener(WordCheckedChangeEvent.type, (event) => {
-  console.log("new checked state:", event.checked)
-  console.log("word:", event.entry.word)
+wordCloud.addEventListener("word-add", (event) => {
+  console.log(`added word: "${event.entry.word}" at ${event.entry.x}, ${event.entry.y}`)
 })
 
-wordCloud.addEventListener(WordDeleteEvent.type, (event) => {
-  console.log("deleted:", event.entry.word, "at", event.entry.x, event.entry.y)
+wordCloud.addEventListener("word-value-change", (event) => {
+  console.log(`renamed word: "${event.oldValue}" -> "${event.value}"`)
 })
 
-wordCloud.addEventListener(WordCloudModeChangeEvent.type, (event) => {
-  console.log("mode:", event.oldMode, "->", event.mode)
+wordCloud.addEventListener("word-checked-change", (event) => {
+  console.log(`"${event.entry.word}" checked: ${event.checked}`)
+})
+
+wordCloud.addEventListener("word-delete", (event) => {
+  console.log(`deleted word: "${event.entry.word}"`)
+})
+
+wordCloud.addEventListener("mode-change", (event) => {
+  console.log(`mode: ${event.oldMode} -> ${event.mode}`)
 })
 ```
 

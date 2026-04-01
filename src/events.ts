@@ -33,6 +33,28 @@ export class WordCloudEvent extends Event {
 }
 
 /**
+ * Fired by {@link HTMLWordCloudElement} when a new word is added to the cloud.
+ * This includes direct calls to {@link HTMLWordCloudElement.addWord}, words
+ * restored through {@link HTMLWordCloudElement.setWords}, and words created by
+ * the built-in input form.
+ *
+ * Listen with `"word-add"` or {@link WordAddEvent.type}.
+ */
+export class WordAddEvent extends WordCloudEvent {
+	/** Event type string for word additions. */
+	static get type() {
+		return "word-add" as const
+	}
+
+	/**
+	 * @param data.entry The live entry that was just added.
+	 */
+	constructor({ entry }: { entry: WordEntry }) {
+		super({ type: WordAddEvent.type, entry })
+	}
+}
+
+/**
  * Fired by {@link HTMLWordCloudElement} when a word's checked state changes —
  * either through user interaction (in `mark` mode) or programmatically via
  * {@link WordEntry.checked}.
@@ -62,6 +84,48 @@ export class WordCheckedChangeEvent extends WordCloudEvent {
 		// state even while entry.checked is live and will change if the event handlers change
 		// it again.
 		return this.#checked
+	}
+}
+
+/**
+ * Fired by {@link HTMLWordCloudElement} when a word's text changes — either
+ * through direct updates to the underlying word element or programmatically via
+ * {@link WordEntry.word}.
+ *
+ * Listen with `"word-value-change"` or {@link WordValueChangeEvent.type}.
+ */
+export class WordValueChangeEvent extends WordCloudEvent {
+	#value: string
+	#oldValue: string
+
+	/** Event type string for word-text changes. */
+	static get type() {
+		return "word-value-change" as const
+	}
+
+	/**
+	 * @param data.entry The live entry whose text changed.
+	 * @param data.value The new word text at dispatch time.
+	 * @param data.oldValue The previous word text before the change.
+	 */
+	constructor({
+		entry,
+		value,
+		oldValue,
+	}: { entry: WordEntry; value: string; oldValue: string }) {
+		super({ type: WordValueChangeEvent.type, entry })
+		this.#value = value
+		this.#oldValue = oldValue
+	}
+
+	/** The new word text at dispatch time. */
+	get value(): string {
+		return this.#value
+	}
+
+	/** The previous word text before the change. */
+	get oldValue(): string {
+		return this.#oldValue
 	}
 }
 

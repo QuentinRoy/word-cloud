@@ -16,9 +16,10 @@ export interface WordData {
 }
 
 interface WordEntryConfig {
-	word: string
 	getX: () => number
 	getY: () => number
+	getWord: () => string
+	setWord: (word: string) => void
 	getAngle: () => number
 	getChecked: () => boolean
 	setChecked: (checked: boolean) => void
@@ -32,7 +33,7 @@ interface WordEntryConfig {
  * there is no stale snapshot. Obtain instances via
  * {@link HTMLWordCloudElement.addWord} or {@link HTMLWordCloudElement.getWords}.
  */
-export class WordEntry implements WordData {
+export class WordEntry implements Readonly<WordData> {
 	#config: WordEntryConfig
 
 	/** @internal */
@@ -42,7 +43,16 @@ export class WordEntry implements WordData {
 
 	/** The displayed text of this word. */
 	get word(): string {
-		return this.#config.word
+		return this.#config.getWord()
+	}
+
+	/**
+	 * Programmatically updates the displayed text of this word.
+	 *
+	 * @param value The new text to display.
+	 */
+	set word(value: string) {
+		this.#config.setWord(value)
 	}
 
 	/** Current horizontal center position in pixels. */
@@ -69,6 +79,8 @@ export class WordEntry implements WordData {
 	 * Programmatically sets the checked state of this word.
 	 * Triggers a `word-checked-change` event on the parent cloud element if the
 	 * value actually changes.
+	 *
+	 * @param value The new checked state.
 	 */
 	set checked(value: boolean) {
 		this.#config.setChecked(value)

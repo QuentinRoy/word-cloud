@@ -57,7 +57,28 @@ clearButton.addEventListener("click", () => {
 	wordCloud.clear()
 })
 
+wordCloud.addEventListener("word-add", (event) => {
+	console.log(
+		`[word-cloud] added word: "${event.entry.word}" at ${event.entry.x}, ${event.entry.y}`,
+	)
+})
+
+wordCloud.addEventListener("word-value-change", (event) => {
+	console.log(
+		`[word-cloud] renamed word: "${event.oldValue}" -> "${event.value}"`,
+	)
+})
+
+wordCloud.addEventListener("word-checked-change", (event) => {
+	console.log(`[word-cloud] "${event.entry.word}" checked: ${event.checked}`)
+})
+
+wordCloud.addEventListener("word-delete", (event) => {
+	console.log(`[word-cloud] deleted word: "${event.entry.word}"`)
+})
+
 wordCloud.addEventListener("mode-change", (event) => {
+	console.log(`[word-cloud] mode: ${event.oldMode} -> ${event.mode}`)
 	syncModeControls(event.mode)
 })
 

@@ -12,9 +12,11 @@ import {
 	Runner,
 } from "matter-js"
 import {
+	WordAddEvent,
 	WordCheckedChangeEvent,
 	WordCloudModeChangeEvent,
 	WordDeleteEvent,
+	WordValueChangeEvent,
 } from "./events.ts"
 import { css, html } from "./template.ts"
 import {
@@ -30,6 +32,7 @@ import {
 	HTMLWordElement,
 	WordElementCheckedChangeEvent,
 	WordElementDeleteEvent,
+	WordElementValueChangeEvent,
 } from "./word-element.ts"
 import type { WordData } from "./word-entry.ts"
 import { WordEntry } from "./word-entry.ts"
@@ -73,7 +76,6 @@ try {
 
 interface InternalWordEntry {
 	id: number
-	word: string
 	body: Body
 	bodySize: { width: number; height: number }
 	element: HTMLWordElement
@@ -108,9 +110,11 @@ function isMode(value: unknown): value is Mode {
 }
 
 interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
+	[WordAddEvent.type]: WordAddEvent
 	[WordCheckedChangeEvent.type]: WordCheckedChangeEvent
 	[WordDeleteEvent.type]: WordDeleteEvent
 	[WordCloudModeChangeEvent.type]: WordCloudModeChangeEvent
+	[WordValueChangeEvent.type]: WordValueChangeEvent
 }
 
 /**
@@ -321,7 +325,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			this.#removeById(id)
 		}
 		let publicEntry = new WordEntry({
-			word,
+			getWord: () => element.value ?? "",
+			setWord: (v) => {
+				element.value = v
+			},
 			getX: () => body.position.x,
 			getY: () => body.position.y,
 			getAngle: () => body.angle,
@@ -333,7 +340,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		})
 		let entry: InternalWordEntry = {
 			id,
-			word,
 			element,
 			body,
 			bodySize: { width, height },
@@ -353,11 +359,22 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}),
 			)
 		})
+		element.addEventListener(WordElementValueChangeEvent.type, (event) => {
+			const valueChangeEvent = event as WordElementValueChangeEvent
+			this.dispatchEvent(
+				new WordValueChangeEvent({
+					entry: publicEntry,
+					value: valueChangeEvent.value,
+					oldValue: valueChangeEvent.oldValue,
+				}),
+			)
+		})
 		element.style.transform = this.#getWordTransform(entry)
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
 		this.#wordResizeObserver.observe(element)
+		this.dispatchEvent(new WordAddEvent({ entry: publicEntry }))
 		return publicEntry
 	}
 
