@@ -762,7 +762,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#lockDraggedEntry(entry: InternalWordEntry) {
 		if (entry.dragLock != null) return
-		console.log("inertia", entry.body.inertia)
 		entry.dragLock = { initialInertia: entry.body.inertia }
 		Body.setInertia(entry.body, Infinity)
 		Body.setAngularVelocity(entry.body, 0)
