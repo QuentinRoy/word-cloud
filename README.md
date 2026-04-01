@@ -130,7 +130,8 @@ const snapshot = Array.from(wordCloud.getWords())
 ### `setWords(words)`
 
 Clears the cloud and populates it from an array of [`WordData`](#worddata)
-objects.
+objects. Because `WordHandle` is structurally compatible with `WordData`, you can
+pass the output of `getWords()` directly:
 
 ```ts
 wordCloud.setWords([
@@ -176,7 +177,7 @@ entry.remove()
 ## WordData
 
 Plain serializable object describing a word. Accepted by `addWord` and
-`setWords`. `WordEntry` is structurally compatible with `WordData`, so entries
+`setWords`. `WordHandle` is structurally compatible with `WordData`, so handles
 obtained from `getWords()` can be passed directly to `setWords()`.
 
 ```ts
@@ -210,15 +211,15 @@ wordCloud.setWords(saved)
 - **`word-add`** — fired when a word is added to the cloud, including through
   `addWord()`, `setWords()`, or the built-in input form.
 - **`word-value-change`** — fired when a word's text changes, including
-  programmatic assignment to `entry.word`.
+  programmatic assignment to `handle.word`.
 - **`word-checked-change`** — fired when a word's checked state changes (user
-  interaction in `check` mode, or programmatic assignment to `entry.checked`).
+  interaction in `check` mode, or programmatic assignment to `handle.checked`).
 - **`word-delete`** — fired when the user deletes a word in `delete` mode,
   just before the word is removed.
 - **`mode-change`** — fired when the element mode changes. Includes `mode`
   (new mode) and `oldMode` (previous mode).
 
-The word-specific events carry an `entry` property: a live
+The word-specific events carry a `handle` property: a live
 [`WordHandle`](#wordhandle) for the affected word. `mode-change` instead carries
 `mode` and `oldMode`.
 
@@ -226,7 +227,7 @@ Listen using the string literal or the static `.type` property of the event clas
 
 ```ts
 wordCloud.addEventListener("word-add", (event) => {
-  console.log(`added word: "${event.entry.word}" at ${event.entry.x}, ${event.entry.y}`)
+  console.log(`added word: "${event.handle.word}" at ${event.handle.x}, ${event.handle.y}`)
 })
 
 wordCloud.addEventListener("word-value-change", (event) => {
@@ -234,11 +235,11 @@ wordCloud.addEventListener("word-value-change", (event) => {
 })
 
 wordCloud.addEventListener("word-checked-change", (event) => {
-  console.log(`"${event.entry.word}" checked: ${event.checked}`)
+  console.log(`"${event.handle.word}" checked: ${event.checked}`)
 })
 
 wordCloud.addEventListener("word-delete", (event) => {
-  console.log(`deleted word: "${event.entry.word}"`)
+  console.log(`deleted word: "${event.handle.word}"`)
 })
 
 wordCloud.addEventListener("mode-change", (event) => {

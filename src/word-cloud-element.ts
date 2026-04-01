@@ -321,12 +321,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let id = body.id
 		const deleteWord = () => {
 			if (!this.#wordEntries.has(id)) return
-			this.dispatchEvent(new WordDeleteEvent({ entry: publicHandle }))
+			this.dispatchEvent(new WordDeleteEvent({ handle: publicHandle }))
 			this.#removeById(id)
 		}
 		let publicHandle = new WordHandle({
-			getValue: () => element.value ?? "",
-			setValue: (v) => {
+			getWord: () => element.value ?? "",
+			setWord: (v) => {
 				element.value = v
 			},
 			getX: () => body.position.x,
@@ -354,7 +354,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
 				new WordCheckedChangeEvent({
-					entry: publicHandle,
+					handle: publicHandle,
 					checked: element.checked,
 				}),
 			)
@@ -363,7 +363,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			const valueChangeEvent = event as WordElementValueChangeEvent
 			this.dispatchEvent(
 				new WordValueChangeEvent({
-					entry: publicHandle,
+					handle: publicHandle,
 					value: valueChangeEvent.value,
 					oldValue: valueChangeEvent.oldValue,
 				}),
@@ -374,7 +374,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
 		this.#wordResizeObserver.observe(element)
-		this.dispatchEvent(new WordAddEvent({ entry: publicHandle }))
+		this.dispatchEvent(new WordAddEvent({ handle: publicHandle }))
 		return publicHandle
 	}
 
@@ -407,10 +407,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	/**
 	 * Replaces the current cloud contents with the provided word data.
-	 * Accepts plain {@link WordData} objects.
-	 *
-	 * To restore from {@link WordHandle} values returned by {@link getWords}, map
-	 * each handle's `value` property to a `word` field.
+	 * Accepts plain {@link WordData} objects or previously obtained
+	 * {@link WordHandle} handles (which are structurally compatible).
 	 *
 	 * @param words The words to insert after clearing the existing cloud.
 	 */

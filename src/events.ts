@@ -6,29 +6,29 @@ import type { WordHandle } from "./word-handle.ts"
  * Events bubble and are composed.
  */
 export class WordCloudEvent extends Event {
-	#entry: WordHandle
+	#handle: WordHandle
 
 	/**
 	 * Creates a new word-cloud event.
 	 *
 	 * @param data.type The event type.
-	 * @param data.entry The live word handle associated with this event.
+	 * @param data.handle The live word handle associated with this event.
 	 * @param init Additional event init options.
 	 */
 	constructor(
-		{ type, entry }: { type: string; entry: WordHandle },
+		{ type, handle }: { type: string; handle: WordHandle },
 		init?: EventInit,
 	) {
 		super(type, { bubbles: true, composed: true, ...init })
-		this.#entry = entry
+		this.#handle = handle
 	}
 
 	/**
 	 * The live {@link WordHandle} for the word that triggered this event.
 	 * Property reads on the handle always reflect the current state of the word.
 	 */
-	get entry(): WordHandle {
-		return this.#entry
+	get handle(): WordHandle {
+		return this.#handle
 	}
 }
 
@@ -47,10 +47,10 @@ export class WordAddEvent extends WordCloudEvent {
 	}
 
 	/**
-	 * @param data.entry The live entry that was just added.
+	 * @param data.handle The live handle that was just added.
 	 */
-	constructor({ entry }: { entry: WordHandle }) {
-		super({ type: WordAddEvent.type, entry })
+	constructor({ handle }: { handle: WordHandle }) {
+		super({ type: WordAddEvent.type, handle })
 	}
 }
 
@@ -70,18 +70,18 @@ export class WordCheckedChangeEvent extends WordCloudEvent {
 	}
 
 	/**
-	 * @param data.entry The live handle whose checked state changed.
+	 * @param data.handle The live handle whose checked state changed.
 	 * @param data.checked The new checked state at dispatch time.
 	 */
-	constructor({ entry, checked }: { entry: WordHandle; checked: boolean }) {
-		super({ type: WordCheckedChangeEvent.type, entry })
+	constructor({ handle, checked }: { handle: WordHandle; checked: boolean }) {
+		super({ type: WordCheckedChangeEvent.type, handle })
 		this.#checked = checked
 	}
 
 	/** The new checked state at dispatch time. */
 	get checked(): boolean {
-		// We do not use entry.checked here because the event should reflect the new checked
-		// state even while entry.checked is live and will change if the event handlers change
+		// We do not use handle.checked here because the event should reflect the new checked
+		// state even while handle.checked is live and will change if the event handlers change
 		// it again.
 		return this.#checked
 	}
@@ -104,16 +104,16 @@ export class WordValueChangeEvent extends WordCloudEvent {
 	}
 
 	/**
-	 * @param data.entry The live entry whose text changed.
+	 * @param data.handle The live handle whose text changed.
 	 * @param data.value The new word text at dispatch time.
 	 * @param data.oldValue The previous word text before the change.
 	 */
 	constructor({
-		entry,
+		handle,
 		value,
 		oldValue,
-	}: { entry: WordHandle; value: string; oldValue: string }) {
-		super({ type: WordValueChangeEvent.type, entry })
+	}: { handle: WordHandle; value: string; oldValue: string }) {
+		super({ type: WordValueChangeEvent.type, handle })
 		this.#value = value
 		this.#oldValue = oldValue
 	}
@@ -143,10 +143,10 @@ export class WordDeleteEvent extends WordCloudEvent {
 	}
 
 	/**
-	 * @param data.entry The live entry that is about to be deleted.
+	 * @param data.handle The live handle that is about to be deleted.
 	 */
-	constructor({ entry }: { entry: WordHandle }) {
-		super({ type: WordDeleteEvent.type, entry })
+	constructor({ handle }: { handle: WordHandle }) {
+		super({ type: WordDeleteEvent.type, handle })
 	}
 }
 
