@@ -215,9 +215,10 @@ footer {
 }
 
 #controls .control-group [type="radio"]:focus-visible + label,
+#controls .control-group [type="checkbox"]:focus-visible + label,
 #controls *[type="button"]:focus-visible,
 #github-link:focus-visible {
 	z-index: 3;
-	outline: 2px solid hwb(212 32% 22%);
-	outline-offset: 2px;
+	outline: 4px solid hwb(212 50% 0% / 0.95);
+	/* outline-offset: 2px; */
 }
