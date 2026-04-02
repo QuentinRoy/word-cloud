@@ -69,7 +69,7 @@
 	--word-dragged-scaling-duration: 50ms;
 
 	/* Duration of the fade-in entry animation for newly spawned word chips. */
-	--word-fade-in-duration: 1s;
+	--word-chip-fade-duration: 1s;
 
 	display: block;
 }
