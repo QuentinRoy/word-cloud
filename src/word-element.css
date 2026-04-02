@@ -23,7 +23,9 @@ label {
 	font-size: var(--font-size);
 	color: var(--word-text-color);
 	text-align: center;
-	text-decoration-thickness: var(--line-width);
+	text-decoration: line-through;
+	text-decoration-thickness: 0;
+	text-decoration-color: transparent;
 	cursor: inherit;
 	background-color: var(--word-background-color);
 	border: var(--line-width) solid var(--word-border-color);
@@ -31,9 +33,14 @@ label {
 	opacity: var(--opacity, 1);
 	filter: drop-shadow(0px 0px 0px transparent);
 	transform: scale(1);
-	transition-timing-function: ease-in;
-	transition-duration: var(--word-dragged-scaling-duration, 0);
-	transition-property: filter, transform;
+	transition:
+		transform var(--word-dragged-scaling-duration, 0s) ease-in,
+		filter var(--word-state-transition-duration, 0s) ease-in,
+		color var(--word-state-transition-duration, 0s) ease-out,
+		background-color var(--word-state-transition-duration, 0s) ease-out,
+		border-color var(--word-state-transition-duration, 0s) ease-out,
+		text-decoration-color var(--word-state-transition-duration, 0s) ease-out,
+		text-decoration-thickness var(--word-state-transition-duration, 0s) ease-out;
 	animation: none;
 }
 
@@ -50,20 +57,16 @@ input:focus-visible ~ label {
 	animation: chip-fade var(--word-chip-fade-duration, 0s);
 }
 
-:host([dragged]) label {
-	background-color: var(--word-dragged-background-color);
-	border-color: var(--word-dragged-border-color);
-	filter: drop-shadow(
-		0px 0px var(--word-dragged-shadow-blur, 0)
-			var(--word-dragged-shadow-color, transparent)
-	);
-	transform: scale(var(--word-dragged-scale-factor, 1));
-	transition-timing-function: ease-out;
-}
-
 :host([action="check"]) {
 	label {
 		cursor: pointer;
+	}
+
+	label:hover {
+		color: var(--word-checked-hover-text-color);
+		transition:
+			all ease-out var(--word-state-transition-duration, 0s),
+			color 0s;
 	}
 }
 
@@ -90,13 +93,34 @@ input:focus-visible ~ label {
 	border-color: var(--word-delete-hover-background-color);
 }
 
+:host([action="delete"]) label:hover {
+	transition:
+		all ease-out var(--word-state-transition-duration, 0s),
+		color 0s;
+}
+
 :host([checked]) {
 	label {
 		color: var(--word-checked-text-color);
 		text-decoration: line-through;
+		text-decoration-thickness: var(--line-width);
+		text-decoration-color: currentColor;
 		background-color: var(--word-checked-background-color);
 		border-color: var(--word-checked-background-color);
+		transition: all ease-out var(--word-state-transition-duration, 0s);
 	}
+}
+
+:host([dragged]) label {
+	color: var(--word-dragged-text-color);
+	background-color: var(--word-dragged-background-color);
+	border-color: var(--word-dragged-border-color);
+	filter: drop-shadow(
+		0px 0px var(--word-dragged-shadow-blur, 0)
+			var(--word-dragged-shadow-color, transparent)
+	);
+	transform: scale(var(--word-dragged-scale-factor, 1));
+	transition-timing-function: ease-out;
 }
 
 :host {

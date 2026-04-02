@@ -96,7 +96,7 @@ const entry = wordCloud.addWord({
   angle: 0,
   checked: false,
   velocity: { x: 10, y: -15 },
-  animateEntry: true,
+  entryAnimation: "fade",
 })
 
 // Remove it later (fires word-delete):
@@ -113,7 +113,7 @@ Supported options:
 - `angle` _(optional)_: initial rotation in radians. Defaults to `0`.
 - `checked` _(optional)_: initial checked state. Defaults to `false`.
 - `velocity` _(optional)_: initial physics velocity `{ x, y }`.
-- `animateEntry` _(optional)_: play a fade-in entry animation. Defaults to `false`.
+- `entryAnimation` _(optional)_: entry animation to run when the word is created. Supported values are `"fade"`, `"chip-fade"`, and `"none"`. Defaults to `"fade"`.
 
 ### `clear()`
 
@@ -283,20 +283,31 @@ x-word-cloud {
   --word-delete-hover-background-color: #fee2e2;
   --word-dragged-background-color: #dbeafe;
   --word-dragged-border-color: #bfdbfe;
+  --word-dragged-text-color: #1d4ed8;
   --word-dragged-shadow-blur: 8px;
   --word-dragged-shadow-color: rgba(0, 0, 0, 0.15);
   --word-dragged-scale-factor: 1.05;
   --word-dragged-scaling-duration: 80ms;
-  --transition-timing: ease-out;
   --input-background-color: #ffffff;
   --input-text-color: #111827;
   --input-border-color: #9ca3af;
+  --input-hover-text-color: #111827;
+  --input-hover-border-color: #6b7280;
+  --input-hover-background-color: #f9fafb;
+  --input-hover-shadow-color: transparent;
   --input-focus-text-color: #0f172a;
   --input-focus-border-color: #2563eb;
   --input-focus-background-color: #eff6ff;
   --input-focus-shadow-color: #93c5fd;
   --word-focus-outline-color: #2563eb;
+  --fast-animation: 50ms;
+  --slow-animation: 150ms;
+  --extra-slow-animation: 1s;
+  --word-chip-fade-duration: 1s;
   --word-fade-in-duration: 0.5s;
+  --word-fade-out-duration: 0.5s;
+  --word-state-transition-duration: 150ms;
+  --input-state-transition-duration: 150ms;
   width: 100%;
   height: 70vh;
 }
@@ -312,12 +323,19 @@ Supported variables:
 | `--input-padding-x`                    | `var(--space-m)`                  | Input horizontal padding.                                        |
 | `--word-padding-y`                     | `var(--space-s)`                  | Word vertical padding.                                           |
 | `--word-padding-x`                     | `var(--space-m)`                  | Word horizontal padding.                                         |
+| `--fast-animation`                     | `50ms`                            | Shared fast timing token used by default animation durations.    |
+| `--slow-animation`                     | `150ms`                           | Shared medium timing token used by default animation durations.  |
+| `--extra-slow-animation`               | `1s`                              | Shared long timing token used by the chip fade animation.        |
 | `--line-width`                         | `2px`                             | Border width and strike-through thickness.                       |
 | `--font-size`                          | `1.5rem`                          | Input and word font size.                                        |
 | `--font-family`                        | `Arial`                           | Input and word font family.                                      |
 | `--input-text-color`                   | `black`                           | Input text color.                                                |
 | `--input-background-color`             | `hwb(0 93% 7%)`                   | Input background while the built-in input is enabled.            |
 | `--input-border-color`                 | `hwb(0 27% 73%)`                  | Input border color.                                              |
+| `--input-hover-text-color`             | `var(--input-text-color)`         | Input text color while hovered.                                  |
+| `--input-hover-border-color`           | `hwb(0 20% 66%)`                  | Input border color while hovered.                                |
+| `--input-hover-background-color`       | `hwb(0 96% 4%)`                   | Input background while hovered.                                  |
+| `--input-hover-shadow-color`           | `transparent`                     | Input hover drop-shadow color.                                   |
 | `--input-focus-text-color`             | `hwb(212 2% 88%)`                 | Input text color while focused.                                  |
 | `--input-focus-border-color`           | `hwb(212 16% 22%)`                | Input border and default word focus outline color while focused. |
 | `--input-focus-shadow-color`           | `hwb(212 76% 0%)`                 | Input focus drop-shadow color.                                   |
@@ -330,13 +348,19 @@ Supported variables:
 | `--word-delete-hover-background-color` | `hwb(351 99% 0%)`                 | Word background and border on delete hover.                      |
 | `--word-checked-text-color`            | `hwb(276 52% 40%)`                | Checked word text color.                                         |
 | `--word-checked-background-color`      | `hwb(276 98% 0%)`                 | Checked word background and border color.                        |
+| `--word-checked-hover-text-color`      | `hwb(276 21% 21%)`                | Word text color while hovered in check mode.                     |
 | `--word-dragged-background-color`      | `hwb(210 90% 0%)`                 | Dragged word background.                                         |
 | `--word-dragged-border-color`          | `hwb(210 85% 0%)`                 | Dragged word border.                                             |
+| `--word-dragged-text-color`            | `hwb(211 5% 70%)`                 | Dragged word text color.                                         |
 | `--word-dragged-shadow-blur`           | `5px`                             | Blur radius of the drop-shadow on a dragged word.                |
 | `--word-dragged-shadow-color`          | `hwb(0 0% 100% / 0.05)`           | Drop-shadow color on a dragged word.                             |
 | `--word-dragged-scale-factor`          | `1.1`                             | Scale applied to a word while it is being dragged.               |
 | `--word-dragged-scaling-duration`      | `50ms`                            | Transition duration for the drag scale-up / scale-down effect.   |
-| `--word-fade-in-duration`              | `1s`                              | Entry animation duration for newly created words.                |
+| `--word-chip-fade-duration`            | `1s`                              | Chip color fade duration for words created with `"chip-fade"`.   |
+| `--word-fade-in-duration`              | `150ms`                           | Opacity fade-in duration for newly created words.                |
+| `--word-fade-out-duration`             | `150ms`                           | Opacity fade-out duration for deleted words.                     |
+| `--word-state-transition-duration`     | `150ms`                           | Checked and hover state transition duration for words.           |
+| `--input-state-transition-duration`    | `150ms`                           | Hover and focus transition duration for the built-in input.      |
 
 ## Notes
 
