@@ -22,7 +22,7 @@ function createTemplatePlugins({ minify }) {
 }
 
 export default defineConfig(({ command, mode }) => {
-	const plugins = createTemplatePlugins({ minify: command === "build" })
+	const plugins = createTemplatePlugins({ minify: true })
 
 	if (command !== "build") {
 		return { plugins }

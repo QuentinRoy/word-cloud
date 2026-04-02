@@ -1,7 +1,20 @@
 import { readFile } from "node:fs/promises"
-import CleanCSS from "clean-css"
 
-const cleanCSS = new CleanCSS({ compatibility: "*" })
+function minifyCSS(css: string): string {
+	return (
+		css
+			// Remove comments
+			.replace(/\/\*[\s\S]*?\*\//g, "")
+			// Remove leading/trailing whitespace
+			.trim()
+			// Replace multiple whitespaces with single space
+			.replace(/\s+/g, " ")
+			// Remove spaces around special characters
+			.replace(/\s*([{};:,>+~])\s*/g, "$1")
+			// Remove trailing semicolons before closing braces
+			.replace(/;}/g, "}")
+	)
+}
 
 interface CssStylesheetPluginOptions {
 	templateModulePath: string
@@ -25,8 +38,7 @@ export function cssStylesheetPlugin({
 
 			let content = await readFile(filePath, "utf-8")
 			if (minify) {
-				let minifyResult = await cleanCSS.minify(content)
-				content = minifyResult.styles
+				content = minifyCSS(content)
 			}
 
 			return {
