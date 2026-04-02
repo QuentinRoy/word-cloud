@@ -17,15 +17,13 @@ input {
 }
 
 label {
+	position: relative;
 	display: block;
 	padding: var(--word-padding-y) var(--word-padding-x);
 	font-family: var(--font-family);
 	font-size: var(--font-size);
 	color: var(--word-text-color);
 	text-align: center;
-	text-decoration: line-through;
-	text-decoration-thickness: 0;
-	text-decoration-color: transparent;
 	cursor: inherit;
 	background-color: var(--word-background-color);
 	border: var(--line-width) solid var(--word-border-color);
@@ -38,10 +36,22 @@ label {
 		filter var(--word-state-transition-duration, 0s) ease-in,
 		color var(--word-state-transition-duration, 0s) ease-out,
 		background-color var(--word-state-transition-duration, 0s) ease-out,
-		border-color var(--word-state-transition-duration, 0s) ease-out,
-		text-decoration-color var(--word-state-transition-duration, 0s) ease-out,
-		text-decoration-thickness var(--word-state-transition-duration, 0s) ease-out;
+		border-color var(--word-state-transition-duration, 0s) ease-out;
 	animation: none;
+}
+
+label::before {
+	position: absolute;
+	top: 50%;
+	right: var(--word-padding-x);
+	left: var(--word-padding-x);
+	height: var(--line-width);
+	pointer-events: none;
+	content: "";
+	background-color: currentColor;
+	transform: translateY(-50%) scaleX(0);
+	transform-origin: left center;
+	transition: transform var(--word-state-transition-duration, 0s) ease-out;
 }
 
 input:focus-visible ~ label {
@@ -102,12 +112,20 @@ input:focus-visible ~ label {
 :host([checked]) {
 	label {
 		color: var(--word-checked-text-color);
-		text-decoration: line-through;
-		text-decoration-thickness: var(--line-width);
-		text-decoration-color: currentColor;
 		background-color: var(--word-checked-background-color);
 		border-color: var(--word-checked-background-color);
 		transition: all ease-out var(--word-state-transition-duration, 0s);
+	}
+
+	label::before {
+		transform: translateY(-50%) scaleX(1);
+		transform-origin: left center;
+	}
+}
+
+:host(:not([checked])) {
+	label::before {
+		transform-origin: left center;
 	}
 }
 
