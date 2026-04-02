@@ -4,10 +4,9 @@ import {
 	string,
 	WithAttributeProps,
 } from "@quentinroy/custom-element-mixins"
-import { css, html } from "./template"
 import { generateRandomId, queryStrict } from "./utils"
-import wordStylesheetContent from "./word-element.css?raw"
-import wordTemplateContent from "./word-element.html?raw"
+import wordStylesheet from "./word-element.css?stylesheet"
+import wordTemplate from "./word-element.html?template"
 
 export class WordElementCheckedChangeEvent extends Event {
 	static get type() {
@@ -59,9 +58,6 @@ export class WordElementDeleteEvent extends Event {
 		super(WordElementDeleteEvent.type, { bubbles: false, composed: false })
 	}
 }
-
-const wordTemplate = html`${wordTemplateContent}`
-const wordStylesheet = css`${wordStylesheetContent}`
 
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),

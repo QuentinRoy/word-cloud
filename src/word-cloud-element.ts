@@ -24,16 +24,15 @@ import {
 	WordDeleteEvent,
 	WordValueChangeEvent,
 } from "./events.ts"
-import { css, html } from "./template.ts"
 import {
 	generateRandomId,
 	normalizeAngle,
 	queryStrict,
 	toPrecision,
 } from "./utils.ts"
-import debugStylesheetContent from "./word-cloud-debug.css?raw"
-import mainStylesheetContent from "./word-cloud-element.css?raw"
-import mainTemplateContent from "./word-cloud-element.html?raw"
+import debugStyles from "./word-cloud-debug.css?stylesheet"
+import mainStylesheet from "./word-cloud-element.css?stylesheet"
+import mainTemplate from "./word-cloud-element.html?template"
 import {
 	HTMLWordElement,
 	WordElementCheckedChangeEvent,
@@ -63,11 +62,6 @@ const REPULSION_FORCE = 0.0003
 const WORD_COLLISION_CATEGORY = 0x0001
 const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
 const DEFAULT_WORD_COLLISION_MASK = -1
-
-const mainTemplate = html`${mainTemplateContent}`
-
-const stylesheet = css`${mainStylesheetContent}`
-const debugStyles = css`${debugStylesheetContent}`
 
 let scopedElementRegistry: CustomElementRegistry | null = null
 let wordElementTagName = "x-word"
@@ -485,7 +479,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				: { mode: "closed", customElementRegistry: scopedElementRegistry },
 		)
 		shadowRoot.appendChild(mainTemplate.cloneNode(true))
-		let stylesheets = [stylesheet]
+		let stylesheets = [mainStylesheet]
 		if (DEBUG_MODE) stylesheets.push(debugStyles)
 		shadowRoot.adoptedStyleSheets = stylesheets
 		const container = queryStrict(shadowRoot, ".word-cloud", HTMLElement)

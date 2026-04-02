@@ -30,8 +30,11 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.10",
     "@changesets/cli": "^2.30.0",
+    "@types/clean-css": "^4.2.11",
     "@types/matter-js": "^0.20.2",
     "arktype": "^2.2.0",
+    "clean-css": "^5.3.3",
+    "html-minifier-terser": "^7.2.0",
     "type-fest": "^5.5.0",
     "typescript": "~6.0.2",
     "vite": "^8.0.3",
