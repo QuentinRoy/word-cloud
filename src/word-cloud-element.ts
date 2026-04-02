@@ -37,6 +37,7 @@ import {
 	HTMLWordElement,
 	WordElementCheckedChangeEvent,
 	WordElementDeleteEvent,
+	type WordElementEntryAnimation,
 	WordElementValueChangeEvent,
 } from "./word-element.ts"
 import type { WordData } from "./word-handle.ts"
@@ -95,7 +96,7 @@ type AddWordOptions = WordData & {
 	/** The initial linear velocity applied to the word body. */
 	velocity?: WordVelocity
 	/** Whether the word element should play its entry animation. */
-	entryAnimation?: HTMLWordElement["entryAnimation"]
+	entryAnimation?: WordElementEntryAnimation | "none"
 	/**
 	 * Internal behavior used for words spawned by the input form.
 	 * While true, collisions with the input volume stay disabled until the body
@@ -301,7 +302,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * @param options.angle The initial body rotation in radians. Defaults to `0`.
 	 * @param options.checked Whether the word starts in the checked state. Defaults to `false`.
 	 * @param options.velocity The initial linear velocity applied to the body.
-	 * @param options.animateEntry Whether the word should play its entry animation. Defaults to `false`.
+	 * @param options.entryAnimation Which entry animation to run. Defaults to `"fade"`.
 	 * @returns A live {@link WordHandle} for the newly created word.
 	 */
 	addWord({
@@ -311,7 +312,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		angle = 0,
 		checked = false,
 		velocity,
-		entryAnimation,
+		entryAnimation = "fade",
 		ignoreInputVolumeUntilExit = false,
 	}: AddWordOptions): WordHandle {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
@@ -320,11 +321,16 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#container.appendChild(element)
 		element.value = word
 		element.checked = checked
-		if (entryAnimation != null) element.entryAnimation = entryAnimation
+		if (entryAnimation !== "none") element.animateEntry(entryAnimation)
 		element.classList.add("word")
 		element.action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
 		let width = element.offsetWidth
 		let height = element.offsetHeight
+
+		const remove = () => {
+			this.#removeWordById(id, { exitAnimation: "fade" })
+		}
+
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
@@ -338,11 +344,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			},
 		})
 		let id = body.id
-		const deleteWord = () => {
-			if (!this.#wordEntries.has(id)) return
-			this.dispatchEvent(new WordDeleteEvent({ handle: publicHandle }))
-			this.#removeById(id)
-		}
 		let publicHandle = new WordHandle({
 			getWord: () => element.value ?? "",
 			setWord: (v) => {
@@ -355,7 +356,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			setChecked: (v) => {
 				element.checked = v
 			},
-			remove: deleteWord,
+			remove,
 		})
 		let entry: InternalWordEntry = {
 			id,
@@ -367,9 +368,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			dragLock: null,
 		}
 		this.#wordEntriesByElement.set(element, entry)
-		element.addEventListener(WordElementDeleteEvent.type, () => {
-			deleteWord()
-		})
+		element.addEventListener(WordElementDeleteEvent.type, remove)
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
 				new WordCheckedChangeEvent({
@@ -397,10 +396,21 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return publicHandle
 	}
 
-	#removeById(id: number) {
+	#removeWordById(
+		id: number,
+		{ exitAnimation = "none" }: { exitAnimation?: "fade" | "none" } = {},
+	) {
 		let entry = this.#wordEntries.get(id)
 		if (entry) {
-			this.#removeWordBodyAndDom(entry)
+			if (exitAnimation !== "none") {
+				entry.element.animateExit(exitAnimation).then(() => {
+					this.#container.removeChild(entry.element)
+				})
+			} else {
+				this.#container.removeChild(entry.element)
+			}
+			this.dispatchEvent(new WordDeleteEvent({ handle: entry.publicHandle }))
+			this.#removeWordBody(entry)
 			this.#wordEntries.delete(entry.id)
 		}
 	}
@@ -410,7 +420,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	clear() {
 		for (let entry of this.#wordEntries.values()) {
-			this.#removeWordBodyAndDom(entry)
+			this.#removeWordBody(entry)
 		}
 		this.#wordEntries.clear()
 	}
@@ -434,7 +444,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	setWords(words: Iterable<WordData>) {
 		this.clear()
 		for (let word of words) {
-			this.addWord(word)
+			this.addWord({ ...word, entryAnimation: "none" })
 		}
 	}
 
@@ -544,11 +554,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		})
 	}
 
-	#removeWordBodyAndDom(entry: InternalWordEntry) {
+	#removeWordBody(entry: InternalWordEntry) {
 		this.#unlockDraggedEntry(entry)
 		this.#wordResizeObserver.unobserve(entry.element)
 		Composite.remove(this.#engine.world, entry.body)
-		// this.#container.removeChild(entry.element)
 	}
 
 	#updateWordBodySize(entry: InternalWordEntry) {

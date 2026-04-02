@@ -78,16 +78,14 @@ export class WordElementDeletedChangeEvent extends Event {
 	}
 }
 
+export type WordElementEntryAnimation = "fade" | "chip-fade"
+export type WordElementExitAnimation = "fade"
+
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
 	deleted: boolean(),
 	dragged: boolean(),
 	action: pickList({ values: ["check", "delete"] }),
-	entryAnimation: pickList({
-		values: ["none", "chip-fade", "fade"],
-		default: "fade",
-	}),
-	exitAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
 	value: string({ default: "" }),
 }) {
 	#shadowRoot: ShadowRoot
@@ -95,6 +93,8 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	#deletedCheckbox: HTMLInputElement
 	#label: HTMLLabelElement
 	#id = generateRandomId()
+	#internals = this.attachInternals()
+	#entryAnimationToken = 0
 
 	constructor() {
 		super()
@@ -249,5 +249,31 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		if (event.key === "Enter") {
 			this.#deletedCheckbox.click()
 		}
+	}
+
+	async animateEntry(animation: WordElementEntryAnimation = "fade") {
+		this.#internals.states.delete("entering")
+		this.#internals.states.delete("chip-entering")
+
+		this.#internals.states.add("entering")
+		if (animation === "chip-fade") this.#internals.states.add("chip-entering")
+
+		await Promise.allSettled(
+			this.getAnimations({ subtree: true }).map(
+				(animation) => animation.finished,
+			),
+		)
+		this.#internals.states.delete("entering")
+		this.#internals.states.delete("chip-entering")
+	}
+
+	async animateExit(_animation: "fade" = "fade") {
+		this.#internals.states.add("exiting")
+		await Promise.allSettled(
+			this.getAnimations({ subtree: true }).map(
+				(animation) => animation.finished,
+			),
+		)
+		this.#internals.states.delete("exiting")
 	}
 }

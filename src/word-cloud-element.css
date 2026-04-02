@@ -70,6 +70,10 @@
 
 	/* Duration of the fade-in entry animation for newly spawned word chips. */
 	--word-chip-fade-duration: 1s;
+	/* Duration of the opacity fade-in animation for newly added words. */
+	--word-fade-in-duration: 100ms;
+	/* Duration of the opacity fade-out animation when a word is deleted. */
+	--word-fade-out-duration: var(--word-fade-in-duration);
 
 	display: block;
 }

@@ -130,9 +130,12 @@ export class WordValueChangeEvent extends WordCloudEvent {
 }
 
 /**
- * Fired by {@link HTMLWordCloudElement} when the user deletes a word while
- * `wordAction` is `delete`. The word is removed from the cloud immediately after all
- * event listeners have run.
+ * Fired by {@link HTMLWordCloudElement} when a word is removed from the cloud,
+ * whether by user interaction while `wordAction` is `delete` or through
+ * {@link WordHandle.remove}.
+ *
+ * The associated physics body is removed immediately. The DOM element may stay
+ * mounted until its exit animation completes.
  *
  * Listen with `"word-delete"` or {@link WordDeleteEvent.type}.
  */
@@ -143,7 +146,7 @@ export class WordDeleteEvent extends WordCloudEvent {
 	}
 
 	/**
-	 * @param data.handle The live handle that is about to be deleted.
+	 * @param data.handle The live handle that is being removed.
 	 */
 	constructor({ handle }: { handle: WordHandle }) {
 		super({ type: WordDeleteEvent.type, handle })
