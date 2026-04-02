@@ -185,9 +185,13 @@ input[type="text"] {
 		user-select: none;
 	}
 	.word[dragged] {
-		z-index: 4;
+		z-index: 5;
 		cursor: grabbing;
 	}
+}
+
+.word:focus {
+	z-index: 4;
 }
 
 :host(:state(active)) {

@@ -89,7 +89,7 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	value: string({ default: "" }),
 }) {
 	#shadowRoot: ShadowRoot
-	#checkbox: HTMLInputElement
+	#checkedCheckbox: HTMLInputElement
 	#deletedCheckbox: HTMLInputElement
 	#label: HTMLLabelElement
 	#id = generateRandomId()
@@ -97,15 +97,18 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 
 	constructor() {
 		super()
-		this.#shadowRoot = this.attachShadow({ mode: "closed" })
+		this.#shadowRoot = this.attachShadow({
+			mode: "closed",
+			delegatesFocus: true,
+		})
 		this.#shadowRoot.adoptedStyleSheets = [wordStylesheet]
 		this.#shadowRoot.appendChild(wordTemplate.cloneNode(true))
-		this.#checkbox = queryStrict(
+		this.#checkedCheckbox = queryStrict(
 			this.#shadowRoot,
 			"input[name='checked']",
 			HTMLInputElement,
 		)
-		this.#checkbox.id = `${this.#id}-checkbox`
+		this.#checkedCheckbox.id = `${this.#id}-checkbox`
 		this.#deletedCheckbox = queryStrict(
 			this.#shadowRoot,
 			"input[name='deleted']",
@@ -124,8 +127,11 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		this.#updateDeleted()
 		this.#updateAction()
 		this.#updateLabel()
-		this.#checkbox.addEventListener("change", this.#handleCheckboxChange)
-		this.#checkbox.addEventListener("keydown", this.#handleCheckboxKeypress)
+		this.#checkedCheckbox.addEventListener("change", this.#handleCheckboxChange)
+		this.#checkedCheckbox.addEventListener(
+			"keydown",
+			this.#handleCheckboxKeypress,
+		)
 		this.#deletedCheckbox.addEventListener(
 			"change",
 			this.#handleDeletedCheckboxChange,
@@ -137,8 +143,14 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	disconnectedCallback() {
-		this.#checkbox.removeEventListener("change", this.#handleCheckboxChange)
-		this.#checkbox.removeEventListener("keydown", this.#handleCheckboxKeypress)
+		this.#checkedCheckbox.removeEventListener(
+			"change",
+			this.#handleCheckboxChange,
+		)
+		this.#checkedCheckbox.removeEventListener(
+			"keydown",
+			this.#handleCheckboxKeypress,
+		)
 		this.#deletedCheckbox.removeEventListener(
 			"change",
 			this.#handleDeletedCheckboxChange,
@@ -184,13 +196,15 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 
 	#updateAction() {
 		this.#label.htmlFor =
-			this.action === "delete" ? this.#deletedCheckbox.id : this.#checkbox.id
-		this.#checkbox.disabled = this.action !== "check"
+			this.action === "delete"
+				? this.#deletedCheckbox.id
+				: this.#checkedCheckbox.id
+		this.#checkedCheckbox.disabled = this.action !== "check"
 		this.#deletedCheckbox.disabled = this.action !== "delete"
 	}
 
 	#updateChecked() {
-		this.#checkbox.checked = this.checked
+		this.#checkedCheckbox.checked = this.checked
 	}
 
 	#updateDeleted() {
@@ -224,14 +238,14 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#handleCheckboxChange = () => {
-		if (this.checked !== this.#checkbox.checked) {
-			this.checked = this.#checkbox.checked
+		if (this.checked !== this.#checkedCheckbox.checked) {
+			this.checked = this.#checkedCheckbox.checked
 		}
 	}
 
 	#handleCheckboxKeypress = (event: KeyboardEvent) => {
 		if (event.key === "Enter") {
-			this.#checkbox.click()
+			this.#checkedCheckbox.click()
 		}
 	}
 
