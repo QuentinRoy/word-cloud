@@ -42,7 +42,11 @@ input:focus-visible ~ label {
 	outline-offset: 2px;
 }
 
-:host([entry-animation="chip-fade"]) label {
+:host(:state(entering)) {
+	animation: word-fade-in var(--word-fade-in-duration, 0s) ease;
+}
+
+:host(:state(chip-entering)) label {
 	animation: chip-fade var(--word-chip-fade-duration, 0s);
 }
 
@@ -67,19 +71,23 @@ input:focus-visible ~ label {
 	label {
 		cursor: pointer;
 	}
-	label:hover {
-		color: var(--word-delete-hover-text-color);
-		background-color: var(--word-delete-hover-background-color);
-		border-color: var(--word-delete-hover-background-color);
-	}
+}
+
+:host(:state(exiting)) {
+	opacity: 0;
 }
 
 :host([deleted]) {
-	label {
-		color: var(--word-delete-hover-text-color);
-		background-color: var(--word-delete-hover-background-color);
-		border-color: var(--word-delete-hover-background-color);
-	}
+	display: none;
+	opacity: 0;
+}
+
+:host(:state(exiting)) label,
+:host([deleted]) label,
+:host([action="delete"]) label:hover {
+	color: var(--word-delete-hover-text-color);
+	background-color: var(--word-delete-hover-background-color);
+	border-color: var(--word-delete-hover-background-color);
 }
 
 :host([checked]) {
@@ -95,6 +103,20 @@ input:focus-visible ~ label {
 	display: block;
 	width: fit-content;
 	height: fit-content;
+	opacity: 1;
+	transition:
+		opacity var(--word-fade-out-duration, 0s) ease,
+		display var(--word-fade-out-duration, 0s) ease;
+	transition-behavior: allow-discrete;
+}
+
+@keyframes word-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 @keyframes chip-fade {
