@@ -326,7 +326,7 @@ Supported variables:
 | `--fast-animation`                     | `50ms`                            | Shared fast timing token used by default animation durations.    |
 | `--slow-animation`                     | `150ms`                           | Shared medium timing token used by default animation durations.  |
 | `--extra-slow-animation`               | `1s`                              | Shared long timing token used by the chip fade animation.        |
-| `--line-width`                         | `2px`                             | Border width and strike-through thickness.                       |
+| `--line-width`                         | `2px`                             | Border width and strike line thickness.                          |
 | `--font-size`                          | `1.5rem`                          | Input and word font size.                                        |
 | `--font-family`                        | `Arial`                           | Input and word font family.                                      |
 | `--input-text-color`                   | `black`                           | Input text color.                                                |
@@ -346,21 +346,21 @@ Supported variables:
 | `--word-border-color`                  | `var(--word-background-color)`    | Default word border color.                                       |
 | `--word-delete-hover-text-color`       | `hwb(357 45% 11%)`                | Word text color on delete hover.                                 |
 | `--word-delete-hover-background-color` | `hwb(351 99% 0%)`                 | Word background and border on delete hover.                      |
-| `--word-checked-text-color`            | `hwb(276 52% 40%)`                | Checked word text color.                                         |
+| `--word-checked-text-color`            | `hwb(276 54% 31%)`                | Checked word text color.                                         |
 | `--word-checked-background-color`      | `hwb(276 98% 0%)`                 | Checked word background and border color.                        |
 | `--word-checked-hover-text-color`      | `hwb(276 21% 21%)`                | Word text color while hovered in check mode.                     |
-| `--word-dragged-background-color`      | `hwb(210 90% 0%)`                 | Dragged word background.                                         |
-| `--word-dragged-border-color`          | `hwb(210 85% 0%)`                 | Dragged word border.                                             |
+| `--word-dragged-background-color`      | `hwb(212 90% 0%)`                 | Dragged word background.                                         |
+| `--word-dragged-border-color`          | `hwb(212 76% 0%)`                 | Dragged word border.                                             |
 | `--word-dragged-text-color`            | `hwb(211 5% 70%)`                 | Dragged word text color.                                         |
 | `--word-dragged-shadow-blur`           | `5px`                             | Blur radius of the drop-shadow on a dragged word.                |
 | `--word-dragged-shadow-color`          | `hwb(0 0% 100% / 0.05)`           | Drop-shadow color on a dragged word.                             |
 | `--word-dragged-scale-factor`          | `1.1`                             | Scale applied to a word while it is being dragged.               |
-| `--word-dragged-scaling-duration`      | `50ms`                            | Transition duration for the drag scale-up / scale-down effect.   |
-| `--word-chip-fade-duration`            | `1s`                              | Chip color fade duration for words created with `"chip-fade"`.   |
-| `--word-fade-in-duration`              | `150ms`                           | Opacity fade-in duration for newly created words.                |
-| `--word-fade-out-duration`             | `150ms`                           | Opacity fade-out duration for deleted words.                     |
-| `--word-state-transition-duration`     | `150ms`                           | Checked and hover state transition duration for words.           |
-| `--input-state-transition-duration`    | `150ms`                           | Hover and focus transition duration for the built-in input.      |
+| `--word-dragged-scaling-duration`      | `var(--fast-animation)`           | Transition duration for the drag scale-up / scale-down effect.   |
+| `--word-chip-fade-duration`            | `var(--extra-slow-animation)`     | Chip color fade duration for words created with `"chip-fade"`.   |
+| `--word-fade-in-duration`              | `var(--slow-animation)`           | Opacity fade-in duration for newly created words.                |
+| `--word-fade-out-duration`             | `var(--slow-animation)`           | Opacity fade-out duration for deleted words.                     |
+| `--word-state-transition-duration`     | `var(--slow-animation)`           | Checked and hover state transition duration for words.           |
+| `--input-state-transition-duration`    | `var(--slow-animation)`           | Hover and focus transition duration for the built-in input.      |
 
 ## Notes
 
