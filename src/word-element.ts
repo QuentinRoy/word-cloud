@@ -94,7 +94,6 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	#label: HTMLLabelElement
 	#id = generateRandomId()
 	#internals = this.attachInternals()
-	#entryAnimationToken = 0
 
 	constructor() {
 		super()

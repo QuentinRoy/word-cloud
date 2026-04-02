@@ -95,7 +95,7 @@ type WordVelocity = { x: number; y: number }
 type AddWordOptions = WordData & {
 	/** The initial linear velocity applied to the word body. */
 	velocity?: WordVelocity
-	/** Whether the word element should play its entry animation. */
+	/** Which entry animation to run when the word element is created. */
 	entryAnimation?: WordElementEntryAnimation | "none"
 	/**
 	 * Internal behavior used for words spawned by the input form.
@@ -396,6 +396,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return publicHandle
 	}
 
+	/**
+	 * Removes a word by id, optionally waiting for its exit animation before
+	 * detaching the DOM element.
+	 */
 	#removeWordById(
 		id: number,
 		{ exitAnimation = "none" }: { exitAnimation?: "fade" | "none" } = {},

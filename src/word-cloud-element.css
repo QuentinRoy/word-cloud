@@ -13,6 +13,13 @@
 	/* Horizontal padding of each word chip. */
 	--word-padding-x: var(--space-m);
 
+	/* Shared fast timing token used by default animation durations. */
+	--fast-animation: 50ms;
+	/* Shared medium timing token used by default animation durations. */
+	--slow-animation: 150ms;
+	/* Shared slow timing token used by the chip fade animation. */
+	--extra-slow-animation: 1s;
+
 	/* Border width used for word chips and the text input. */
 	--line-width: 2px;
 	/* Font size applied to both word chips and the text input. */
@@ -26,6 +33,14 @@
 	--input-background-color: hwb(0 93% 7%);
 	/* Border color of the built-in text input. */
 	--input-border-color: hwb(0 27% 73%);
+	/* Text color of the built-in text input while hovered. */
+	--input-hover-text-color: var(--input-text-color);
+	/* Border color of the built-in text input while hovered. */
+	--input-hover-border-color: hwb(0 20% 66%);
+	/* Background color of the built-in text input while hovered. */
+	--input-hover-background-color: hwb(0 96% 4%);
+	/* Drop-shadow color of the built-in text input while hovered. */
+	--input-hover-shadow-color: transparent;
 	/* Text color of the built-in text input while focused. */
 	--input-focus-text-color: hwb(212 2% 88%);
 	/* Border color of the built-in text input while focused. */
@@ -51,14 +66,18 @@
 	--word-delete-hover-background-color: hwb(351 99% 0%);
 
 	/* Text color of a checked word chip. */
-	--word-checked-text-color: hwb(276 52% 40%);
+	--word-checked-text-color: hwb(276 54% 31%);
 	/* Background color of a checked word chip. */
 	--word-checked-background-color: hwb(276 98% 0%);
+	/* Text color of a word chip while hovered in check mode. */
+	--word-checked-hover-text-color: hwb(276 21% 21%);
 
 	/* Background color of a word chip while being dragged. */
-	--word-dragged-background-color: hwb(210 90% 0%);
+	--word-dragged-background-color: hwb(212 90% 0%);
 	/* Border color of a word chip while being dragged. */
-	--word-dragged-border-color: hwb(210 85% 0%);
+	--word-dragged-border-color: hwb(212 76% 0%);
+	/* Text color of a word chip while being dragged. */
+	--word-dragged-text-color: hwb(211 5% 70%);
 	/* Blur radius of the drop-shadow applied to a dragged word chip. */
 	--word-dragged-shadow-blur: 5px;
 	/* Color of the drop-shadow applied to a dragged word chip. */
@@ -66,14 +85,18 @@
 	/* Scale factor applied to a word chip while it is being dragged. */
 	--word-dragged-scale-factor: 1.1;
 	/* Duration of the scale-up / scale-down transition when dragging starts or ends. */
-	--word-dragged-scaling-duration: 50ms;
+	--word-dragged-scaling-duration: var(--fast-animation);
 
 	/* Duration of the fade-in entry animation for newly spawned word chips. */
-	--word-chip-fade-duration: 1s;
+	--word-chip-fade-duration: var(--extra-slow-animation);
 	/* Duration of the opacity fade-in animation for newly added words. */
-	--word-fade-in-duration: 100ms;
+	--word-fade-in-duration: var(--slow-animation);
 	/* Duration of the opacity fade-out animation when a word is deleted. */
-	--word-fade-out-duration: var(--word-fade-in-duration);
+	--word-fade-out-duration: var(--slow-animation);
+	/* Duration for checked/unchecked and delete-hover chip color transitions. */
+	--word-state-transition-duration: var(--slow-animation);
+	/* Duration for input hover/focus visual transitions. */
+	--input-state-transition-duration: var(--slow-animation);
 
 	display: block;
 }
@@ -112,6 +135,18 @@ input[type="text"] {
 	border: var(--line-width) solid var(--input-border-color);
 	border-radius: var(--chamfer-radius, 0);
 	opacity: var(--opacity, 1);
+	transition:
+		color var(--input-state-transition-duration, 0s) ease-in,
+		background-color var(--input-state-transition-duration, 0s) ease-in,
+		border-color var(--input-state-transition-duration, 0s) ease-in,
+		filter var(--input-state-transition-duration, 0s) ease-in;
+
+	&:hover {
+		color: var(--input-hover-text-color);
+		background-color: var(--input-hover-background-color);
+		border-color: var(--input-hover-border-color);
+		filter: drop-shadow(0px 0px 6px var(--input-hover-shadow-color));
+	}
 
 	&:focus,
 	&:focus-visible {
@@ -121,6 +156,16 @@ input[type="text"] {
 		border-color: var(--input-focus-border-color);
 		border-radius: var(--chamfer-radius, 0);
 		filter: drop-shadow(0px 0px 10px var(--input-focus-shadow-color));
+	}
+
+	&:hover,
+	&:focus,
+	&:focus-visible {
+		transition:
+			color var(--input-state-transition-duration, 0s) ease-out,
+			background-color var(--input-state-transition-duration, 0s) ease-out,
+			border-color var(--input-state-transition-duration, 0s) ease-out,
+			filter var(--input-state-transition-duration, 0s) ease-out;
 	}
 }
 
