@@ -30,7 +30,6 @@ import {
 	queryStrict,
 	toPrecision,
 } from "./utils.ts"
-import debugStyles from "./word-cloud-debug.css?stylesheet"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
 import mainTemplate from "./word-cloud-element.html?template"
 import {
@@ -495,7 +494,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		)
 		shadowRoot.appendChild(mainTemplate.cloneNode(true))
 		let stylesheets = [mainStylesheet]
-		if (DEBUG_MODE) stylesheets.push(debugStyles)
 		shadowRoot.adoptedStyleSheets = stylesheets
 		const container = queryStrict(shadowRoot, ".word-cloud", HTMLElement)
 		const wordForm = queryStrict(container, "form", HTMLFormElement)
