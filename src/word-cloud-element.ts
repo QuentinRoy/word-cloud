@@ -425,6 +425,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	clear() {
 		for (let entry of this.#wordEntries.values()) {
 			this.#removeWordBody(entry)
+			entry.element.remove()
 		}
 		this.#wordEntries.clear()
 	}
