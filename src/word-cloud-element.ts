@@ -692,7 +692,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				angle: 0,
 				checked: false,
 				velocity: this.#pickRandomVelocity(),
-				entryAnimation: "box-fade",
+				entryAnimation: "chip-fade",
 				ignoreInputVolumeUntilExit: true,
 			})
 		}

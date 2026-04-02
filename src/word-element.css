@@ -31,7 +31,7 @@ label {
 	opacity: var(--opacity, 1);
 	filter: drop-shadow(0px 0px 0px transparent);
 	transform: scale(1);
-	transition-timing-function: var(--transition-timing);
+	transition-timing-function: ease-in;
 	transition-duration: var(--word-dragged-scaling-duration, 0);
 	transition-property: filter, transform;
 	animation: none;
@@ -42,7 +42,7 @@ input:focus-visible ~ label {
 	outline-offset: 2px;
 }
 
-:host([entry-animation="box-fade"]) label {
+:host([entry-animation="chip-fade"]) label {
 	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 }
 
@@ -54,6 +54,7 @@ input:focus-visible ~ label {
 			var(--word-dragged-shadow-color, transparent)
 	);
 	transform: scale(var(--word-dragged-scale-factor, 1));
+	transition-timing-function: ease-out;
 }
 
 :host([action="check"]) {

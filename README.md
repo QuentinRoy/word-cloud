@@ -283,6 +283,11 @@ x-word-cloud {
   --word-delete-hover-background-color: #fee2e2;
   --word-dragged-background-color: #dbeafe;
   --word-dragged-border-color: #bfdbfe;
+  --word-dragged-shadow-blur: 8px;
+  --word-dragged-shadow-color: rgba(0, 0, 0, 0.15);
+  --word-dragged-scale-factor: 1.05;
+  --word-dragged-scaling-duration: 80ms;
+  --transition-timing: ease-out;
   --input-background-color: #ffffff;
   --input-text-color: #111827;
   --input-border-color: #9ca3af;
@@ -327,6 +332,10 @@ Supported variables:
 | `--word-checked-background-color`      | `hwb(276 98% 0%)`                 | Checked word background and border color.                        |
 | `--word-dragged-background-color`      | `hwb(210 90% 0%)`                 | Dragged word background.                                         |
 | `--word-dragged-border-color`          | `hwb(210 85% 0%)`                 | Dragged word border.                                             |
+| `--word-dragged-shadow-blur`           | `5px`                             | Blur radius of the drop-shadow on a dragged word.                |
+| `--word-dragged-shadow-color`          | `hwb(0 0% 100% / 0.05)`           | Drop-shadow color on a dragged word.                             |
+| `--word-dragged-scale-factor`          | `1.1`                             | Scale applied to a word while it is being dragged.               |
+| `--word-dragged-scaling-duration`      | `50ms`                            | Transition duration for the drag scale-up / scale-down effect.   |
 | `--word-fade-in-duration`              | `1s`                              | Entry animation duration for newly created words.                |
 
 ## Notes

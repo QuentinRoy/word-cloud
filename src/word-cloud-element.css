@@ -1,36 +1,76 @@
 :host {
+	/* Compact spacing token — used by the default --input-padding-* and --word-padding-* values. */
 	--space-s: 0.5rem;
+	/* Roomy spacing token — used by the default --input-padding-* and --word-padding-* values. */
 	--space-m: 1rem;
+
+	/* Vertical padding of the built-in text input. */
 	--input-padding-y: var(--space-s);
+	/* Horizontal padding of the built-in text input. */
 	--input-padding-x: var(--space-m);
+	/* Vertical padding of each word chip. */
 	--word-padding-y: var(--space-s);
+	/* Horizontal padding of each word chip. */
 	--word-padding-x: var(--space-m);
+
+	/* Border width used for word chips and the text input. */
 	--line-width: 2px;
+	/* Font size applied to both word chips and the text input. */
 	--font-size: 1.5rem;
+	/* Font family applied to both word chips and the text input. */
 	--font-family: Arial;
+
+	/* Text color of the built-in text input. */
 	--input-text-color: black;
+	/* Background color of the built-in text input. */
 	--input-background-color: hwb(0 93% 7%);
+	/* Border color of the built-in text input. */
 	--input-border-color: hwb(0 27% 73%);
+	/* Text color of the built-in text input while focused. */
 	--input-focus-text-color: hwb(212 2% 88%);
+	/* Border color of the built-in text input while focused. */
 	--input-focus-border-color: hwb(212 16% 22%);
+	/* Drop-shadow color of the built-in text input while focused. */
 	--input-focus-shadow-color: hwb(212 76% 0%);
+	/* Background color of the built-in text input while focused. */
 	--input-focus-background-color: hwb(212 95% 0%);
+
+	/* Keyboard focus outline color for word chips. Defaults to --input-focus-border-color. */
 	--word-focus-outline-color: var(--input-focus-border-color);
+
+	/* Default text color for word chips. */
 	--word-text-color: hwb(276 2% 80%);
+	/* Default background color for word chips. */
 	--word-background-color: hwb(276 96% 0%);
+	/* Default border color for word chips. Defaults to --word-background-color. */
 	--word-border-color: var(--word-background-color);
+
+	/* Text color of a word chip on delete hover (wordAction="delete"). */
 	--word-delete-hover-text-color: hwb(357 45% 11%);
+	/* Background color of a word chip on delete hover (wordAction="delete"). */
 	--word-delete-hover-background-color: hwb(351 99% 0%);
+
+	/* Text color of a checked word chip. */
 	--word-checked-text-color: hwb(276 52% 40%);
+	/* Background color of a checked word chip. */
 	--word-checked-background-color: hwb(276 98% 0%);
+
+	/* Background color of a word chip while being dragged. */
 	--word-dragged-background-color: hwb(210 90% 0%);
+	/* Border color of a word chip while being dragged. */
 	--word-dragged-border-color: hwb(210 85% 0%);
+	/* Blur radius of the drop-shadow applied to a dragged word chip. */
 	--word-dragged-shadow-blur: 5px;
+	/* Color of the drop-shadow applied to a dragged word chip. */
 	--word-dragged-shadow-color: hwb(0 0% 100% / 0.05);
+	/* Scale factor applied to a word chip while it is being dragged. */
 	--word-dragged-scale-factor: 1.1;
+	/* Duration of the scale-up / scale-down transition when dragging starts or ends. */
 	--word-dragged-scaling-duration: 50ms;
+
+	/* Duration of the fade-in entry animation for newly spawned word chips. */
 	--word-fade-in-duration: 1s;
-	--transition-timing: ease-in-out;
+
 	display: block;
 }
 
