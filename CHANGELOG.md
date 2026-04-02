@@ -1,5 +1,20 @@
 # @quentinroy/word-cloud
 
+## 0.7.0
+
+### Minor Changes
+
+- 469da68: Disable word entry animation by default with `HTMLWordCloudElement:addWord`.
+- 9fe8c23: Add word enter and exit animations
+- de9c3d4: Add animated state transitions to words and input.
+- 1b50f87: Split mode attribute into two new attributes: has-input (boolean) and word-action ("none", "drag", "check"). This allows for more flexible combinations of input and word interaction modes. The old "mode" attribute is no longer supported and should be replaced with the new attributes in any code that references it.
+- 7b42c96: Disable a word's collision while it's being dragged.
+- 582be95: Add a small repulsion force between words, walls, and input.
+
+### Patch Changes
+
+- e8fe42b: CSS and HTML minification in dist files.
+
 ## 0.6.0
 
 ### Minor Changes
