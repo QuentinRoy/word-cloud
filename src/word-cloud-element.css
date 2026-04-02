@@ -25,7 +25,12 @@
 	--word-checked-background-color: hwb(276 98% 0%);
 	--word-dragged-background-color: hwb(210 90% 0%);
 	--word-dragged-border-color: hwb(210 85% 0%);
+	--word-dragged-shadow-blur: 5px;
+	--word-dragged-shadow-color: hwb(0 0% 100% / 0.05);
+	--word-dragged-scale-factor: 1.1;
+	--word-dragged-scaling-duration: 50ms;
 	--word-fade-in-duration: 1s;
+	--transition-timing: ease-in-out;
 	display: block;
 }
 

@@ -29,6 +29,11 @@ label {
 	border: var(--line-width) solid var(--word-border-color);
 	border-radius: var(--chamfer-radius, 0);
 	opacity: var(--opacity, 1);
+	filter: drop-shadow(0px 0px 0px transparent);
+	transform: scale(1);
+	transition-timing-function: var(--transition-timing);
+	transition-duration: var(--word-dragged-scaling-duration, 0);
+	transition-property: filter, transform;
 	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 }
 
@@ -44,6 +49,11 @@ input:focus-visible ~ label {
 :host([dragged]) label {
 	background-color: var(--word-dragged-background-color);
 	border-color: var(--word-dragged-border-color);
+	filter: drop-shadow(
+		0px 0px var(--word-dragged-shadow-blur, 0)
+			var(--word-dragged-shadow-color, transparent)
+	);
+	transform: scale(var(--word-dragged-scale-factor, 1));
 }
 
 :host([action="check"]) {

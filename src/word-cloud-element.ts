@@ -656,6 +656,15 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return DEFAULT_WORD_COLLISION_MASK & ~INPUT_VOLUME_COLLISION_CATEGORY
 	}
 
+	#updateWordCollisionMask(entry: InternalWordEntry) {
+		entry.body.collisionFilter.mask =
+			entry.dragLock != null
+				? 0
+				: this.#getWordCollisionMask({
+						ignoreInputVolume: entry.ignoreInputVolumeUntilExit,
+					})
+	}
+
 	#isOverlappingInputVolume(body: Body) {
 		const a = body.bounds
 		const b = this.#inputVolumeBody.bounds
@@ -777,9 +786,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (let i = 0; i < entries.length; i++) {
 			const entryA = entries[i]
 			if (entryA.body.isStatic || entryA.body.isSleeping) continue
+			if (entryA.dragLock != null) continue
 			for (let j = i + 1; j < entries.length; j++) {
 				const entryB = entries[j]
 				if (entryB.body.isStatic || entryB.body.isSleeping) continue
+				if (entryB.dragLock != null) continue
 
 				const boundsA = entryA.body.bounds
 				const boundsB = entryB.body.bounds
@@ -830,8 +841,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		const edgeTop = top.position.y + FRAME_THICKNESS / 2
 		const edgeBottom = bottom.position.y - FRAME_THICKNESS / 2
 
-		for (const { body } of this.#wordEntries.values()) {
+		for (const entry of this.#wordEntries.values()) {
+			const { body } = entry
 			if (body.isStatic || body.isSleeping) continue
+			if (entry.dragLock != null) continue
 			const bounds = body.bounds
 
 			const gapLeft = bounds.min.x - edgeLeft
@@ -880,6 +893,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (const entry of this.#wordEntries.values()) {
 			const { body } = entry
 			if (body.isStatic || body.isSleeping) continue
+			if (entry.dragLock != null) continue
 			if (entry.ignoreInputVolumeUntilExit) continue
 
 			const boundsA = body.bounds
@@ -924,9 +938,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				if (!entry.ignoreInputVolumeUntilExit) continue
 				if (this.#isOverlappingInputVolume(entry.body)) continue
 				entry.ignoreInputVolumeUntilExit = false
-				entry.body.collisionFilter.mask = this.#getWordCollisionMask({
-					ignoreInputVolume: false,
-				})
+				this.#updateWordCollisionMask(entry)
 			}
 		}
 	}
@@ -940,6 +952,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#lockDraggedEntry(entry: InternalWordEntry) {
 		if (entry.dragLock != null) return
 		entry.dragLock = { initialInertia: entry.body.inertia }
+		this.#updateWordCollisionMask(entry)
 		Body.setInertia(entry.body, Infinity)
 		Body.setAngularVelocity(entry.body, 0)
 		entry.element.dragged = true
@@ -950,6 +963,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Body.setInertia(entry.body, entry.dragLock.initialInertia)
 		Body.setAngularVelocity(entry.body, 0)
 		entry.dragLock = null
+		this.#updateWordCollisionMask(entry)
 		entry.element.dragged = false
 	}
 
@@ -993,9 +1007,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (let entry of this.#wordEntries.values()) {
 			if (!entry.ignoreInputVolumeUntilExit) continue
 			entry.ignoreInputVolumeUntilExit = false
-			entry.body.collisionFilter.mask = this.#getWordCollisionMask({
-				ignoreInputVolume: false,
-			})
+			this.#updateWordCollisionMask(entry)
 		}
 		this.#inputVolumeEnabled = false
 	}
