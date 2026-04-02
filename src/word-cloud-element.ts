@@ -436,7 +436,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * Useful for persistence — pass the result to {@link setWords} to restore.
 	 */
 	getWords(): Iterable<WordHandle> {
-		return this.#wordEntries.values().map((entry) => entry.publicHandle)
+		return Array.from(this.#wordEntries.values(), (entry) => entry.publicHandle)
 	}
 
 	/**

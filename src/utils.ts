@@ -15,9 +15,7 @@ export function queryStrict<T extends HTMLElement>(
 	if (element instanceof type) {
 		return element
 	}
-	throw new Error(
-		`Expected ${selector} to be a instance of ${type.constructor.name}`,
-	)
+	throw new Error(`Expected ${selector} to be an instance of ${type.name}`)
 }
 
 /**
@@ -33,10 +31,9 @@ export function createIterativeIdGenerator(): () => number
  */
 export function createIterativeIdGenerator<T>(map: (x: number) => T): () => T
 export function createIterativeIdGenerator(map?: (x: number) => unknown) {
-	let last = 0
+	let current = 0
 	return () => {
-		let current = last + 1
-		last = current
+		current += 1
 		return map ? map(current) : current
 	}
 }
@@ -48,8 +45,8 @@ export function createIterativeIdGenerator(map?: (x: number) => unknown) {
  * @returns The rounded number.
  */
 export function toPrecision(value: number, precision: number): number {
-	let f = 10 ** Math.floor(precision)
-	return Math.round(value * f) / f
+	const factor = 10 ** Math.floor(precision)
+	return Math.round(value * factor) / factor
 }
 
 export function generateRandomId() {

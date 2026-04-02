@@ -123,12 +123,6 @@ input:focus-visible ~ label {
 	}
 }
 
-:host(:not([checked])) {
-	label::before {
-		transform-origin: left center;
-	}
-}
-
 :host([dragged]) label {
 	color: var(--word-dragged-text-color);
 	background-color: var(--word-dragged-background-color);

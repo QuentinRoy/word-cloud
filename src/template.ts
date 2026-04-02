@@ -1,6 +1,6 @@
 export function html(...args: Parameters<typeof String.raw>) {
-	let html = String.raw(...args)
-	return createHtmlTemplate(html)
+	const content = String.raw(...args)
+	return createHtmlTemplate(content)
 }
 
 export function createHtmlTemplate(content: string) {
@@ -10,8 +10,8 @@ export function createHtmlTemplate(content: string) {
 }
 
 export function css(...args: Parameters<typeof String.raw>) {
-	let css = String.raw(...args)
-	return createCssStylesheet(css)
+	const content = String.raw(...args)
+	return createCssStylesheet(content)
 }
 
 export function createCssStylesheet(content: string) {

@@ -20,9 +20,6 @@ if (!(controls instanceof HTMLFormElement)) {
 if (!(wordCloud instanceof HTMLWordCloudElement)) {
 	throw new Error("Expected x-word-cloud demo root element to exist")
 }
-if (!(controls instanceof HTMLFormElement)) {
-	throw new Error("Expected controls form to exist")
-}
 if (!(clearButton instanceof HTMLButtonElement)) {
 	throw new Error("Expected clear button to exist")
 }
