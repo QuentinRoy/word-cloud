@@ -101,7 +101,7 @@ type AddWordOptions = WordData & {
 	/** The initial linear velocity applied to the word body. */
 	velocity?: WordVelocity
 	/** Whether the word element should play its entry animation. */
-	animateEntry?: boolean
+	entryAnimation?: HTMLWordElement["entryAnimation"]
 	/**
 	 * Internal behavior used for words spawned by the input form.
 	 * While true, collisions with the input volume stay disabled until the body
@@ -317,7 +317,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		angle = 0,
 		checked = false,
 		velocity,
-		animateEntry = false,
+		entryAnimation,
 		ignoreInputVolumeUntilExit = false,
 	}: AddWordOptions): WordHandle {
 		let element = document.createElement(wordElementTagName) as HTMLWordElement
@@ -326,7 +326,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#container.appendChild(element)
 		element.value = word
 		element.checked = checked
-		if (!animateEntry) element.entryAnimation = "none"
+		if (entryAnimation != null) element.entryAnimation = entryAnimation
 		element.classList.add("word")
 		element.action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
 		let width = element.offsetWidth
@@ -692,7 +692,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				angle: 0,
 				checked: false,
 				velocity: this.#pickRandomVelocity(),
-				animateEntry: true,
+				entryAnimation: "box-fade",
 				ignoreInputVolumeUntilExit: true,
 			})
 		}

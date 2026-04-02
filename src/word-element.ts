@@ -67,7 +67,7 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
 	dragged: boolean(),
 	action: pickList({ values: ["check", "delete"] }),
-	entryAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
+	entryAnimation: pickList({ values: ["none", "box-fade"], default: "none" }),
 	value: string({ default: "" }),
 }) {
 	#shadowRoot: ShadowRoot

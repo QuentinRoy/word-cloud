@@ -34,7 +34,7 @@ label {
 	transition-timing-function: var(--transition-timing);
 	transition-duration: var(--word-dragged-scaling-duration, 0);
 	transition-property: filter, transform;
-	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+	animation: none;
 }
 
 input:focus-visible ~ label {
@@ -42,8 +42,8 @@ input:focus-visible ~ label {
 	outline-offset: 2px;
 }
 
-:host([entry-animation="none"]) label {
-	animation: none;
+:host([entry-animation="box-fade"]) label {
+	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
 }
 
 :host([dragged]) label {
