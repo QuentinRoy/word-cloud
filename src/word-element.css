@@ -43,7 +43,7 @@ input:focus-visible ~ label {
 }
 
 :host([entry-animation="chip-fade"]) label {
-	animation: word-fade-in var(--word-fade-in-duration, 0.3s);
+	animation: chip-fade var(--word-chip-fade-duration, 0s);
 }
 
 :host([dragged]) label {
@@ -74,6 +74,14 @@ input:focus-visible ~ label {
 	}
 }
 
+:host([deleted]) {
+	label {
+		color: var(--word-delete-hover-text-color);
+		background-color: var(--word-delete-hover-background-color);
+		border-color: var(--word-delete-hover-background-color);
+	}
+}
+
 :host([checked]) {
 	label {
 		color: var(--word-checked-text-color);
@@ -89,7 +97,7 @@ input:focus-visible ~ label {
 	height: fit-content;
 }
 
-@keyframes word-fade-in {
+@keyframes chip-fade {
 	0% {
 		background-color: transparent;
 		border-color: transparent;

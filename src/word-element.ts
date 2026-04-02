@@ -59,16 +59,40 @@ export class WordElementDeleteEvent extends Event {
 	}
 }
 
+export class WordElementDeletedChangeEvent extends Event {
+	static get type() {
+		return "word-element-deleted-change" as const
+	}
+	#deleted: boolean
+
+	constructor({ deleted }: { deleted: boolean }) {
+		super(WordElementDeletedChangeEvent.type, {
+			bubbles: false,
+			composed: false,
+		})
+		this.#deleted = deleted
+	}
+
+	get deleted() {
+		return this.#deleted
+	}
+}
+
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
+	deleted: boolean(),
 	dragged: boolean(),
 	action: pickList({ values: ["check", "delete"] }),
-	entryAnimation: pickList({ values: ["none", "chip-fade"], default: "none" }),
+	entryAnimation: pickList({
+		values: ["none", "chip-fade", "fade"],
+		default: "fade",
+	}),
+	exitAnimation: pickList({ values: ["none", "fade"], default: "fade" }),
 	value: string({ default: "" }),
 }) {
 	#shadowRoot: ShadowRoot
 	#checkbox: HTMLInputElement
-	#deleteButton: HTMLInputElement
+	#deletedCheckbox: HTMLInputElement
 	#label: HTMLLabelElement
 	#id = generateRandomId()
 
@@ -83,32 +107,47 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 			HTMLInputElement,
 		)
 		this.#checkbox.id = `${this.#id}-checkbox`
-		this.#deleteButton = queryStrict(
+		this.#deletedCheckbox = queryStrict(
 			this.#shadowRoot,
-			"input[name='delete']",
+			"input[name='deleted']",
 			HTMLInputElement,
 		)
-		this.#deleteButton.id = `${this.#id}-delete`
+		this.#deletedCheckbox.id = `${this.#id}-deleted`
 		this.#label = queryStrict(this.#shadowRoot, "label", HTMLLabelElement)
 	}
 
 	static get observedAttributes() {
-		return ["checked", "action", "value"]
+		return ["checked", "deleted", "action", "value"]
 	}
 
 	connectedCallback() {
 		this.#updateChecked()
+		this.#updateDeleted()
 		this.#updateAction()
 		this.#updateLabel()
 		this.#checkbox.addEventListener("change", this.#handleCheckboxChange)
 		this.#checkbox.addEventListener("keydown", this.#handleCheckboxKeypress)
-		this.#deleteButton.addEventListener("click", this.#handleDelete)
+		this.#deletedCheckbox.addEventListener(
+			"change",
+			this.#handleDeletedCheckboxChange,
+		)
+		this.#deletedCheckbox.addEventListener(
+			"keydown",
+			this.#handleDeletedCheckboxKeypress,
+		)
 	}
 
 	disconnectedCallback() {
 		this.#checkbox.removeEventListener("change", this.#handleCheckboxChange)
 		this.#checkbox.removeEventListener("keydown", this.#handleCheckboxKeypress)
-		this.#deleteButton.removeEventListener("click", this.#handleDelete)
+		this.#deletedCheckbox.removeEventListener(
+			"change",
+			this.#handleDeletedCheckboxChange,
+		)
+		this.#deletedCheckbox.removeEventListener(
+			"keydown",
+			this.#handleDeletedCheckboxKeypress,
+		)
 	}
 
 	attributeChangedCallback(
@@ -121,6 +160,12 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 				this.#updateChecked()
 				if (oldValue !== newValue && this.isConnected) {
 					this.#dispatchCheckedChangeEvent()
+				}
+				break
+			case "deleted":
+				this.#updateDeleted()
+				if (oldValue !== newValue && this.isConnected) {
+					this.#dispatchDeletedChangeEvent()
 				}
 				break
 			case "action":
@@ -140,13 +185,17 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 
 	#updateAction() {
 		this.#label.htmlFor =
-			this.action === "delete" ? this.#deleteButton.id : this.#checkbox.id
+			this.action === "delete" ? this.#deletedCheckbox.id : this.#checkbox.id
 		this.#checkbox.disabled = this.action !== "check"
-		this.#deleteButton.disabled = this.action !== "delete"
+		this.#deletedCheckbox.disabled = this.action !== "delete"
 	}
 
 	#updateChecked() {
 		this.#checkbox.checked = this.checked
+	}
+
+	#updateDeleted() {
+		this.#deletedCheckbox.checked = this.deleted
 	}
 
 	#updateLabel() {
@@ -156,6 +205,12 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	#dispatchCheckedChangeEvent() {
 		this.dispatchEvent(
 			new WordElementCheckedChangeEvent({ checked: this.checked }),
+		)
+	}
+
+	#dispatchDeletedChangeEvent() {
+		this.dispatchEvent(
+			new WordElementDeletedChangeEvent({ deleted: this.deleted }),
 		)
 	}
 
@@ -181,7 +236,18 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#handleDelete = () => {
-		this.dispatchEvent(new WordElementDeleteEvent())
+	#handleDeletedCheckboxChange = () => {
+		if (this.#deletedCheckbox.checked && !this.deleted) {
+			this.deleted = true
+			this.dispatchEvent(new WordElementDeleteEvent())
+		} else if (!this.#deletedCheckbox.checked && this.deleted) {
+			this.deleted = false
+		}
+	}
+
+	#handleDeletedCheckboxKeypress = (event: KeyboardEvent) => {
+		if (event.key === "Enter") {
+			this.#deletedCheckbox.click()
+		}
 	}
 }

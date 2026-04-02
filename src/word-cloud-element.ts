@@ -548,7 +548,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#unlockDraggedEntry(entry)
 		this.#wordResizeObserver.unobserve(entry.element)
 		Composite.remove(this.#engine.world, entry.body)
-		this.#container.removeChild(entry.element)
+		// this.#container.removeChild(entry.element)
 	}
 
 	#updateWordBodySize(entry: InternalWordEntry) {
