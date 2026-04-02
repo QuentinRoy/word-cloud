@@ -1,5 +1,12 @@
 # @quentinroy/word-cloud
 
+## 0.7.1
+
+### Patch Changes
+
+- 496a6e5: Fix `HTMLWordCloudElement:clear()` regression.
+- 23359c6: Improve strikethrough with a better animation and fix for occasional visual bugs on chrome.
+
 ## 0.7.0
 
 ### Minor Changes
