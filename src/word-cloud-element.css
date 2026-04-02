@@ -51,7 +51,11 @@
 	--input-focus-background-color: hwb(212 95% 0%);
 
 	/* Keyboard focus outline color for word chips. Defaults to --input-focus-border-color. */
-	--word-focus-outline-color: var(--input-focus-border-color);
+	--word-focus-outline-color: hwb(212 50% 0% / 0.95);
+	/* Keyboard focus outline width for word chips. */
+	--word-focus-outline-width: 4px;
+	/* Keyboard focus outline offset for word chips. */
+	--word-focus-outline-offset: 4px;
 
 	/* Default text color for word chips. */
 	--word-text-color: hwb(276 2% 80%);

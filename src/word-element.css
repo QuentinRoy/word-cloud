@@ -32,11 +32,9 @@ label {
 	filter: drop-shadow(0px 0px 0px transparent);
 	transform: scale(1);
 	transition:
-		transform var(--word-dragged-scaling-duration, 0s) ease-in,
-		filter var(--word-state-transition-duration, 0s) ease-in,
-		color var(--word-state-transition-duration, 0s) ease-out,
-		background-color var(--word-state-transition-duration, 0s) ease-out,
-		border-color var(--word-state-transition-duration, 0s) ease-out;
+		all var(--word-state-transition-duration, 0s) ease-out,
+		transform var(--word-dragged-scaling-duration, 0s) ease-out,
+		filter var(--word-state-transition-duration, 0s) ease-out;
 	animation: none;
 }
 
@@ -55,8 +53,8 @@ label::before {
 }
 
 input:focus-visible ~ label {
-	outline: 2px solid var(--word-focus-outline-color);
-	outline-offset: 2px;
+	outline: var(--word-focus-outline-width) solid var(--word-focus-outline-color);
+	outline-offset: var(--word-focus-outline-offset);
 }
 
 :host(:state(entering)) {
@@ -72,6 +70,7 @@ input:focus-visible ~ label {
 		cursor: pointer;
 	}
 
+	input:focus-visible ~ label,
 	label:hover {
 		color: var(--word-checked-hover-text-color);
 		transition:
@@ -97,13 +96,11 @@ input:focus-visible ~ label {
 
 :host(:state(exiting)) label,
 :host([deleted]) label,
+:host([action="delete"]) input:focus-visible ~ label,
 :host([action="delete"]) label:hover {
 	color: var(--word-delete-hover-text-color);
 	background-color: var(--word-delete-hover-background-color);
 	border-color: var(--word-delete-hover-background-color);
-}
-
-:host([action="delete"]) label:hover {
 	transition:
 		all ease-out var(--word-state-transition-duration, 0s),
 		color 0s;
