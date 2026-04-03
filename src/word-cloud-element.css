@@ -115,11 +115,6 @@
 	font-size: var(--font-size);
 }
 
-form {
-	z-index: 2;
-	display: none;
-}
-
 .word-cloud .word {
 	position: absolute;
 	top: 0;
@@ -173,9 +168,26 @@ input[type="text"] {
 	}
 }
 
+form {
+	z-index: 2;
+	display: none;
+	opacity: 0;
+	transition:
+		opacity var(--input-state-transition-duration, 0s) ease-in-out,
+		display var(--input-state-transition-duration, 0s) allow-discrete
+		ease-in-out;
+}
+
 :host([has-input]) {
 	form {
 		display: block;
+		opacity: 1;
+	}
+
+	@starting-style {
+		form {
+			opacity: 0;
+		}
 	}
 }
 
