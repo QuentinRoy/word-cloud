@@ -59,7 +59,7 @@ jobs:
 
       # the magic happens below 🪄
       - name: Update Visual Regression Screenshots
-        run: pnpm run test:visual --update
+        run: pnpm run test --update
 
       # check what changed
       - name: Check for changes
