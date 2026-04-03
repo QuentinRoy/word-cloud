@@ -102,7 +102,9 @@ footer {
 
 		&:hover {
 			color: var(--hover-color);
+			transition: background-color var(--transition-speed) ease;
 		}
+
 		&:active {
 			background: hwb(208 94% 0%);
 		}
@@ -160,6 +162,9 @@ footer {
 		:checked + label {
 			color: white;
 			background: var(--selected-color);
+			transition:
+				background-color var(--transition-speed) ease,
+				color var(--transition-speed) ease;
 		}
 	}
 
@@ -169,7 +174,6 @@ footer {
 		padding-right: 0.65rem;
 		padding-left: 2.85rem;
 		background: white;
-		transition: background-color var(--transition-speed) ease;
 	}
 
 	input[type="checkbox"] + label::before {
@@ -220,5 +224,4 @@ footer {
 #github-link:focus-visible {
 	z-index: 3;
 	outline: 4px solid hwb(212 50% 0% / 0.95);
-	/* outline-offset: 2px; */
 }
