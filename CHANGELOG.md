@@ -1,5 +1,15 @@
 # @quentinroy/word-cloud
 
+## 0.8.0
+
+### Minor Changes
+
+- 17b66b1: Fix focused word outline going underneath other words when the focused word is not the topmost one. The focused word will now be rendered above all other words, except for dragged words.
+
+### Patch Changes
+
+- f36e2b6: Update focused word style
+
 ## 0.7.1
 
 ### Patch Changes
