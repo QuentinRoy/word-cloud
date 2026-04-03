@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.9.1
+
+### Patch Changes
+
+- 2329fdf: Remove wrongly built and distributed CSS file from dist files.
+
 ## 0.9.0
 
 ### Minor Changes
