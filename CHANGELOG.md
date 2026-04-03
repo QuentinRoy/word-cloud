@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.9.0
+
+### Minor Changes
+
+- 06168b7: Animate input entry and exit
+
 ## 0.8.0
 
 ### Minor Changes
