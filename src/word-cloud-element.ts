@@ -53,12 +53,14 @@ const INPUT_VOLUME_MIN_SIZE = 1
 const TRANSLATE_PRECISION = 1
 const ROTATE_PRECISION = 4
 const ANGULAR_REST_ANGLE = 0
-const ANGULAR_REST_ANGLE_EPSILON = 0.01
-const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.25
-const ANGULAR_DAMPING_COEFFICIENT = 0.7
+const ANGULAR_REST_ANGLE_EPSILON = 0.005
+const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.4
+const ANGULAR_DAMPING_COEFFICIENT = 0.2
 const ANGULAR_SPRING_WIDTH_REFERENCE = 150
 const REPULSION_MARGIN = 5
 const REPULSION_FORCE = 0.0003
+const WORD_AIR_FRICTION = 0.04
+const WORD_RESTITUTION = 0.2
 const WORD_COLLISION_CATEGORY = 0x0001
 const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
 const DEFAULT_WORD_COLLISION_MASK = -1
@@ -333,8 +335,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
-			frictionAir: 0.05,
-			restitution: 0.2,
+			frictionAir: WORD_AIR_FRICTION,
+			restitution: WORD_RESTITUTION,
 			collisionFilter: {
 				category: WORD_COLLISION_CATEGORY,
 				mask: this.#getWordCollisionMask({
@@ -743,25 +745,20 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#applyAngularRestoringTorque() {
-		for (let { body } of this.#wordEntries.values()) {
+		for (let {
+			body,
+			bodySize: { width, height },
+		} of this.#wordEntries.values()) {
 			if (body.isStatic || body.isSleeping) continue
 			const angleError = normalizeAngle(body.angle) - ANGULAR_REST_ANGLE
-			if (
-				Math.abs(angleError) <= ANGULAR_REST_ANGLE_EPSILON &&
-				Math.abs(body.angularVelocity) < 0.001
-			)
-				continue
-
-			// Convert torque to a pair of opposing forces applied at opposite points
-			const width = body.bounds.max.x - body.bounds.min.x
-			const height = body.bounds.max.y - body.bounds.min.y
+			if (Math.abs(angleError) <= ANGULAR_REST_ANGLE_EPSILON) continue
 
 			// Spring with light damping: restores to rest angle and dissipates energy.
 			// Scale by word width so larger words receive proportionally stronger torque.
 			const torque =
 				(-angleError * ANGULAR_SPRING_TORQUE_STIFFNESS -
 					body.angularVelocity * ANGULAR_DAMPING_COEFFICIENT) *
-				(width / ANGULAR_SPRING_WIDTH_REFERENCE)
+				(width / ANGULAR_SPRING_WIDTH_REFERENCE) ** 2
 			const forceArm = Math.min(width, height) * 0.25
 			if (forceArm <= 0) continue
 
