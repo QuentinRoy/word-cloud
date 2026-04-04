@@ -216,9 +216,9 @@ interface WordData {
 
 ```ts
 // Save
-const saved = Array.from(wordCloud.getWords()).map(({ word, x, y, angle, checked }) => ({
-  word, x, y, angle, checked,
-}))
+const saved = Array.from(wordCloud.getWords(), ({ word, x, y, angle, checked }) => {
+  return { word, x, y, angle, checked }
+})
 localStorage.setItem("words", JSON.stringify(saved))
 
 // Restore
