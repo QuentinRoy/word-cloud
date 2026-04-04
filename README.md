@@ -13,7 +13,20 @@ classes, and the `WordHandle` / `WordData` / `WordCloudWordAction` types. It doe
 ## Installation
 
 ```sh
+# Using npm:
 npm install @quentinroy/word-cloud
+
+# Using pnpm:
+pnpm install @quentinroy/word-cloud
+
+# Using yarn:
+yarn add @quentinroy/word-cloud
+
+# Using deno:
+deno add npm:@quentinroy/word-cloud
+
+# Using bun:
+bun add @quentinroy/word-cloud
 ```
 
 ## Register the element
