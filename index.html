@@ -10,6 +10,13 @@
 	<body>
 		<x-word-cloud word-action="drag" has-input></x-word-cloud>
 		<footer>
+			<div id="lib-info">
+				<a href="%VITE_LIB_HOMEPAGE%" id="lib-name">%VITE_LIB_NAME%</a>
+				<span id="version">
+					<span id="lib-version">v%VITE_LIB_VERSION%</span>
+					<span id="commit-hash">(%VITE_GIT_COMMIT_HASH%)</span></span
+				>
+			</div>
 			<form id="controls">
 				<div class="control-group">
 					<div>
@@ -57,7 +64,7 @@
 				</div>
 				<div><button type="button" id="clear" value="Clear">Clear</button></div>
 			</form>
-			<a id="github-link" href="https://github.com/QuentinRoy/word-cloud"
+			<a id="github-link" href="%VITE_LIB_HOMEPAGE%"
 				><img src="/demo/github.svg" alt="GitHub"></a
 			>
 		</footer>

@@ -1,11 +1,14 @@
+import { execSync } from "node:child_process"
 import { resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { defineConfig } from "vite"
+import pkg from "./package.json" with { type: "json" }
 import { cssStylesheetPlugin } from "./plugins/css-stylesheet-plugin.ts"
 import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
 const templateModulePath = resolve(workspaceRoot, "src/template.ts")
+let gitVersionResult = (await execSync("git rev-parse --short HEAD")).toString().trim()
 
 function normalizeBasePath(basePath) {
 	if (!basePath || basePath === "/") {
@@ -21,28 +24,35 @@ function createTemplatePlugins({ minify }) {
 	]
 }
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(async ({ command, mode }) => {
 	const plugins = createTemplatePlugins({ minify: true })
 
+	const define = {
+		"import.meta.env.VITE_LIB_VERSION": JSON.stringify(pkg.version),
+		"import.meta.env.VITE_LIB_NAME": JSON.stringify(pkg.name),
+		"import.meta.env.VITE_GIT_COMMIT_HASH": JSON.stringify(gitVersionResult),
+		"import.meta.env.VITE_LIB_HOMEPAGE": JSON.stringify(pkg.homepage),
+	}
+
 	if (command !== "build") {
-		return { plugins }
+		return { plugins, define }
 	}
 
 	if (mode === "demo") {
 		return {
 			plugins,
+			define,
 			base: normalizeBasePath(process.env.PAGES_BASE_PATH),
 			build: {
 				outDir: "dist-demo",
-				rollupOptions: {
-					input: resolve(workspaceRoot, "index.html"),
-				},
+				rollupOptions: { input: resolve(workspaceRoot, "index.html") },
 			},
 		}
 	}
 
 	return {
 		plugins,
+		define,
 		build: {
 			lib: {
 				entry: resolve(workspaceRoot, "src/index.ts"),
