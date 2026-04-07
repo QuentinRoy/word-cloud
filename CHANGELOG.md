@@ -1,5 +1,16 @@
 # @quentinroy/word-cloud
 
+## 0.10.0
+
+### Minor Changes
+
+- 95474f2: Add the `showFramerate` attribute-property to display the rendering framerate and enable it in the demo.
+
+### Patch Changes
+
+- 8d012f8: Fix weird behavior of angular restoration. It should feel much more natural now.
+- 48f26c0: Rework physics of body repulsions for better realism.
+
 ## 0.9.1
 
 ### Patch Changes
