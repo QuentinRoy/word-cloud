@@ -75,10 +75,13 @@ wordCloud.setWords([
 
 ## Interaction Settings
 
-The element uses two independent attributes:
+The element uses three independent attributes:
 
 - `word-action`: controls how words react to user interaction.
 - `has-input`: boolean, controls whether the built-in input form is shown and active.
+- `show-framerate`: boolean, controls whether the framerate display is shown.
+
+
 
 Supported `word-action` values:
 
@@ -93,9 +96,13 @@ Set `has-input` to show the built-in input form:
 <x-word-cloud word-action="check" has-input></x-word-cloud>
 ```
 
+
+Each of these can also be read or set via the corresponding property on the element instance. Instance properties use camelCase instead of kebab-case. For example, the above configuration can be achieved with:
+
 ```ts
-wordCloud.wordAction = "delete"
+wordCloud.wordAction = "check"
 wordCloud.hasInput = true
+wordCloud.showFramerate = false
 ```
 
 ## Public API
