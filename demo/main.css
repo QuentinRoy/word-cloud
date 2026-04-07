@@ -236,10 +236,6 @@ footer {
 				background-color var(--transition-speed) ease;
 		}
 
-		input[type="checkbox"]:checked + label {
-			background: var(--selected-color);
-		}
-
 		input[type="checkbox"]:checked + label::before {
 			background: white;
 		}
@@ -247,6 +243,10 @@ footer {
 		input[type="checkbox"]:checked + label::after {
 			left: 1.5rem;
 			background: hwb(212 16% 22%);
+		}
+
+		input[type="checkbox"]:checked + label:hover::after {
+			background: hwb(from var(--hover-color) h calc(w + 30) calc(b - 10));
 		}
 	}
 
