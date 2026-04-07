@@ -27,7 +27,7 @@ import {
 import {
 	applyAngularRestoringTorque,
 	applyMutualRepulsionForce,
-} from "./physic-utils.ts"
+} from "./physics-utils.ts"
 import { generateRandomId, queryStrict, toPrecision } from "./utils.ts"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
 import mainTemplate from "./word-cloud-element.html?template"
