@@ -142,6 +142,37 @@ function getSegmentIntersectionPoint({
 }
 
 /**
+ * Check whether a world-space point is inside a rotated rectangle body.
+ *
+ * @param options.point The point to test.
+ * @param options.body The rectangle body center and angle.
+ * @param options.halfWidth Half the rectangle width in body-local axes.
+ * @param options.halfHeight Half the rectangle height in body-local axes.
+ * @returns True when the point is inside or on the rectangle boundary.
+ */
+function isPointInsideBodyRectangle({
+	point,
+	body,
+	halfWidth,
+	halfHeight,
+}: {
+	point: Vector
+	body: Body
+	halfWidth: number
+	halfHeight: number
+}) {
+	const dx = point.x - body.position.x
+	const dy = point.y - body.position.y
+	const cos = Math.cos(body.angle)
+	const sin = Math.sin(body.angle)
+
+	const localX = dx * cos + dy * sin
+	const localY = -dx * sin + dy * cos
+
+	return Math.abs(localX) <= halfWidth && Math.abs(localY) <= halfHeight
+}
+
+/**
  * Find the closest pair of points on the boundaries of two rectangle bodies.
  *
  * @param options.bodyA The first body.
@@ -169,6 +200,23 @@ function getClosestBodyBoundaryPoints({
 }): BoundaryPair {
 	const verticesA = getBodyRectangleCorners(bodyA, halfWidthA, halfHeightA)
 	const verticesB = getBodyRectangleCorners(bodyB, halfWidthB, halfHeightB)
+	const hasContainment =
+		verticesA.some((pointA) =>
+			isPointInsideBodyRectangle({
+				point: pointA,
+				body: bodyB,
+				halfWidth: halfWidthB,
+				halfHeight: halfHeightB,
+			}),
+		) ||
+		verticesB.some((pointB) =>
+			isPointInsideBodyRectangle({
+				point: pointB,
+				body: bodyA,
+				halfWidth: halfWidthA,
+				halfHeight: halfHeightA,
+			}),
+		)
 
 	for (let i = 0; i < verticesA.length; i++) {
 		const edgeAStart = verticesA[i]
@@ -235,7 +283,7 @@ function getClosestBodyBoundaryPoints({
 	return {
 		pointA: bestPointA,
 		pointB: bestPointB,
-		gap: Math.sqrt(minDistanceSquared),
+		gap: hasContainment ? 0 : Math.sqrt(minDistanceSquared),
 	}
 }
 
