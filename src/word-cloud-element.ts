@@ -132,6 +132,7 @@ interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
 export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	wordAction: pickList({ values: WORD_ACTIONS, default: "none" }),
 	hasInput: boolean(),
+	showFramerate: boolean(),
 	wordRepulsion: number({ default: REPULSION_MARGIN }),
 	edgeRepulsion: number({ default: REPULSION_MARGIN }),
 	inputRepulsion: number({ default: REPULSION_MARGIN }),
@@ -164,6 +165,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		new WeakMap()
 	#mouseConstraint: MouseConstraint
 	#mouseEnabled = false
+	#framerateDisplay: HTMLElement
 	#containerResizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
 		this.#updateInputVolumeBody()
@@ -187,10 +189,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	constructor() {
 		super()
-		const { container, wordForm, wordInput } = this.#setupShadowDom()
+		const { container, wordForm, wordInput, framerateDisplay } =
+			this.#setupShadowDom()
 		this.#container = container
 		this.#wordForm = wordForm
 		this.#wordInput = wordInput
+		this.#framerateDisplay = framerateDisplay
 
 		const { engine, runner } = this.#setupPhysics()
 		this.#engine = engine
@@ -500,7 +504,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		const container = queryStrict(shadowRoot, ".word-cloud", HTMLElement)
 		const wordForm = queryStrict(container, "form", HTMLFormElement)
 		const wordInput = queryStrict(container, "input", HTMLInputElement)
-		return { container, wordForm, wordInput }
+		const framerateDisplay = queryStrict(
+			container,
+			".framerate-display",
+			HTMLElement,
+		)
+		return { container, wordForm, wordInput, framerateDisplay }
 	}
 
 	#setupPhysics() {
@@ -742,6 +751,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#handleTick = () => {
 		this.#updateWordInputCollisions()
 		this.#updateWordPositions()
+		if (this.showFramerate) this.#updateFramerateDisplay()
+	}
+
+	#updateFramerateDisplay() {
+		const delta = this.#runner.frameDelta
+		this.#framerateDisplay.textContent = `${Math.round(1000 / delta)} fps`
 	}
 
 	#applyAngularRestoringTorque() {

@@ -222,3 +222,18 @@ form {
 	height: 100%;
 	pointer-events: none;
 }
+
+.framerate-display {
+	position: absolute;
+	right: 6px;
+	bottom: 4px;
+	display: none;
+	font-family: monospace;
+	font-size: 0.75rem;
+	color: hwb(0 40% 60% / 0.7);
+	pointer-events: none;
+}
+
+:host([show-framerate]) .framerate-display {
+	display: block;
+}
