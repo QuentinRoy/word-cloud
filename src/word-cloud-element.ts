@@ -813,15 +813,14 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		const rightEdge = right.bounds.min.x
 		const topEdge = top.bounds.max.y
 		const bottomEdge = bottom.bounds.min.y
+		const frameThickness = HTMLWordCloudElement.#frameThickness
+		const { horizontalLength, verticalLength } = this.#frameBodySize
 
 		for (const entry of this.#wordEntries.values()) {
 			const { body } = entry
 			if (body.isStatic || body.isSleeping) continue
 			if (entry.dragLock != null) continue
 			const bounds = body.bounds
-
-			const frameThickness = HTMLWordCloudElement.#frameThickness
-			const { horizontalLength, verticalLength } = this.#frameBodySize
 			if (bounds.min.x - leftEdge < margin) {
 				applyMutualRepulsionForce({
 					bodyA: left,
