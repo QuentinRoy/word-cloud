@@ -42,8 +42,7 @@ import {
 import type { WordData } from "./word-handle.ts"
 import { WordHandle } from "./word-handle.ts"
 
-const DEBUG_MODE = false
-
+const USE_DEBUG_RENDERER = false
 const CHAMFER_RADIUS = 8
 const FRAME_THICKNESS = 1000
 const MIN_RANDOM_VELOCITY = 10
@@ -555,7 +554,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#setupContainerStyles() {
 		this.#container.style.setProperty("--chamfer-radius", `${CHAMFER_RADIUS}px`)
-		if (DEBUG_MODE) {
+		if (USE_DEBUG_RENDERER) {
 			this.#container.style.setProperty("--opacity", "0.2")
 		}
 	}
@@ -1049,7 +1048,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#start() {
 		Runner.run(this.#runner, this.#engine)
-		if (DEBUG_MODE) {
+		if (USE_DEBUG_RENDERER) {
 			let containerBox = this.#container.getBoundingClientRect()
 			this.#debugRender =
 				Render?.create({
