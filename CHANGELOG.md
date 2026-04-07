@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.10.1
+
+### Patch Changes
+
+- 2f9643d: Change caret color
+
 ## 0.10.0
 
 ### Minor Changes
