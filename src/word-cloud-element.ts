@@ -25,11 +25,10 @@ import {
 	WordValueChangeEvent,
 } from "./events.ts"
 import {
-	generateRandomId,
-	normalizeAngle,
-	queryStrict,
-	toPrecision,
-} from "./utils.ts"
+	applyAngularRestoringTorque,
+	applyMutualRepulsionForce,
+} from "./physics-utils.ts"
+import { generateRandomId, queryStrict, toPrecision } from "./utils.ts"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
 import mainTemplate from "./word-cloud-element.html?template"
 import {
@@ -740,11 +739,15 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#handleBeforeUpdate = () => {
 		this.#applyAngularRestoringTorque()
 		const wordRepulsion = this.wordRepulsion
-		if (wordRepulsion > 0) this.#applyWordRepulsionForces(wordRepulsion)
+		if (wordRepulsion > 0)
+			this.#applyWordRepulsionForces({ margin: wordRepulsion })
 		const edgeRepulsion = this.edgeRepulsion
-		if (edgeRepulsion > 0) this.#applyEdgeRepulsionForces(edgeRepulsion)
+		if (edgeRepulsion > 0)
+			this.#applyEdgeRepulsionForces({ margin: edgeRepulsion })
 		const inputRepulsion = this.inputRepulsion
-		if (inputRepulsion > 0) this.#applyInputRepulsionForces(inputRepulsion)
+		if (inputRepulsion > 0) {
+			this.#applyInputRepulsionForces({ margin: inputRepulsion })
+		}
 	}
 
 	#handleTick = () => {
@@ -763,188 +766,129 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			body,
 			bodySize: { width, height },
 		} of this.#wordEntries.values()) {
-			if (body.isStatic || body.isSleeping) continue
-			const angleError = normalizeAngle(body.angle) - ANGULAR_REST_ANGLE
-			if (Math.abs(angleError) <= ANGULAR_REST_ANGLE_EPSILON) continue
-
-			// Spring with light damping: restores to rest angle and dissipates energy.
-			// Scale by word width so larger words receive proportionally stronger torque.
-			const torque =
-				(-angleError * ANGULAR_SPRING_TORQUE_STIFFNESS -
-					body.angularVelocity * ANGULAR_DAMPING_COEFFICIENT) *
-				(width / ANGULAR_SPRING_WIDTH_REFERENCE) ** 2
-			const forceArm = Math.min(width, height) * 0.25
-			if (forceArm <= 0) continue
-
-			const forceMagnitude = torque / (2 * forceArm)
-
-			const ux = Math.cos(body.angle)
-			const uy = Math.sin(body.angle)
-			const nx = -uy
-			const ny = ux
-
-			const pointA = {
-				x: body.position.x + ux * forceArm,
-				y: body.position.y + uy * forceArm,
-			}
-			const pointB = {
-				x: body.position.x - ux * forceArm,
-				y: body.position.y - uy * forceArm,
-			}
-			const force = { x: nx * forceMagnitude, y: ny * forceMagnitude }
-
-			Body.applyForce(body, pointA, force)
-			Body.applyForce(body, pointB, { x: -force.x, y: -force.y })
+			applyAngularRestoringTorque({
+				body,
+				bodySize: { width, height },
+				restAngle: ANGULAR_REST_ANGLE,
+				restAngleEpsilon: ANGULAR_REST_ANGLE_EPSILON,
+				springTorqueStiffness: ANGULAR_SPRING_TORQUE_STIFFNESS,
+				dampingCoefficient: ANGULAR_DAMPING_COEFFICIENT,
+				springWidthReference: ANGULAR_SPRING_WIDTH_REFERENCE,
+			})
 		}
 	}
 
-	#applyWordRepulsionForces(margin: number) {
-		const entries = [...this.#wordEntries.values()]
+	#applyWordRepulsionForces({ margin }: { margin: number }) {
+		const entries = [...this.#wordEntries.values()].sort(
+			(entryA, entryB) => entryA.body.bounds.min.x - entryB.body.bounds.min.x,
+		)
 		for (let i = 0; i < entries.length; i++) {
 			const entryA = entries[i]
 			if (entryA.body.isStatic || entryA.body.isSleeping) continue
 			if (entryA.dragLock != null) continue
+			const boundsA = entryA.body.bounds
 			for (let j = i + 1; j < entries.length; j++) {
 				const entryB = entries[j]
+				const boundsB = entryB.body.bounds
+				if (boundsB.min.x - boundsA.max.x >= margin) break
 				if (entryB.body.isStatic || entryB.body.isSleeping) continue
 				if (entryB.dragLock != null) continue
 
-				const boundsA = entryA.body.bounds
-				const boundsB = entryB.body.bounds
-
-				// Compute AABB gap: positive = separated, negative = overlapping
-				const gapX =
-					-Math.min(boundsA.max.x, boundsB.max.x) +
-					Math.max(boundsA.min.x, boundsB.min.x)
-				const gapY =
-					-Math.min(boundsA.max.y, boundsB.max.y) +
-					Math.max(boundsA.min.y, boundsB.min.y)
-
-				// Minimum separation distance between the two AABBs
-				let gap: number
-				if (gapX > 0 && gapY > 0) {
-					gap = Math.sqrt(gapX * gapX + gapY * gapY)
-				} else if (gapX > 0) {
-					gap = gapX
-				} else if (gapY > 0) {
-					gap = gapY
-				} else {
-					// Overlapping in both axes; use the shallowest overlap as gap
-					gap = Math.max(gapX, gapY)
-				}
-
-				if (gap >= margin) continue
-
-				const dx = entryB.body.position.x - entryA.body.position.x
-				const dy = entryB.body.position.y - entryA.body.position.y
-				const dist = Math.sqrt(dx * dx + dy * dy)
-				if (dist === 0) continue
-
-				const strength = Math.min(1, (margin - gap) / margin)
-				const forceMagnitude = strength * REPULSION_FORCE
-				const nx = (dx / dist) * forceMagnitude
-				const ny = (dy / dist) * forceMagnitude
-
-				Body.applyForce(entryA.body, entryA.body.position, { x: -nx, y: -ny })
-				Body.applyForce(entryB.body, entryB.body.position, { x: nx, y: ny })
+				applyMutualRepulsionForce({
+					bodyA: entryA.body,
+					bodySizeA: entryA.bodySize,
+					bodyB: entryB.body,
+					bodySizeB: entryB.bodySize,
+					margin,
+					repulsionForce: REPULSION_FORCE,
+				})
 			}
 		}
 	}
 
-	#applyEdgeRepulsionForces(margin: number) {
+	#applyEdgeRepulsionForces({ margin }: { margin: number }) {
 		const { left, right, top, bottom } = this.#frameBodies
-		const edgeLeft = left.position.x + FRAME_THICKNESS / 2
-		const edgeRight = right.position.x - FRAME_THICKNESS / 2
-		const edgeTop = top.position.y + FRAME_THICKNESS / 2
-		const edgeBottom = bottom.position.y - FRAME_THICKNESS / 2
+		const leftEdge = left.bounds.max.x
+		const rightEdge = right.bounds.min.x
+		const topEdge = top.bounds.max.y
+		const bottomEdge = bottom.bounds.min.y
+		const frameThickness = HTMLWordCloudElement.#frameThickness
+		const { horizontalLength, verticalLength } = this.#frameBodySize
 
 		for (const entry of this.#wordEntries.values()) {
 			const { body } = entry
 			if (body.isStatic || body.isSleeping) continue
 			if (entry.dragLock != null) continue
 			const bounds = body.bounds
-
-			const gapLeft = bounds.min.x - edgeLeft
-			if (gapLeft < margin) {
-				const strength = Math.min(1, (margin - gapLeft) / margin)
-				Body.applyForce(body, body.position, {
-					x: strength * REPULSION_FORCE,
-					y: 0,
+			if (bounds.min.x - leftEdge < margin) {
+				applyMutualRepulsionForce({
+					bodyA: left,
+					bodySizeA: { width: frameThickness, height: verticalLength },
+					bodyB: body,
+					bodySizeB: entry.bodySize,
+					margin,
+					repulsionForce: REPULSION_FORCE,
 				})
 			}
-
-			const gapRight = edgeRight - bounds.max.x
-			if (gapRight < margin) {
-				const strength = Math.min(1, (margin - gapRight) / margin)
-				Body.applyForce(body, body.position, {
-					x: -strength * REPULSION_FORCE,
-					y: 0,
+			if (rightEdge - bounds.max.x < margin) {
+				applyMutualRepulsionForce({
+					bodyA: right,
+					bodySizeA: { width: frameThickness, height: verticalLength },
+					bodyB: body,
+					bodySizeB: entry.bodySize,
+					margin,
+					repulsionForce: REPULSION_FORCE,
 				})
 			}
-
-			const gapTop = bounds.min.y - edgeTop
-			if (gapTop < margin) {
-				const strength = Math.min(1, (margin - gapTop) / margin)
-				Body.applyForce(body, body.position, {
-					x: 0,
-					y: strength * REPULSION_FORCE,
+			if (bounds.min.y - topEdge < margin) {
+				applyMutualRepulsionForce({
+					bodyA: top,
+					bodySizeA: { width: horizontalLength, height: frameThickness },
+					bodyB: body,
+					bodySizeB: entry.bodySize,
+					margin,
+					repulsionForce: REPULSION_FORCE,
 				})
 			}
-
-			const gapBottom = edgeBottom - bounds.max.y
-			if (gapBottom < margin) {
-				const strength = Math.min(1, (margin - gapBottom) / margin)
-				Body.applyForce(body, body.position, {
-					x: 0,
-					y: -strength * REPULSION_FORCE,
+			if (bottomEdge - bounds.max.y < margin) {
+				applyMutualRepulsionForce({
+					bodyA: bottom,
+					bodySizeA: { width: horizontalLength, height: frameThickness },
+					bodyB: body,
+					bodySizeB: entry.bodySize,
+					margin,
+					repulsionForce: REPULSION_FORCE,
 				})
 			}
 		}
 	}
 
-	#applyInputRepulsionForces(margin: number) {
+	#applyInputRepulsionForces({ margin }: { margin: number }) {
 		if (!this.#inputVolumeEnabled) return
 		const inputBounds = this.#inputVolumeBody.bounds
-		const inputPos = this.#inputVolumeBody.position
 
 		for (const entry of this.#wordEntries.values()) {
 			const { body } = entry
 			if (body.isStatic || body.isSleeping) continue
 			if (entry.dragLock != null) continue
 			if (entry.ignoreInputVolumeUntilExit) continue
-
-			const boundsA = body.bounds
-
-			const gapX =
-				-Math.min(boundsA.max.x, inputBounds.max.x) +
-				Math.max(boundsA.min.x, inputBounds.min.x)
-			const gapY =
-				-Math.min(boundsA.max.y, inputBounds.max.y) +
-				Math.max(boundsA.min.y, inputBounds.min.y)
-
-			let gap: number
-			if (gapX > 0 && gapY > 0) {
-				gap = Math.sqrt(gapX * gapX + gapY * gapY)
-			} else if (gapX > 0) {
-				gap = gapX
-			} else if (gapY > 0) {
-				gap = gapY
-			} else {
-				gap = Math.max(gapX, gapY)
+			const bounds = body.bounds
+			if (
+				bounds.min.x - inputBounds.max.x >= margin ||
+				inputBounds.min.x - bounds.max.x >= margin ||
+				bounds.min.y - inputBounds.max.y >= margin ||
+				inputBounds.min.y - bounds.max.y >= margin
+			) {
+				continue
 			}
 
-			if (gap >= margin) continue
-
-			const dx = body.position.x - inputPos.x
-			const dy = body.position.y - inputPos.y
-			const dist = Math.sqrt(dx * dx + dy * dy)
-			if (dist === 0) continue
-
-			const strength = Math.min(1, (margin - gap) / margin)
-			const forceMagnitude = strength * REPULSION_FORCE
-			Body.applyForce(body, body.position, {
-				x: (dx / dist) * forceMagnitude,
-				y: (dy / dist) * forceMagnitude,
+			applyMutualRepulsionForce({
+				bodyA: this.#inputVolumeBody,
+				bodySizeA: this.#inputVolumeBodySize,
+				bodyB: body,
+				bodySizeB: entry.bodySize,
+				margin,
+				repulsionForce: REPULSION_FORCE,
 			})
 		}
 	}
