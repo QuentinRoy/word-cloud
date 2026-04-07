@@ -49,6 +49,8 @@
 	--input-focus-shadow-color: hwb(212 76% 0%);
 	/* Background color of the built-in text input while focused. */
 	--input-focus-background-color: hwb(212 95% 0%);
+	/* Color of the input caret while the built-in text input is focused. */
+	--input-caret-color: var(--input-focus-border-color);
 
 	/* Keyboard focus outline color for word chips. Defaults to --input-focus-border-color. */
 	--word-focus-outline-color: hwb(212 50% 0% / 0.95);
@@ -130,6 +132,7 @@ input[type="text"] {
 	font-size: var(--font-size);
 	color: var(--input-text-color);
 	text-align: center;
+	caret-color: var(--input-caret-color);
 	background-color: var(--input-background-color);
 	border: var(--line-width) solid var(--input-border-color);
 	border-radius: var(--chamfer-radius, 0);
