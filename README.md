@@ -1,6 +1,6 @@
 # word-cloud
 
-[![Test](https://github.com/QuentinRoy/word-cloud/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/QuentinRoy/word-cloud/actions/workflows/test.yml)
+[![Test](https://github.com/QuentinRoy/word-cloud/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/QuentinRoy/word-cloud/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/%40quentinroy%2Fword-cloud?logo=npm)](https://www.npmjs.com/package/@quentinroy/word-cloud)
 
 Interactive word cloud custom element powered by Matter.js. Check out the [demo](https://quentinroy.github.io/word-cloud/)!
