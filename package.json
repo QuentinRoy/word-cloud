@@ -1,56 +1,58 @@
 {
-  "name": "@quentinroy/word-cloud",
-  "private": false,
-  "version": "0.10.1",
-  "description": "Interactive word cloud custom element powered by Matter.js",
-  "type": "module",
-  "files": [
-    "dist"
-  ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/QuentinRoy/word-cloud.git"
-  },
-  "homepage": "https://github.com/QuentinRoy/word-cloud",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build && tsc -p tsconfig.lib.json",
-    "build:demo": "vite build --mode demo",
-    "preview": "vite preview --mode demo",
-    "test": "vitest --config vitest.config.ts --run",
-    "test:watch": "vitest --config vitest.config.ts",
-    "release": "pnpm run build && changeset publish"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.4.10",
-    "@changesets/cli": "^2.30.0",
-    "@types/html-minifier-terser": "^7.0.2",
-    "@types/matter-js": "^0.20.2",
-    "@types/node": "^24.12.0",
-    "@vitest/browser": "^4.1.2",
-    "@vitest/browser-playwright": "^4.1.2",
-    "arktype": "^2.2.0",
-    "cssnano": "^7.1.4",
-    "cssnano-preset-default": "^7.0.12",
-    "html-minifier-terser": "^7.2.0",
-    "playwright": "^1.59.1",
-    "postcss": "^8.5.9",
-    "type-fest": "^5.5.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.0.3",
-    "vitest": "^4.1.2"
-  },
-  "dependencies": {
-    "@quentinroy/custom-element-mixins": "npm:@jsr/quentinroy__custom-element-mixins@^0.4.1",
-    "matter-js": "^0.20.0"
-  }
+	"name": "@quentinroy/word-cloud",
+	"private": false,
+	"version": "0.10.1",
+	"description": "Interactive word cloud custom element powered by Matter.js",
+	"type": "module",
+	"files": [
+		"dist"
+	],
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/QuentinRoy/word-cloud.git"
+	},
+	"homepage": "https://github.com/QuentinRoy/word-cloud",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build && tsc -p tsconfig.lib.json",
+		"build:demo": "vite build --mode demo",
+		"preview": "vite preview --mode demo",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"test": "vitest --config vitest.config.ts --run",
+		"test:watch": "vitest --config vitest.config.ts",
+		"release": "pnpm run build && changeset publish"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.10",
+		"@changesets/cli": "^2.30.0",
+		"@types/html-minifier-terser": "^7.0.2",
+		"@types/matter-js": "^0.20.2",
+		"@types/node": "^24.12.0",
+		"@vitest/browser": "^4.1.2",
+		"@vitest/browser-playwright": "^4.1.2",
+		"arktype": "^2.2.0",
+		"cssnano": "^7.1.4",
+		"cssnano-preset-default": "^7.0.12",
+		"html-minifier-terser": "^7.2.0",
+		"playwright": "^1.59.1",
+		"postcss": "^8.5.9",
+		"type-fest": "^5.5.0",
+		"typescript": "~6.0.2",
+		"vite": "^8.0.3",
+		"vitest": "^4.1.2"
+	},
+	"dependencies": {
+		"@quentinroy/custom-element-mixins": "npm:@jsr/quentinroy__custom-element-mixins@^0.4.1",
+		"matter-js": "^0.20.0"
+	}
 }
