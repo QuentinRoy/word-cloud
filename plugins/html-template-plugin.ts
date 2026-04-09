@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises"
-import { relative } from "node:path"
 import { minify as minifyHtml } from "html-minifier-terser"
 import type { HmrContext, Plugin } from "vite"
 import {
+	createModuleSourceMap,
 	getFilePathFromVirtualId,
 	getSourceFilePath,
 	hasQueryFlag,
@@ -15,32 +15,6 @@ interface HTMLTemplatePluginOptions {
 }
 
 const VIRTUAL_PREFIX = "template:"
-
-function normalizeMapPath(path: string): string {
-	const rel = relative(process.cwd(), path)
-	const normalized = (rel.startsWith("..") ? path : rel).replaceAll("\\", "/")
-	return normalized.startsWith("/") ? normalized : `/${normalized}`
-}
-
-function createModuleSourceMap({
-	id,
-	filePath,
-	sourceContent,
-}: {
-	id: string
-	filePath: string
-	sourceContent: string
-}) {
-	return JSON.stringify({
-		version: 3,
-		file: id,
-		sources: [normalizeMapPath(filePath)],
-		sourcesContent: [sourceContent],
-		names: [],
-		// Line 1 (import) unmapped, line 2 (export) mapped to HTML line 1.
-		mappings: ";AAAA",
-	})
-}
 
 /**
  * Converts `*.html?template` imports into modules exporting a cloneable

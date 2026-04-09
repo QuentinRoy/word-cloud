@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises"
-import { relative } from "node:path"
 import cssnano from "cssnano"
 import preset from "cssnano-preset-default"
 import postcss from "postcss"
 import type { HmrContext, Plugin } from "vite"
 import {
+	createModuleSourceMap,
 	getFilePathFromVirtualId,
 	getSourceFilePath,
 	hasQueryFlag,
@@ -19,38 +19,12 @@ interface CssStylesheetPluginOptions {
 const minifier = postcss([cssnano({ preset })])
 const VIRTUAL_PREFIX = "stylesheet:"
 
-function normalizeMapPath(path: string): string {
-	const rel = relative(process.cwd(), path)
-	const normalized = (rel.startsWith("..") ? path : rel).replaceAll("\\", "/")
-	return normalized.startsWith("/") ? normalized : `/${normalized}`
-}
-
 function toVirtualStylesheetId(filePath: string): string {
 	return toVirtualId(filePath, VIRTUAL_PREFIX)
 }
 
 function getFilePathFromStylesheetId(id: string): string | null {
 	return getFilePathFromVirtualId(id, VIRTUAL_PREFIX)
-}
-
-function createModuleSourceMap({
-	id,
-	filePath,
-	sourceContent,
-}: {
-	id: string
-	filePath: string
-	sourceContent: string
-}) {
-	return JSON.stringify({
-		version: 3,
-		file: id,
-		sources: [normalizeMapPath(filePath)],
-		sourcesContent: [sourceContent],
-		names: [],
-		// Line 1 (import) unmapped, line 2 (export) mapped to CSS line 1.
-		mappings: ";AAAA",
-	})
 }
 
 /**
