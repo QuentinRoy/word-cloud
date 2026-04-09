@@ -7,7 +7,7 @@ import { cssStylesheetPlugin } from "./plugins/css-stylesheet-plugin.ts"
 import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
-const templateModulePath = resolve(workspaceRoot, "src/template.ts")
+const templateModulePath = resolve(workspaceRoot, "lib/template.ts")
 
 /**
  * Moves the Playwright cursor to (0, 0) so CSS :hover is cleared between

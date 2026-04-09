@@ -5,7 +5,7 @@ import {
 	WordAddEvent,
 	WordCheckedChangeEvent,
 	WordDeleteEvent,
-} from "../src/index.ts"
+} from "../lib/index.ts"
 
 declare module "vitest/browser" {
 	interface BrowserCommands {
