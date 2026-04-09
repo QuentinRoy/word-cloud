@@ -1,5 +1,12 @@
 # @quentinroy/word-cloud
 
+## 0.10.2
+
+### Patch Changes
+
+- 0db2e2e: Improve sourcemaps of html templates and css stylesheets.
+- 0db2e2e: Improve css stylesheet minification.
+
 ## 0.10.1
 
 ### Patch Changes
