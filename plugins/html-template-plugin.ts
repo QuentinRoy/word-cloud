@@ -13,7 +13,7 @@ interface HTMLTemplatePluginOptions {
 	minify?: boolean
 }
 
-const VIRTUAL_PREFIX = "\0word-cloud-template:"
+const VIRTUAL_PREFIX = "template:"
 
 /**
  * Converts `*.html?template` imports into modules exporting a cloneable

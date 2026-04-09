@@ -1,4 +1,8 @@
 import { readFile } from "node:fs/promises"
+import { relative } from "node:path"
+import cssnano from "cssnano"
+import preset from "cssnano-preset-default"
+import postcss from "postcss"
 import type { HmrContext, Plugin } from "vite"
 import {
 	getFilePathFromVirtualId,
@@ -7,28 +11,41 @@ import {
 	toVirtualId,
 } from "./utils"
 
-function minifyCSS(css: string): string {
-	return (
-		css
-			// Remove comments
-			.replace(/\/\*[\s\S]*?\*\//g, "")
-			// Remove leading/trailing whitespace
-			.trim()
-			// Replace multiple whitespaces with single space
-			.replace(/\s+/g, " ")
-			// Remove spaces around special characters
-			.replace(/\s*([{};:,>+~])\s*/g, "$1")
-			// Remove trailing semicolons before closing braces
-			.replace(/;}/g, "}")
-	)
-}
-
 interface CssStylesheetPluginOptions {
 	templateModulePath: string
 	minify?: boolean
 }
 
-const VIRTUAL_PREFIX = "\0word-cloud-stylesheet:"
+const minifier = postcss([cssnano({ preset })])
+const VIRTUAL_PREFIX = "/@id/stylesheet:"
+
+function normalizeMapPath(path: string): string {
+	const rel = relative(process.cwd(), path)
+	const normalized = (rel.startsWith("..") ? path : rel).replaceAll("\\", "/")
+	return normalized.startsWith("/") ? normalized : `/${normalized}`
+}
+
+function toVirtualStylesheetId(filePath: string): string {
+	return toVirtualId(filePath, VIRTUAL_PREFIX)
+}
+
+function getFilePathFromStylesheetId(id: string): string | null {
+	return getFilePathFromVirtualId(id, VIRTUAL_PREFIX)
+}
+
+function toSourceMapString(
+	rawMap: ReturnType<NonNullable<postcss.LazyResult["map"]>["toJSON"]>,
+) {
+	const sources = rawMap.sources.map(normalizeMapPath)
+	return JSON.stringify({
+		version: Number(rawMap.version) || 3,
+		file: rawMap.file,
+		sources,
+		sourcesContent: null,
+		names: rawMap.names,
+		mappings: rawMap.mappings,
+	})
+}
 
 /**
  * Converts `*.css?stylesheet` imports into modules exporting a constructed
@@ -48,16 +65,22 @@ export function cssStylesheetPlugin({
 				skipSelf: true,
 			})
 			if (resolved == null) return null
-			return toVirtualId(getSourceFilePath(resolved.id), VIRTUAL_PREFIX)
+			return toVirtualStylesheetId(getSourceFilePath(resolved.id))
 		},
 		async load(id: string) {
-			const filePath = getFilePathFromVirtualId(id, VIRTUAL_PREFIX)
+			const filePath = getFilePathFromStylesheetId(id)
 			if (filePath == null) return null
 			this.addWatchFile(filePath)
 
 			let content = await readFile(filePath, "utf-8")
+			let map = null
 			if (minify) {
-				content = minifyCSS(content)
+				let result = await minifier.process(content, {
+					from: filePath,
+					map: { inline: false, annotation: false, sourcesContent: false },
+				})
+				content = result.css
+				map = result.map == null ? null : toSourceMapString(result.map.toJSON())
 			}
 
 			return {
@@ -65,7 +88,7 @@ export function cssStylesheetPlugin({
 					`import { createCssStylesheet } from ${JSON.stringify(templateModulePath)};`,
 					`export default createCssStylesheet(${JSON.stringify(content)});`,
 				].join("\n"),
-				map: null,
+				map,
 			}
 		},
 		handleHotUpdate(context: HmrContext) {
