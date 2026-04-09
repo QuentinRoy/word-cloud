@@ -19,26 +19,6 @@ export function queryStrict<T extends HTMLElement>(
 }
 
 /**
- * Creates a unique ID generator function that generates IDs.
- * @returns A function that, when called, returns a unique ID of type number.
- */
-export function createIterativeIdGenerator(): () => number
-/**
- * Creates a unique ID generator function that generates IDs based on a provided mapping function.
- * @param map A function that takes a number and returns a value of type T.
- * This function is used to generate the ID based on the current count.
- * @returns A function that, when called, returns a unique ID of type T.
- */
-export function createIterativeIdGenerator<T>(map: (x: number) => T): () => T
-export function createIterativeIdGenerator(map?: (x: number) => unknown) {
-	let current = 0
-	return () => {
-		current += 1
-		return map ? map(current) : current
-	}
-}
-
-/**
  * Rounds a number to a given number of digits after the decimal point.
  * @param value The number to round.
  * @param precision The number of digits after the decimal point to round to.
