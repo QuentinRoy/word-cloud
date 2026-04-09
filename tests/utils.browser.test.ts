@@ -1,0 +1,74 @@
+import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+	generateRandomId,
+	normalizeAngle,
+	queryStrict,
+	toPrecision,
+} from "../lib/utils.ts"
+
+describe("queryStrict", () => {
+	it("returns the matching element when it is the expected type", () => {
+		const root = document.createElement("div")
+		const button = document.createElement("button")
+		button.className = "action"
+		root.appendChild(button)
+
+		const result = queryStrict(root, ".action", HTMLButtonElement)
+
+		expect(result).toBe(button)
+	})
+
+	it("throws when the selector does not match anything", () => {
+		const root = document.createElement("div")
+
+		expect(() => queryStrict(root, ".missing", HTMLButtonElement)).toThrow(
+			"Expected .missing to be an instance of HTMLButtonElement",
+		)
+	})
+
+	it("throws when the matched element has the wrong type", () => {
+		const root = document.createElement("div")
+		const span = document.createElement("span")
+		span.className = "item"
+		root.appendChild(span)
+
+		expect(() => queryStrict(root, ".item", HTMLButtonElement)).toThrow(
+			"Expected .item to be an instance of HTMLButtonElement",
+		)
+	})
+})
+
+describe("toPrecision", () => {
+	it("rounds to the requested decimal precision", () => {
+		expect(toPrecision(1.234, 2)).toBe(1.23)
+		expect(toPrecision(1.235, 2)).toBe(1.24)
+		expect(toPrecision(-1.235, 2)).toBe(-1.24)
+	})
+
+	it("floors a non-integer precision before rounding", () => {
+		expect(toPrecision(1.239, 2.9)).toBe(1.24)
+	})
+})
+
+describe("generateRandomId", () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
+	it("combines base36 timestamp and random suffix", () => {
+		vi.spyOn(Date, "now").mockReturnValue(123456)
+		vi.spyOn(Math, "random").mockReturnValue(0.5)
+
+		expect(generateRandomId()).toBe("2n9ci")
+	})
+})
+
+describe("normalizeAngle", () => {
+	it("keeps angles in the [-pi, pi] range", () => {
+		expect(normalizeAngle(0)).toBe(0)
+		expect(normalizeAngle(3 * Math.PI)).toBe(Math.PI)
+		expect(normalizeAngle(-3 * Math.PI)).toBe(-Math.PI)
+		expect(normalizeAngle((5 * Math.PI) / 2)).toBe(Math.PI / 2)
+		expect(normalizeAngle((-5 * Math.PI) / 2)).toBe(-Math.PI / 2)
+	})
+})
