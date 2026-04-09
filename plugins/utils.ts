@@ -1,3 +1,5 @@
+import { relative } from "node:path"
+
 export function hasQueryFlag(id: string, flag: string): boolean {
 	const [, query] = id.split("?", 2)
 	if (query == null) return false
@@ -19,4 +21,35 @@ export function getFilePathFromVirtualId(
 	if (!id.startsWith(virtualPrefix)) return null
 	const encodedPath = id.slice(virtualPrefix.length)
 	return Buffer.from(encodedPath, "base64url").toString("utf-8")
+}
+
+export function normalizeMapPath(path: string): string {
+	const rel = relative(process.cwd(), path)
+	const originalPath = rel.startsWith("..") ? path : rel
+	const normalized = originalPath.replaceAll("\\", "/")
+	const isWindowsAbsolute =
+		/^[A-Za-z]:\//.test(normalized) || normalized.startsWith("//")
+	return normalized.startsWith("/") || isWindowsAbsolute
+		? normalized
+		: `/${normalized}`
+}
+
+export function createModuleSourceMap({
+	id,
+	filePath,
+	sourceContent,
+}: {
+	id: string
+	filePath: string
+	sourceContent: string
+}) {
+	return JSON.stringify({
+		version: 3,
+		file: id,
+		sources: [normalizeMapPath(filePath)],
+		sourcesContent: [sourceContent],
+		names: [],
+		// Line 1 (import) unmapped, line 2 (export) mapped to CSS line 1.
+		mappings: ";AAAA",
+	})
 }

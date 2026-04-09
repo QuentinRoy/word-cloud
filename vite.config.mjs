@@ -8,7 +8,9 @@ import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
 const templateModulePath = resolve(workspaceRoot, "src/template.ts")
-let gitVersionResult = (await execSync("git rev-parse --short HEAD")).toString().trim()
+let gitVersionResult = (await execSync("git rev-parse --short HEAD"))
+	.toString()
+	.trim()
 
 function normalizeBasePath(basePath) {
 	if (!basePath || basePath === "/") {
@@ -44,6 +46,7 @@ export default defineConfig(async ({ command, mode }) => {
 			define,
 			base: normalizeBasePath(process.env.PAGES_BASE_PATH),
 			build: {
+				sourcemap: true,
 				outDir: "dist-demo",
 				rollupOptions: { input: resolve(workspaceRoot, "index.html") },
 			},

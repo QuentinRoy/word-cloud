@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { minify as minifyHtml } from "html-minifier-terser"
 import type { HmrContext, Plugin } from "vite"
 import {
+	createModuleSourceMap,
 	getFilePathFromVirtualId,
 	getSourceFilePath,
 	hasQueryFlag,
@@ -13,7 +14,7 @@ interface HTMLTemplatePluginOptions {
 	minify?: boolean
 }
 
-const VIRTUAL_PREFIX = "\0word-cloud-template:"
+const VIRTUAL_PREFIX = "template:"
 
 /**
  * Converts `*.html?template` imports into modules exporting a cloneable
@@ -40,7 +41,8 @@ export function htmlTemplatePlugin({
 			if (filePath == null) return null
 			this.addWatchFile(filePath)
 
-			let content = await readFile(filePath, "utf-8")
+			const sourceContent = await readFile(filePath, "utf-8")
+			let content = sourceContent
 			if (minify) {
 				try {
 					content = await minifyHtml(content, {
@@ -63,7 +65,7 @@ export function htmlTemplatePlugin({
 					`import { createHtmlTemplate } from ${JSON.stringify(templateModulePath)};`,
 					`export default createHtmlTemplate(${JSON.stringify(content)});`,
 				].join("\n"),
-				map: null,
+				map: createModuleSourceMap({ id, filePath, sourceContent }),
 			}
 		},
 		handleHotUpdate(context: HmrContext) {
