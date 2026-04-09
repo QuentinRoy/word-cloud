@@ -7,7 +7,7 @@ import { cssStylesheetPlugin } from "./plugins/css-stylesheet-plugin.ts"
 import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
-const templateModulePath = resolve(workspaceRoot, "src/template.ts")
+const templateModulePath = resolve(workspaceRoot, "lib/template.ts")
 let gitVersionResult = (await execSync("git rev-parse --short HEAD"))
 	.toString()
 	.trim()
@@ -58,7 +58,7 @@ export default defineConfig(async ({ command, mode }) => {
 		define,
 		build: {
 			lib: {
-				entry: resolve(workspaceRoot, "src/index.ts"),
+				entry: resolve(workspaceRoot, "lib/index.ts"),
 				formats: ["es"],
 				fileName: "index",
 			},

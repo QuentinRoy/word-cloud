@@ -1,5 +1,5 @@
 import { type } from "arktype"
-import { toPrecision } from "../src/utils"
+import { toPrecision } from "../lib/utils"
 
 let wordSchema = type({
 	word: "string",

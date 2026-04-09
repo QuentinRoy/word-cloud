@@ -1,5 +1,5 @@
 import "./main.css"
-import { HTMLWordCloudElement, type WordCloudWordAction } from "../src/index.ts"
+import { HTMLWordCloudElement, type WordCloudWordAction } from "../lib/index.ts"
 import { getSavedWords, saveWords } from "./storage.ts"
 
 const localStorageKey = "word-cloud-words"
