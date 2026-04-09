@@ -17,7 +17,7 @@ interface CssStylesheetPluginOptions {
 }
 
 const minifier = postcss([cssnano({ preset })])
-const VIRTUAL_PREFIX = "/@id/stylesheet:"
+const VIRTUAL_PREFIX = "stylesheet:"
 
 function normalizeMapPath(path: string): string {
 	const rel = relative(process.cwd(), path)
@@ -33,17 +33,23 @@ function getFilePathFromStylesheetId(id: string): string | null {
 	return getFilePathFromVirtualId(id, VIRTUAL_PREFIX)
 }
 
-function toSourceMapString(
-	rawMap: ReturnType<NonNullable<postcss.LazyResult["map"]>["toJSON"]>,
-) {
-	const sources = rawMap.sources.map(normalizeMapPath)
+function createModuleSourceMap({
+	id,
+	filePath,
+	sourceContent,
+}: {
+	id: string
+	filePath: string
+	sourceContent: string
+}) {
 	return JSON.stringify({
-		version: Number(rawMap.version) || 3,
-		file: rawMap.file,
-		sources,
-		sourcesContent: null,
-		names: rawMap.names,
-		mappings: rawMap.mappings,
+		version: 3,
+		file: id,
+		sources: [normalizeMapPath(filePath)],
+		sourcesContent: [sourceContent],
+		names: [],
+		// Line 1 (import) unmapped, line 2 (export) mapped to CSS line 1.
+		mappings: ";AAAA",
 	})
 }
 
@@ -72,15 +78,14 @@ export function cssStylesheetPlugin({
 			if (filePath == null) return null
 			this.addWatchFile(filePath)
 
-			let content = await readFile(filePath, "utf-8")
-			let map = null
+			const sourceContent = await readFile(filePath, "utf-8")
+			let content = sourceContent
 			if (minify) {
 				let result = await minifier.process(content, {
 					from: filePath,
-					map: { inline: false, annotation: false, sourcesContent: false },
+					map: false,
 				})
 				content = result.css
-				map = result.map == null ? null : toSourceMapString(result.map.toJSON())
 			}
 
 			return {
@@ -88,7 +93,7 @@ export function cssStylesheetPlugin({
 					`import { createCssStylesheet } from ${JSON.stringify(templateModulePath)};`,
 					`export default createCssStylesheet(${JSON.stringify(content)});`,
 				].join("\n"),
-				map,
+				map: createModuleSourceMap({ id, filePath, sourceContent }),
 			}
 		},
 		handleHotUpdate(context: HmrContext) {
