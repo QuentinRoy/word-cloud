@@ -390,7 +390,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}),
 			)
 		})
-		element.style.transform = this.#getWordTransform(entry)
+		Object.assign(element.style, this.#getWordStyle(entry))
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
@@ -906,7 +906,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#updateWordPositions() {
 		for (let entry of this.#wordEntries.values()) {
-			entry.element.style.transform = this.#getWordTransform(entry)
+			Object.assign(entry.element.style, this.#getWordStyle(entry))
 		}
 	}
 
@@ -934,18 +934,27 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#getWordTransform({ body }: InternalWordEntry) {
+	#getWordStyle({ body, bodySize: { width, height } }: InternalWordEntry) {
+		let result: Partial<CSSStyleDeclaration> = {}
 		let angle = toPrecision(body.angle, ROTATE_PRECISION)
-		let translateX = toPrecision(body.position.x, TRANSLATE_PRECISION)
-		let translateY = toPrecision(body.position.y, TRANSLATE_PRECISION)
-		let transform = ""
-		if (translateX !== 0 || translateY !== 0) {
-			transform += `translate(${translateX}px, ${translateY}px)`
+		let translateX = toPrecision(
+			body.position.x - width / 2,
+			TRANSLATE_PRECISION,
+		)
+		let translateY = toPrecision(
+			body.position.y - height / 2,
+			TRANSLATE_PRECISION,
+		)
+		if (translateX !== 0) {
+			result.left = `${translateX}px`
+		}
+		if (translateY !== 0) {
+			result.top = `${translateY}px`
 		}
 		if (angle !== 0) {
-			transform += ` rotate(${angle}rad)`
+			result.rotate = `${angle}rad`
 		}
-		return transform
+		return result
 	}
 
 	#updateWordsActionFromWordAction() {
