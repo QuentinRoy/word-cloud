@@ -77,7 +77,7 @@ export class WordHandle implements Readonly<WordData> {
 
 	/**
 	 * Programmatically sets the checked state of this word.
-	 * Triggers a `word-checked-change` event on the parent cloud element if the
+	 * Triggers a `word-check` event on the parent cloud element if the
 	 * value actually changes.
 	 *
 	 * @param value The new checked state.

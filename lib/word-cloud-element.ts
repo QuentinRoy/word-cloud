@@ -17,12 +17,13 @@ import {
 	Runner,
 } from "matter-js"
 import {
+	PhysicsPauseEvent,
+	WordActionChangeEvent,
 	WordAddEvent,
-	WordCheckedChangeEvent,
-	WordCloudInputChangeEvent,
-	WordCloudWordActionChangeEvent,
+	WordCheckEvent,
+	WordInputToggleEvent,
 	WordDeleteEvent,
-	WordValueChangeEvent,
+	WordChangeEvent,
 } from "./events.ts"
 import {
 	applyAngularRestoringTorque,
@@ -113,11 +114,12 @@ function isWordAction(value: unknown): value is WordAction {
 
 interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
 	[WordAddEvent.type]: WordAddEvent
-	[WordCheckedChangeEvent.type]: WordCheckedChangeEvent
+	[WordCheckEvent.type]: WordCheckEvent
 	[WordDeleteEvent.type]: WordDeleteEvent
-	[WordCloudInputChangeEvent.type]: WordCloudInputChangeEvent
-	[WordCloudWordActionChangeEvent.type]: WordCloudWordActionChangeEvent
-	[WordValueChangeEvent.type]: WordValueChangeEvent
+	[PhysicsPauseEvent.type]: PhysicsPauseEvent
+	[WordInputToggleEvent.type]: WordInputToggleEvent
+	[WordActionChangeEvent.type]: WordActionChangeEvent
+	[WordChangeEvent.type]: WordChangeEvent
 }
 
 /**
@@ -129,8 +131,9 @@ interface HTMLWordCloudElementEventMap extends HTMLElementEventMap {
  */
 export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	wordAction: pickList({ values: WORD_ACTIONS, default: "none" }),
-	hasInput: boolean(),
+	wordInput: boolean(),
 	showFramerate: boolean(),
+	physicsPaused: boolean(),
 	wordRepulsion: number({ default: REPULSION_MARGIN }),
 	edgeRepulsion: number({ default: REPULSION_MARGIN }),
 	inputRepulsion: number({ default: REPULSION_MARGIN }),
@@ -180,6 +183,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	})
 	#internals = this.attachInternals()
 	#debugRender: Render | null = null
+	#isRunning = false
 
 	/**
 	 * Creates a word cloud instance and initializes its shadow DOM, physics
@@ -206,7 +210,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	static get observedAttributes() {
-		return ["word-action", "has-input"]
+		return ["word-action", "word-input", "physics-paused"] as const
 	}
 
 	/**
@@ -235,18 +239,37 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 					this.#updateMouseConstraint()
 					if (oldWordAction !== wordAction) {
 						this.dispatchEvent(
-							new WordCloudWordActionChangeEvent({ oldWordAction, wordAction }),
+							new WordActionChangeEvent({ oldWordAction, wordAction }),
 						)
 					}
 				}
 				break
-			case "has-input": {
-				const oldHasInput = oldValue !== null
-				const hasInput = newValue !== null
+			case "word-input": {
+				const oldWordInput = oldValue !== null
+				const wordInput = newValue !== null
 				this.#updateInputVolumeFromInput()
-				if (oldHasInput !== hasInput) {
+				if (oldWordInput !== wordInput) {
 					this.dispatchEvent(
-						new WordCloudInputChangeEvent({ oldHasInput, hasInput }),
+						new WordInputToggleEvent({ oldWordInput, wordInput }),
+					)
+				}
+				break
+			}
+			case "physics-paused": {
+				const oldPhysicsPaused = oldValue !== null
+				const physicsPaused = newValue !== null
+				if (physicsPaused) {
+					this.#stop()
+					this.#setFrameRateDisplay(0)
+				} else {
+					this.#start()
+				}
+				if (oldPhysicsPaused !== physicsPaused) {
+					this.dispatchEvent(
+						new PhysicsPauseEvent({
+							oldPhysicsPaused,
+							physicsPaused,
+						}),
 					)
 				}
 				break
@@ -274,7 +297,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			this.#wordResizeObserver.observe(entry.element)
 			this.#updateWordBodySize(entry)
 		}
-		this.#start()
+		if (!this.physicsPaused) this.#start()
 	}
 
 	/**
@@ -374,7 +397,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.addEventListener(WordElementDeleteEvent.type, remove)
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
-				new WordCheckedChangeEvent({
+				new WordCheckEvent({
 					handle: publicHandle,
 					checked: element.checked,
 				}),
@@ -383,7 +406,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.addEventListener(WordElementValueChangeEvent.type, (event) => {
 			const valueChangeEvent = event as WordElementValueChangeEvent
 			this.dispatchEvent(
-				new WordValueChangeEvent({
+				new WordChangeEvent({
 					handle: publicHandle,
 					value: valueChangeEvent.value,
 					oldValue: valueChangeEvent.oldValue,
@@ -758,7 +781,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#updateFramerateDisplay() {
 		const delta = this.#runner.frameDelta
-		this.#framerateDisplay.textContent = `${Math.round(1000 / delta)} fps`
+		this.#setFrameRateDisplay(1000 / delta)
+	}
+
+	#setFrameRateDisplay(fps: number) {
+		this.#framerateDisplay.textContent = `${Math.round(fps)} fps`
 	}
 
 	#applyAngularRestoringTorque() {
@@ -956,7 +983,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateInputVolumeFromInput() {
-		if (this.hasInput) {
+		if (this.wordInput) {
 			if (this.#inputVolumeEnabled) return
 			this.#updateInputVolumeBody()
 			Composite.add(this.#engine.world, this.#inputVolumeBody)
@@ -991,6 +1018,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#start() {
+		if (this.#isRunning) return
+		this.#isRunning = true
 		Runner.run(this.#runner, this.#engine)
 		if (USE_DEBUG_RENDERER) {
 			let containerBox = this.#container.getBoundingClientRect()
@@ -1014,6 +1043,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#stop() {
+		if (!this.#isRunning) return
+		this.#isRunning = false
 		this.#unlockAllDraggedBodies()
 		Runner.stop(this.#runner)
 		if (this.#debugRender != null) Render?.stop(this.#debugRender)

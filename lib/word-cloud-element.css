@@ -181,7 +181,7 @@ form {
 		ease-in-out;
 }
 
-:host([has-input]) {
+:host([word-input]) {
 	form {
 		display: block;
 		opacity: 1;
