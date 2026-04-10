@@ -3,9 +3,14 @@
 	margin: 0;
 }
 
+/* Hide from layout and rendering while preserving accessibility.
+Kept within the label’s box to ensure correct behavior under
+label transforms (rotation/scale), which may otherwise cause issues
+(e.g. https://github.com/QuentinRoy/word-cloud/issues/22) */
 input {
 	position: absolute;
-	top: -1000px;
+	top: 50%;
+	left: 50%;
 	z-index: -1000;
 	width: 1px;
 	height: 1px;
