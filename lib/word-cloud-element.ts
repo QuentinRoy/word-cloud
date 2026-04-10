@@ -50,9 +50,9 @@ const MAX_RANDOM_VELOCITY = 40
 const PADDING = 0
 const INPUT_VOLUME_MIN_SIZE = 1
 const TRANSLATE_PRECISION = 1
-const ROTATE_PRECISION = 4
+const ROTATE_PRECISION = 3
 const ANGULAR_REST_ANGLE = 0
-const ANGULAR_REST_ANGLE_EPSILON = 0.005
+const ANGULAR_REST_ANGLE_EPSILON = 0.001
 const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.4
 const ANGULAR_DAMPING_COEFFICIENT = 0.2
 const ANGULAR_SPRING_WIDTH_REFERENCE = 150
@@ -407,7 +407,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}),
 			)
 		})
-		Object.assign(element.style, this.#getWordStyle(entry))
+		element.style.transform = this.#getWordTransform(entry)
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
 		this.#wordEntries.set(id, entry)
@@ -927,7 +927,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#updateWordPositions() {
 		for (let entry of this.#wordEntries.values()) {
-			Object.assign(entry.element.style, this.#getWordStyle(entry))
+			entry.element.style.transform = this.#getWordTransform(entry)
 		}
 	}
 
@@ -955,8 +955,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#getWordStyle({ body, bodySize: { width, height } }: InternalWordEntry) {
-		let result: Partial<CSSStyleDeclaration> = {}
+	#getWordTransform({
+		body,
+		bodySize: { width, height },
+	}: InternalWordEntry): string {
 		let angle = toPrecision(body.angle, ROTATE_PRECISION)
 		let translateX = toPrecision(
 			body.position.x - width / 2,
@@ -966,16 +968,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			body.position.y - height / 2,
 			TRANSLATE_PRECISION,
 		)
-		if (translateX !== 0) {
-			result.left = `${translateX}px`
-		}
-		if (translateY !== 0) {
-			result.top = `${translateY}px`
-		}
-		if (angle !== 0) {
-			result.rotate = `${angle}rad`
-		}
-		return result
+		return angle !== 0
+			? `translate(${translateX}px, ${translateY}px) rotate(${angle}rad)`
+			: `translate(${translateX}px, ${translateY}px)`
 	}
 
 	#updateWordsActionFromWordAction() {

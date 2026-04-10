@@ -119,8 +119,10 @@
 
 .word-cloud .word {
 	position: absolute;
+	top: 0;
+	left: 0;
 	z-index: 3;
-	will-change: top, left, rotate;
+	will-change: transform;
 }
 
 input[type="text"] {
