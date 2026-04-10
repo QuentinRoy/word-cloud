@@ -329,4 +329,23 @@ describe("HTMLWordCloudElement user interactions", () => {
 		// Drag mode has no special hover styling — same as none mode
 		await expect.element(locator).toMatchScreenshot("word-drag-hover.png")
 	})
+
+	it("visual regression: grabbed word appearance in drag mode", async () => {
+		const { element } = await createCloudElement()
+		element.setAttribute("word-action", "drag")
+		await flushFrames(2)
+		element.addWord({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
+		await flushFrames(3)
+
+		const wordElement = getFirstWordElement(element)
+		const label = getWordLabel(wordElement)
+		const locator = page.elementLocator(label)
+
+		// Mirror the DOM state applied while dragging so we can snapshot
+		// grabbed visuals deterministically. We snapshot the transformed label
+		// directly so scale is fully visible and not clipped by the host box.
+		wordElement.setAttribute("dragged", "")
+		await flushFrames(1)
+		await expect.element(locator).toMatchScreenshot("word-drag-grabbed.png")
+	})
 })

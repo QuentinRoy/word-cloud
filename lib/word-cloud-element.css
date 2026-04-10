@@ -120,10 +120,6 @@
 .word-cloud .word {
 	position: absolute;
 	z-index: 3;
-	/* Fixes what I believe is a bug in Chrome: viewport is getting enlarged
-	in case of rotations, adding scrollbars to view non-existing content.
-	c.f https://github.com/QuentinRoy/word-cloud/issues/22 */
-	overflow: hidden;
 	will-change: top, left, rotate;
 }
 
