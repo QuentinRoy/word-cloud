@@ -176,10 +176,7 @@ export class WordActionChangeEvent extends Event {
 		wordAction,
 		oldWordAction,
 	}: { wordAction: WordCloudWordAction; oldWordAction: WordCloudWordAction }) {
-		super(WordActionChangeEvent.type, {
-			bubbles: true,
-			composed: true,
-		})
+		super(WordActionChangeEvent.type, { bubbles: true, composed: true })
 		this.#wordAction = wordAction
 		this.#oldWordAction = oldWordAction
 	}
@@ -258,10 +255,7 @@ export class PhysicsPauseEvent extends Event {
 		physicsPaused,
 		oldPhysicsPaused,
 	}: { physicsPaused: boolean; oldPhysicsPaused: boolean }) {
-		super(PhysicsPauseEvent.type, {
-			bubbles: true,
-			composed: true,
-		})
+		super(PhysicsPauseEvent.type, { bubbles: true, composed: true })
 		this.#physicsPaused = physicsPaused
 		this.#oldPhysicsPaused = oldPhysicsPaused
 	}

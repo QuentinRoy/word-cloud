@@ -20,10 +20,10 @@ import {
 	PhysicsPauseEvent,
 	WordActionChangeEvent,
 	WordAddEvent,
-	WordCheckEvent,
-	WordInputToggleEvent,
-	WordDeleteEvent,
 	WordChangeEvent,
+	WordCheckEvent,
+	WordDeleteEvent,
+	WordInputToggleEvent,
 } from "./events.ts"
 import {
 	applyAngularRestoringTorque,
@@ -266,10 +266,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}
 				if (oldPhysicsPaused !== physicsPaused) {
 					this.dispatchEvent(
-						new PhysicsPauseEvent({
-							oldPhysicsPaused,
-							physicsPaused,
-						}),
+						new PhysicsPauseEvent({ oldPhysicsPaused, physicsPaused }),
 					)
 				}
 				break
@@ -397,10 +394,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		element.addEventListener(WordElementDeleteEvent.type, remove)
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
-				new WordCheckEvent({
-					handle: publicHandle,
-					checked: element.checked,
-				}),
+				new WordCheckEvent({ handle: publicHandle, checked: element.checked }),
 			)
 		})
 		element.addEventListener(WordElementValueChangeEvent.type, (event) => {
