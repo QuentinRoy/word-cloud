@@ -1,10 +1,11 @@
 export {
+	PhysicsPauseEvent,
+	WordActionChangeEvent,
 	WordAddEvent,
-	WordCheckedChangeEvent,
-	WordCloudInputChangeEvent,
-	WordCloudWordActionChangeEvent,
+	WordChangeEvent,
+	WordCheckEvent,
 	WordDeleteEvent,
-	WordValueChangeEvent,
+	WordInputToggleEvent,
 } from "./events.ts"
 export {
 	HTMLWordCloudElement,

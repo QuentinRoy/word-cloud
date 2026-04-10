@@ -59,14 +59,14 @@ export class WordAddEvent extends WordCloudEvent {
  * either through user interaction while `wordAction` is `check` or
  * programmatically via {@link WordHandle.checked}.
  *
- * Listen with `"word-checked-change"` or {@link WordCheckedChangeEvent.type}.
+ * Listen with `"word-check"` or {@link WordCheckEvent.type}.
  */
-export class WordCheckedChangeEvent extends WordCloudEvent {
+export class WordCheckEvent extends WordCloudEvent {
 	#checked: boolean
 
 	/** Event type string for checked-state changes. */
 	static get type() {
-		return "word-checked-change" as const
+		return "word-check" as const
 	}
 
 	/**
@@ -74,7 +74,7 @@ export class WordCheckedChangeEvent extends WordCloudEvent {
 	 * @param data.checked The new checked state at dispatch time.
 	 */
 	constructor({ handle, checked }: { handle: WordHandle; checked: boolean }) {
-		super({ type: WordCheckedChangeEvent.type, handle })
+		super({ type: WordCheckEvent.type, handle })
 		this.#checked = checked
 	}
 
@@ -92,15 +92,15 @@ export class WordCheckedChangeEvent extends WordCloudEvent {
  * through direct updates to the underlying word element or programmatically via
  * {@link WordHandle.word}.
  *
- * Listen with `"word-value-change"` or {@link WordValueChangeEvent.type}.
+ * Listen with `"word-change"` or {@link WordChangeEvent.type}.
  */
-export class WordValueChangeEvent extends WordCloudEvent {
+export class WordChangeEvent extends WordCloudEvent {
 	#value: string
 	#oldValue: string
 
 	/** Event type string for word-text changes. */
 	static get type() {
-		return "word-value-change" as const
+		return "word-change" as const
 	}
 
 	/**
@@ -113,7 +113,7 @@ export class WordValueChangeEvent extends WordCloudEvent {
 		value,
 		oldValue,
 	}: { handle: WordHandle; value: string; oldValue: string }) {
-		super({ type: WordValueChangeEvent.type, handle })
+		super({ type: WordChangeEvent.type, handle })
 		this.#value = value
 		this.#oldValue = oldValue
 	}
@@ -157,9 +157,9 @@ export class WordDeleteEvent extends WordCloudEvent {
  * Fired by {@link HTMLWordCloudElement} when its `wordAction` changes.
  *
  * Listen with `"word-action-change"` or
- * {@link WordCloudWordActionChangeEvent.type}.
+ * {@link WordActionChangeEvent.type}.
  */
-export class WordCloudWordActionChangeEvent extends Event {
+export class WordActionChangeEvent extends Event {
 	#wordAction: WordCloudWordAction
 	#oldWordAction: WordCloudWordAction
 
@@ -176,10 +176,7 @@ export class WordCloudWordActionChangeEvent extends Event {
 		wordAction,
 		oldWordAction,
 	}: { wordAction: WordCloudWordAction; oldWordAction: WordCloudWordAction }) {
-		super(WordCloudWordActionChangeEvent.type, {
-			bubbles: true,
-			composed: true,
-		})
+		super(WordActionChangeEvent.type, { bubbles: true, composed: true })
 		this.#wordAction = wordAction
 		this.#oldWordAction = oldWordAction
 	}
@@ -196,39 +193,80 @@ export class WordCloudWordActionChangeEvent extends Event {
 }
 
 /**
- * Fired by {@link HTMLWordCloudElement} when its `hasInput` setting changes.
+ * Fired by {@link HTMLWordCloudElement} when its `wordInput` setting changes.
  *
- * Listen with `"has-input-change"` or {@link WordCloudInputChangeEvent.type}.
+ * Listen with `"word-input-toggle"` or
+ * {@link WordInputToggleEvent.type}.
  */
-export class WordCloudInputChangeEvent extends Event {
-	#hasInput: boolean
-	#oldHasInput: boolean
+export class WordInputToggleEvent extends Event {
+	#wordInput: boolean
+	#oldWordInput: boolean
 
-	/** Event type string for has-input-setting changes. */
+	/** Event type string for word-input-setting changes. */
 	static get type() {
-		return "has-input-change" as const
+		return "word-input-toggle" as const
 	}
 
 	/**
-	 * @param data.hasInput The new hasInput setting after the change.
-	 * @param data.oldHasInput The previous hasInput setting before the change.
+	 * @param data.wordInput The new wordInput setting after the change.
+	 * @param data.oldWordInput The previous wordInput setting before the change.
 	 */
 	constructor({
-		hasInput,
-		oldHasInput,
-	}: { hasInput: boolean; oldHasInput: boolean }) {
-		super(WordCloudInputChangeEvent.type, { bubbles: true, composed: true })
-		this.#hasInput = hasInput
-		this.#oldHasInput = oldHasInput
+		wordInput,
+		oldWordInput,
+	}: { wordInput: boolean; oldWordInput: boolean }) {
+		super(WordInputToggleEvent.type, { bubbles: true, composed: true })
+		this.#wordInput = wordInput
+		this.#oldWordInput = oldWordInput
 	}
 
-	/** The new hasInput setting after the change. */
-	get hasInput(): boolean {
-		return this.#hasInput
+	/** The new wordInput setting after the change. */
+	get wordInput(): boolean {
+		return this.#wordInput
 	}
 
-	/** The previous hasInput setting before the change. */
-	get oldHasInput(): boolean {
-		return this.#oldHasInput
+	/** The previous wordInput setting before the change. */
+	get oldWordInput(): boolean {
+		return this.#oldWordInput
+	}
+}
+
+/**
+ * Fired by {@link HTMLWordCloudElement} when its `physicsPaused` setting
+ * changes.
+ *
+ * Listen with `"physics-pause"` or
+ * {@link PhysicsPauseEvent.type}.
+ */
+export class PhysicsPauseEvent extends Event {
+	#physicsPaused: boolean
+	#oldPhysicsPaused: boolean
+
+	/** Event type string for physics-paused-setting changes. */
+	static get type() {
+		return "physics-pause" as const
+	}
+
+	/**
+	 * @param data.physicsPaused The new physicsPaused setting after the change.
+	 * @param data.oldPhysicsPaused The previous physicsPaused setting before the change.
+	 */
+	constructor({
+		physicsPaused,
+		oldPhysicsPaused,
+	}: { physicsPaused: boolean; oldPhysicsPaused: boolean }) {
+		super(PhysicsPauseEvent.type, { bubbles: true, composed: true })
+		this.#physicsPaused = physicsPaused
+		this.#oldPhysicsPaused = oldPhysicsPaused
+	}
+
+	/** The new physicsPaused setting after the change. */
+	get physicsPaused(): boolean {
+		return this.#physicsPaused
+	}
+
+	/** The previous physicsPaused setting before the change. */
+	get oldPhysicsPaused(): boolean {
+		return this.#oldPhysicsPaused
 	}
 }

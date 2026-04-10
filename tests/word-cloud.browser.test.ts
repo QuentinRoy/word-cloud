@@ -3,7 +3,7 @@ import { commands, page, userEvent } from "vitest/browser"
 import {
 	HTMLWordCloudElement,
 	WordAddEvent,
-	WordCheckedChangeEvent,
+	WordCheckEvent,
 	WordDeleteEvent,
 } from "../lib/index.ts"
 
@@ -119,7 +119,7 @@ afterEach(async () => {
 describe("HTMLWordCloudElement user interactions", () => {
 	it("adds a word from the built-in input when user types + Enter", async () => {
 		const { element } = await createCloudElement()
-		element.hasInput = true
+		element.wordInput = true
 		await flushFrames(2)
 
 		const addedWords: string[] = []
@@ -154,8 +154,8 @@ describe("HTMLWordCloudElement user interactions", () => {
 		await flushFrames(3)
 
 		const checkEvents: boolean[] = []
-		element.addEventListener(WordCheckedChangeEvent.type, (event) => {
-			checkEvents.push((event as WordCheckedChangeEvent).checked)
+		element.addEventListener(WordCheckEvent.type, (event) => {
+			checkEvents.push((event as WordCheckEvent).checked)
 		})
 
 		const wordElement = getFirstWordElement(element)
@@ -208,8 +208,8 @@ describe("HTMLWordCloudElement user interactions", () => {
 
 		const checkEvents: boolean[] = []
 		const deletedWords: string[] = []
-		element.addEventListener(WordCheckedChangeEvent.type, (event) => {
-			checkEvents.push((event as WordCheckedChangeEvent).checked)
+		element.addEventListener(WordCheckEvent.type, (event) => {
+			checkEvents.push((event as WordCheckEvent).checked)
 		})
 		element.addEventListener(WordDeleteEvent.type, (event) => {
 			deletedWords.push((event as WordDeleteEvent).handle.word)
@@ -241,8 +241,8 @@ describe("HTMLWordCloudElement user interactions", () => {
 
 		const checkEvents: boolean[] = []
 		const deletedWords: string[] = []
-		element.addEventListener(WordCheckedChangeEvent.type, (event) => {
-			checkEvents.push((event as WordCheckedChangeEvent).checked)
+		element.addEventListener(WordCheckEvent.type, (event) => {
+			checkEvents.push((event as WordCheckEvent).checked)
 		})
 		element.addEventListener(WordDeleteEvent.type, (event) => {
 			deletedWords.push((event as WordDeleteEvent).handle.word)

@@ -37,8 +37,8 @@ const syncControls = () => {
 			control.checked = control.value === wordCloud.wordAction
 			continue
 		}
-		if (control.name === "has-input") {
-			control.checked = wordCloud.hasInput
+		if (control.name === "word-input") {
+			control.checked = wordCloud.wordInput
 		}
 	}
 }
@@ -54,8 +54,8 @@ controls.addEventListener("change", (event) => {
 		wordCloud.wordAction = target.value
 		return
 	}
-	if (target.name === "has-input") {
-		wordCloud.hasInput = target.checked
+	if (target.name === "word-input") {
+		wordCloud.wordInput = target.checked
 	}
 })
 
@@ -67,13 +67,13 @@ wordCloud.addEventListener("word-add", (event) => {
 	console.log(`[word-cloud] added word: "${event.handle.word}"`)
 })
 
-wordCloud.addEventListener("word-value-change", (event) => {
+wordCloud.addEventListener("word-change", (event) => {
 	console.log(
 		`[word-cloud] renamed word: "${event.oldValue}" -> "${event.value}"`,
 	)
 })
 
-wordCloud.addEventListener("word-checked-change", (event) => {
+wordCloud.addEventListener("word-check", (event) => {
 	console.log(`[word-cloud] "${event.handle.word}" checked: ${event.checked}`)
 })
 
@@ -88,11 +88,17 @@ wordCloud.addEventListener("word-action-change", (event) => {
 	syncControls()
 })
 
-wordCloud.addEventListener("has-input-change", (event) => {
+wordCloud.addEventListener("word-input-toggle", (event) => {
 	console.log(
-		`[word-cloud] has-input: ${event.oldHasInput} -> ${event.hasInput}`,
+		`[word-cloud] word-input: ${event.oldWordInput} -> ${event.wordInput}`,
 	)
 	syncControls()
+})
+
+wordCloud.addEventListener("physics-pause", (event) => {
+	console.log(
+		`[word-cloud] physics-paused: ${event.oldPhysicsPaused} -> ${event.physicsPaused}`,
+	)
 })
 
 document.addEventListener("keypress", (event) => {
@@ -114,7 +120,7 @@ document.addEventListener("keypress", (event) => {
 			break
 		}
 		case "i":
-			wordCloud.hasInput = !wordCloud.hasInput
+			wordCloud.wordInput = !wordCloud.wordInput
 			break
 	}
 })

@@ -52,7 +52,7 @@ The component fills the size of its host element, so give it an explicit width a
   }
 </style>
 
-<x-word-cloud word-action="drag" has-input></x-word-cloud>
+<x-word-cloud word-action="drag" word-input></x-word-cloud>
 ```
 
 ```ts
@@ -75,10 +75,11 @@ wordCloud.setWords([
 
 ## Interaction Settings
 
-The element uses three independent attributes:
+The element uses four independent attributes:
 
 - `word-action`: controls how words react to user interaction.
-- `has-input`: boolean, controls whether the built-in input form is shown and active.
+- `word-input`: boolean, controls whether the built-in input form is shown and active.
+- `physics-paused`: boolean, pauses the physics runner while leaving the rendered state intact. Note that while other functions will continue to work, dragging and velocity changes won't have any effect while physics is paused.
 - `show-framerate`: boolean, controls whether the framerate display is shown.
 
 
@@ -90,10 +91,10 @@ Supported `word-action` values:
 - `check`: clicking a word toggles its checked state.
 - `delete`: clicking a word removes it.
 
-Set `has-input` to show the built-in input form:
+Set `word-input` to show the built-in input form:
 
 ```html
-<x-word-cloud word-action="check" has-input></x-word-cloud>
+<x-word-cloud word-action="check" word-input></x-word-cloud>
 ```
 
 
@@ -101,7 +102,8 @@ Each of these can also be read or set via the corresponding property on the elem
 
 ```ts
 wordCloud.wordAction = "check"
-wordCloud.hasInput = true
+wordCloud.wordInput = true
+wordCloud.physicsPaused = false
 wordCloud.showFramerate = false
 ```
 
@@ -193,10 +195,10 @@ const entry = wordCloud.addWord({ word: "Hello", x: 100, y: 100 })
 // Read live state:
 console.log(entry.x, entry.y, entry.checked)
 
-// Rename the word (fires word-value-change):
+// Rename the word (fires word-change):
 entry.word = "Hello again"
 
-// Toggle checked programmatically (fires word-checked-change):
+// Toggle checked programmatically (fires word-check):
 entry.checked = !entry.checked
 
 // Remove it:
@@ -239,9 +241,9 @@ wordCloud.setWords(saved)
 
 - **`word-add`** — fired when a word is added to the cloud, including through
   `addWord()`, `setWords()`, or the built-in input form.
-- **`word-value-change`** — fired when a word's text changes, including
+- **`word-change`** — fired when a word's text changes, including
   programmatic assignment to `handle.word`.
-- **`word-checked-change`** — fired when a word's checked state changes (user
+- **`word-check`** — fired when a word's checked state changes (user
   interaction while `wordAction` is `check`, or programmatic assignment to
   `handle.checked`).
 - **`word-delete`** — fired when the user deletes a word while `wordAction` is
@@ -249,8 +251,12 @@ wordCloud.setWords(saved)
   just before the word is removed.
 - **`word-action-change`** — fired when the element `wordAction` changes.
   Includes `wordAction` and `oldWordAction`.
-- **`has-input-change`** — fired when the element `hasInput` setting changes.
-  Includes `hasInput` and `oldHasInput`.
+- **`word-input-toggle`** — fired when the element `wordInput`
+  setting changes.
+  Includes `wordInput` and `oldWordInput`.
+- **`physics-pause`** — fired when the element `physicsPaused`
+  setting changes.
+  Includes `physicsPaused` and `oldPhysicsPaused`.
 
 The word-specific events carry a `handle` property: a live
 [`WordHandle`](#wordhandle) for the affected word. The setting-change events
@@ -263,11 +269,11 @@ wordCloud.addEventListener("word-add", (event) => {
   console.log(`added word: "${event.handle.word}" at ${event.handle.x}, ${event.handle.y}`)
 })
 
-wordCloud.addEventListener("word-value-change", (event) => {
+wordCloud.addEventListener("word-change", (event) => {
   console.log(`renamed word: "${event.oldValue}" -> "${event.value}"`)
 })
 
-wordCloud.addEventListener("word-checked-change", (event) => {
+wordCloud.addEventListener("word-check", (event) => {
   console.log(`"${event.handle.word}" checked: ${event.checked}`)
 })
 
@@ -279,8 +285,12 @@ wordCloud.addEventListener("word-action-change", (event) => {
   console.log(`word action: ${event.oldWordAction} -> ${event.wordAction}`)
 })
 
-wordCloud.addEventListener("has-input-change", (event) => {
-  console.log(`has-input: ${event.oldHasInput} -> ${event.hasInput}`)
+wordCloud.addEventListener("word-input-toggle", (event) => {
+  console.log(`word-input: ${event.oldWordInput} -> ${event.wordInput}`)
+})
+
+wordCloud.addEventListener("physics-pause", (event) => {
+  console.log(`physics-paused: ${event.oldPhysicsPaused} -> ${event.physicsPaused}`)
 })
 ```
 
