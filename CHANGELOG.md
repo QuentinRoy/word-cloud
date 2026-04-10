@@ -1,5 +1,28 @@
 # @quentinroy/word-cloud
 
+## 0.11.0
+
+### Minor Changes
+
+- a333459: Rename the has-input/hasInput API to word-input/wordInput, and rename event classes:
+  WordCheckedChangeEvent -> WordCheckEvent,
+  WordValueChangeEvent -> WordChangeEvent,
+  WordCloudWordActionChangeEvent -> WordActionChangeEvent,
+  WordCloudWordInputChangeEvent -> WordInputToggleEvent,
+  WordCloudPhysicsPausedChangeEvent -> PhysicsPauseEvent.
+
+  Update event type strings accordingly:
+  word-checked-change -> word-check,
+  word-value-change -> word-change,
+  word-input-change -> word-input-toggle,
+  physics-paused-change -> physics-pause.
+
+- a333459: Add the physics-paused attribute and physicsPaused property to pause the word-cloud physics engine, and add a physics-pause event for pause-state transitions.
+
+### Patch Changes
+
+- 305159f: Fix a bug in Chrome that caused the viewport to extend when words are rotated.
+
 ## 0.10.2
 
 ### Patch Changes
