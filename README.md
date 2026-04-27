@@ -109,11 +109,16 @@ wordCloud.showFramerate = false
 
 ## Public API
 
-### `add(options)` → `WordHandle | WordHandle[]`
+### `add(options, defaults?)` → `WordHandle | WordHandle[]`
 
 Adds one or more words to the cloud. Pass a single options object to get back a
 single [`WordHandle`](#wordhandle), or an iterable of options objects to get back
 an array of handles.
+
+
+The optional second argument (`defaults`) provides default values that are merged into each word before creation (except `word`, which must always be specified per word).
+Any required field (except `word`) becomes optional in each word if provided in `defaults`.
+Individual word options always override defaults.
 
 ```ts
 // Single word:
@@ -135,6 +140,16 @@ const [a, b] = wordCloud.add([
   { word: "Hello", x: 100, y: 100 },
   { word: "World", x: 200, y: 200 },
 ])
+
+// Restore without animation (using defaults):
+const savedWords: WordData[] = [...]
+wordCloud.add(savedWords, { entryAnimation: "none" })
+
+// Provide shared position defaults so x/y can be omitted per item:
+wordCloud.add(
+  [{ word: "A" }, { word: "B", y: 240 }],
+  { x: 120, y: 200 }
+)
 ```
 
 Adding a word also fires `word-add` with the created `WordHandle`.
@@ -148,6 +163,11 @@ Supported options:
 - `checked` _(optional)_: initial checked state. Defaults to `false`.
 - `velocity` _(optional)_: initial physics velocity `{ x, y }`.
 - `entryAnimation` _(optional)_: entry animation to run when the word is created. Supported values are `"fade"`, `"chip-fade"`, and `"none"`. Defaults to `"fade"`.
+
+The `defaults` parameter (second argument) accepts any add option except `word`.
+When provided, individual word options override the defaults.
+
+Typing note: Any required field (except `word`) becomes optional in each word if present in `defaults`. For example, if you provide `defaults.x`, then `x` is optional in each word object.
 
 ### `clear()`
 
@@ -223,10 +243,10 @@ const saved = Array.from(wordCloud.getWords(), ({ word, x, y, angle, checked }) 
 })
 localStorage.setItem("words", JSON.stringify(saved))
 
-// Restore
+// Restore (without animation)
 const saved = JSON.parse(localStorage.getItem("words") ?? "[]")
 wordCloud.clear()
-wordCloud.add(saved as WordData[])
+wordCloud.add(saved as WordData[], { entryAnimation: "none" })
 ```
 
 ## Events

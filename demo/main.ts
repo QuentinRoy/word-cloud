@@ -44,7 +44,7 @@ const syncControls = () => {
 }
 
 wordCloud.clear()
-wordCloud.add(savedWords)
+wordCloud.add(savedWords, { entryAnimation: "none" })
 syncControls()
 
 controls.addEventListener("change", (event) => {

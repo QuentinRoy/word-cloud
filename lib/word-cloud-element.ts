@@ -33,6 +33,8 @@ import {
 	generateRandomId,
 	isIterable,
 	queryStrict,
+	type RequiredKeysOf,
+	type SetOptional,
 	toPrecision,
 } from "./utils.ts"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
@@ -92,7 +94,11 @@ interface InternalWordEntry {
 	dragLock: { initialInertia: number } | null
 }
 
-type WordVelocity = { x: number; y: number }
+/** Linear velocity vector applied to a word body on creation. */
+interface WordVelocity {
+	x: number
+	y: number
+}
 
 /**
  * Options used to add a single word to the cloud.
@@ -109,6 +115,19 @@ type AddWordOptions = WordData & {
 	 */
 	ignoreInputVolumeUntilExit?: boolean
 }
+
+/**
+ * Optional default values for add().
+ * Accepts any AddWordOptions property except 'word'.
+ */
+type AddWordDefaults = Omit<Partial<AddWordOptions>, "word">
+
+/**
+ * AddWordInput: All required fields except 'word' become optional if present in defaults.
+ * Only consumes required keys from AddWordOptions (except 'word').
+ */
+type AddWordInput<Default extends AddWordDefaults = Record<never, unknown>> =
+	SetOptional<AddWordOptions, RequiredKeysOf<Default> & keyof AddWordDefaults>
 
 export const WORD_ACTIONS = ["none", "drag", "check", "delete"] as const
 export type WordAction = (typeof WORD_ACTIONS)[number]
@@ -303,8 +322,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Removes listeners and stops the physics runner when the element is
-	 * disconnected.
+	 * Detaches DOM and physics listeners, stops observing resize events,
+	 * and stops the physics runner when the element is disconnected.
 	 */
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
@@ -321,30 +340,49 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Creates one or more rendered word elements with matching physics bodies.
-	 * Accepts a single options object or an iterable of options objects.
-	 * Returns a single {@link WordHandle} when given a single object, or an
-	 * array of handles when given an iterable.
+	 * Adds one or more words to the cloud.
 	 *
-	 * @param options.word The text content to display.
-	 * @param options.x The initial horizontal center position in pixels.
-	 * @param options.y The initial vertical center position in pixels.
-	 * @param options.angle The initial body rotation in radians. Defaults to `0`.
-	 * @param options.checked Whether the word starts in the checked state. Defaults to `false`.
-	 * @param options.velocity The initial linear velocity applied to the body.
-	 * @param options.entryAnimation Which entry animation to run. Defaults to `"fade"`.
-	 * @returns A live {@link WordHandle} for the newly created word, or an array
-	 *   of handles when an iterable is provided.
+	 * Pass a single options object to add one word, or an iterable to add many.
+	 * The optional `defaults` argument is merged into each word before creation —
+	 * any required field present in `defaults` becomes optional per-word.
+	 * Per-word options always override defaults.
+	 *
+	 * @example
+	 * // Single word
+	 * cloud.add({ word: "hello", x: 100, y: 200 });
+	 *
+	 * @example
+	 * // Many words sharing a default position
+	 * cloud.add(
+	 *   [{ word: "hello" }, { word: "world" }],
+	 *   { x: 100, y: 200 }
+	 * );
+	 *
+	 * @returns A single {@link WordHandle} when adding one word,
+	 *   or an array of handles when adding an iterable.
 	 */
-	add(options: AddWordOptions): WordHandle
-	add(options: Iterable<AddWordOptions>): WordHandle[]
+	add<Defaults extends AddWordDefaults>(
+		options: AddWordInput<Defaults>,
+		defaults: Defaults,
+	): WordHandle
+	add(options: AddWordInput): WordHandle
+	add<Defaults extends AddWordDefaults>(
+		options: Iterable<AddWordInput<Defaults>>,
+		defaults: Defaults,
+	): WordHandle[]
+	add(options: Iterable<AddWordInput>): WordHandle[]
 	add(
-		options: AddWordOptions | Iterable<AddWordOptions>,
+		options:
+			| AddWordInput<AddWordDefaults>
+			| Iterable<AddWordInput<AddWordDefaults>>,
+		defaults?: AddWordDefaults,
 	): WordHandle | WordHandle[] {
 		if (isIterable(options)) {
-			return Array.from(options, (o) => this.#addWord(o))
+			return Array.from(options, (o) =>
+				this.#addWord({ ...defaults, ...o } as AddWordOptions),
+			)
 		}
-		return this.#addWord(options)
+		return this.#addWord({ ...defaults, ...options } as AddWordOptions)
 	}
 
 	#addWord({
@@ -459,7 +497,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Removes all words currently managed by the cloud.
+	 * Removes all words from the cloud immediately, without exit animations.
+	 * Dispatches no {@link WordDeleteEvent} events.
 	 */
 	clear() {
 		for (let entry of this.#wordEntries.values()) {
@@ -471,8 +510,17 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	/**
 	 * Returns live {@link WordHandle} handles for all words currently in the cloud.
-	 * Property reads on each handle always reflect the current state.
-	 * Useful for persistence — call {@link clear} then {@link add} to restore.
+	 *
+	 * Handles are live — property reads always reflect current physics state.
+	 * Intended for serialization: snapshot positions with `getWords()`,
+	 * then restore with `clear()` + `add()`.
+	 *
+	 * @example
+	 * const snapshot = Array.from(cloud.getWords(), w => {
+	 *   return { word: w.word, x: w.x, y: w.y, angle: w.angle, checked: w.checked }
+	 * });
+	 * cloud.clear();
+	 * cloud.add(snapshot);
 	 */
 	*getWords(): Iterable<WordHandle> {
 		for (let entry of this.#wordEntries.values()) {
@@ -636,6 +684,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
 	}
 
+	/**
+	 * Scales all four frame bodies to match the current container dimensions,
+	 * repositioning them so they tightly bound the container on all sides.
+	 * Should be called whenever the container is resized.
+	 */
 	#updateFrameBodies() {
 		const { left, right, top, bottom } = this.#frameBodies
 		const { width, height } = this.#container.getBoundingClientRect()
@@ -695,6 +748,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return DEFAULT_WORD_COLLISION_MASK & ~INPUT_VOLUME_COLLISION_CATEGORY
 	}
 
+	/**
+	 * Checks each word that has `ignoreInputVolumeUntilExit` set and clears
+	 * the flag once the body is no longer overlapping the input volume.
+	 * Called every physics tick.
+	 */
 	#updateWordCollisionMask(entry: InternalWordEntry) {
 		entry.body.collisionFilter.mask =
 			entry.dragLock != null
@@ -940,6 +998,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
+	/**
+	 * Locks a dragged entry: freezes its rotational inertia, disables collisions,
+	 * and marks the word element as dragged.
+	 * No-op if the entry is already locked.
+	 */
 	#lockDraggedEntry(entry: InternalWordEntry) {
 		if (entry.dragLock != null) return
 		entry.dragLock = { initialInertia: entry.body.inertia }
@@ -949,6 +1012,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		entry.element.dragged = true
 	}
 
+	/**
+	 * Restores a previously locked entry to normal physics behavior.
+	 * No-op if the entry is not locked.
+	 */
 	#unlockDraggedEntry(entry: InternalWordEntry) {
 		if (entry.dragLock == null) return
 		Body.setInertia(entry.body, entry.dragLock.initialInertia)

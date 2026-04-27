@@ -226,6 +226,42 @@ describe("HTMLWordCloudElement API", () => {
 		])
 		expect(getAllWordElements(element)).toHaveLength(2)
 	})
+
+	it("add with defaults parameter applies defaults to each word", async () => {
+		const { element } = await createCloudElement()
+		const snapshot = [
+			{ word: "One", x: 100, y: 100 },
+			{ word: "Two", x: 200, y: 200 },
+		]
+
+		// Without defaults, words would animate (default entryAnimation: "fade")
+		// With defaults, we override to "none"
+		const handles = element.add(snapshot, { entryAnimation: "none" })
+		await flushFrames(2)
+
+		expect(handles.map((h) => h.word)).toEqual(["One", "Two"])
+		expect(getAllWordElements(element)).toHaveLength(2)
+	})
+
+	it("add with defaults can be overridden by individual word options", async () => {
+		const { element } = await createCloudElement()
+		const words = [
+			{ word: "Default", x: 100, y: 100 },
+			{
+				word: "Override",
+				x: 200,
+				y: 200,
+				entryAnimation: "chip-fade" as const,
+			},
+		]
+
+		const handles = element.add(words, { entryAnimation: "none" })
+		await flushFrames(2)
+
+		// First word uses default "none", second word explicitly overrides to "chip-fade"
+		expect(handles).toHaveLength(2)
+		expect(getAllWordElements(element)).toHaveLength(2)
+	})
 })
 
 describe("HTMLWordCloudElement user interactions", () => {
