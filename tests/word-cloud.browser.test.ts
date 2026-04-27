@@ -116,6 +116,118 @@ afterEach(async () => {
 	await commands.resetMouse()
 })
 
+describe("HTMLWordCloudElement API", () => {
+	it("add with a single object returns a WordHandle", async () => {
+		const { element } = await createCloudElement()
+		const handle = element.add({
+			word: "Hello",
+			x: 100,
+			y: 100,
+			entryAnimation: "none",
+		})
+		await flushFrames(2)
+
+		expect(handle.word).toBe("Hello")
+		expect(getAllWordElements(element)).toHaveLength(1)
+	})
+
+	it("add with an iterable returns an array of WordHandles", async () => {
+		const { element } = await createCloudElement()
+		const handles = element.add([
+			{ word: "Alpha", x: 100, y: 100, entryAnimation: "none" },
+			{ word: "Beta", x: 200, y: 200, entryAnimation: "none" },
+			{ word: "Gamma", x: 300, y: 300, entryAnimation: "none" },
+		])
+		await flushFrames(2)
+
+		expect(handles).toHaveLength(3)
+		expect(handles.map((h) => h.word)).toEqual(["Alpha", "Beta", "Gamma"])
+		expect(getAllWordElements(element)).toHaveLength(3)
+	})
+
+	it("add with an iterable fires word-add for each word", async () => {
+		const { element } = await createCloudElement()
+		const addedWords: string[] = []
+		element.addEventListener(WordAddEvent.type, (event) => {
+			addedWords.push((event as WordAddEvent).handle.word)
+		})
+
+		element.add([
+			{ word: "One", x: 100, y: 100, entryAnimation: "none" },
+			{ word: "Two", x: 200, y: 200, entryAnimation: "none" },
+		])
+		await flushFrames(2)
+
+		expect(addedWords).toEqual(["One", "Two"])
+	})
+
+	it("add accepts any iterable, not just arrays", async () => {
+		const { element } = await createCloudElement()
+		function* wordGen() {
+			yield { word: "Gen1", x: 100, y: 100, entryAnimation: "none" as const }
+			yield { word: "Gen2", x: 200, y: 200, entryAnimation: "none" as const }
+		}
+		const handles = element.add(wordGen())
+		await flushFrames(2)
+
+		expect(handles.map((h) => h.word)).toEqual(["Gen1", "Gen2"])
+	})
+
+	it("getWords returns live handles for all current words", async () => {
+		const { element } = await createCloudElement()
+		element.add([
+			{ word: "A", x: 100, y: 100, entryAnimation: "none" },
+			{ word: "B", x: 200, y: 200, entryAnimation: "none" },
+		])
+		await flushFrames(2)
+
+		const words = Array.from(element.getWords()).map((h) => h.word)
+		expect(words).toEqual(["A", "B"])
+	})
+
+	it("clear removes all words", async () => {
+		const { element } = await createCloudElement()
+		element.add([
+			{ word: "X", x: 100, y: 100, entryAnimation: "none" },
+			{ word: "Y", x: 200, y: 200, entryAnimation: "none" },
+		])
+		await flushFrames(2)
+		expect(getAllWordElements(element)).toHaveLength(2)
+
+		element.clear()
+		await flushFrames(2)
+
+		expect(Array.from(element.getWords())).toHaveLength(0)
+		expect(getAllWordElements(element)).toHaveLength(0)
+	})
+
+	it("clear then add restores a snapshot", async () => {
+		const { element } = await createCloudElement()
+		element.add([
+			{ word: "Save1", x: 100, y: 100, entryAnimation: "none" },
+			{ word: "Save2", x: 200, y: 200, entryAnimation: "none" },
+		])
+		await flushFrames(2)
+
+		const snapshot = Array.from(
+			element.getWords(),
+			({ word, x, y, angle, checked }) => ({ word, x, y, angle, checked }),
+		)
+
+		element.clear()
+		element.add(
+			snapshot.map((w) => ({ ...w, entryAnimation: "none" as const })),
+		)
+		await flushFrames(2)
+
+		expect(Array.from(element.getWords()).map((h) => h.word)).toEqual([
+			"Save1",
+			"Save2",
+		])
+		expect(getAllWordElements(element)).toHaveLength(2)
+	})
+})
+
 describe("HTMLWordCloudElement user interactions", () => {
 	it("adds a word from the built-in input when user types + Enter", async () => {
 		const { element } = await createCloudElement()
@@ -144,7 +256,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "check")
 		await flushFrames(2)
-		const handle = element.addWord({
+		const handle = element.add({
 			word: "Check me",
 			x: 220,
 			y: 160,
@@ -171,12 +283,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "delete")
 		await flushFrames(2)
-		element.addWord({
-			word: "Delete me",
-			x: 240,
-			y: 200,
-			entryAnimation: "none",
-		})
+		element.add({ word: "Delete me", x: 240, y: 200, entryAnimation: "none" })
 		await flushFrames(2)
 
 		const deletedWords: string[] = []
@@ -197,7 +304,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 	it("does not check or delete when clicking a word in none mode", async () => {
 		const { element } = await createCloudElement()
 		// word-action defaults to "none" — clicks should be inert
-		const handle = element.addWord({
+		const handle = element.add({
 			word: "No action",
 			x: 220,
 			y: 160,
@@ -230,7 +337,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "drag")
 		await flushFrames(2)
-		const handle = element.addWord({
+		const handle = element.add({
 			word: "Drag mode",
 			x: 220,
 			y: 160,
@@ -262,7 +369,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 	it("visual regression: word appearance in none mode", async () => {
 		const { element } = await createCloudElement()
 		// word-action defaults to "none"
-		element.addWord({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
+		element.add({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
 		await flushFrames(3)
 
 		const wordElement = getFirstWordElement(element)
@@ -279,7 +386,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "check")
 		await flushFrames(2)
-		element.addWord({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
+		element.add({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
 		await flushFrames(3)
 
 		const wordElement = getFirstWordElement(element)
@@ -300,7 +407,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "delete")
 		await flushFrames(2)
-		element.addWord({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
+		element.add({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
 		await flushFrames(3)
 
 		const wordElement = getFirstWordElement(element)
@@ -317,7 +424,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "drag")
 		await flushFrames(2)
-		element.addWord({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
+		element.add({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
 		await flushFrames(3)
 
 		const wordElement = getFirstWordElement(element)
@@ -334,7 +441,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const { element } = await createCloudElement()
 		element.setAttribute("word-action", "drag")
 		await flushFrames(2)
-		element.addWord({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
+		element.add({ word: "Word", x: 220, y: 220, entryAnimation: "none" })
 		await flushFrames(3)
 
 		const wordElement = getFirstWordElement(element)
