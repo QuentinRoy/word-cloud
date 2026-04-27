@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
 	generateRandomId,
+	isIterable,
 	normalizeAngle,
 	queryStrict,
 	toPrecision,
@@ -70,5 +71,51 @@ describe("normalizeAngle", () => {
 		expect(normalizeAngle(-3 * Math.PI)).toBe(-Math.PI)
 		expect(normalizeAngle((5 * Math.PI) / 2)).toBe(Math.PI / 2)
 		expect(normalizeAngle((-5 * Math.PI) / 2)).toBe(-Math.PI / 2)
+	})
+})
+
+describe("isIterable", () => {
+	it("returns true for arrays", () => {
+		expect(isIterable([])).toBe(true)
+		expect(isIterable([1, 2, 3])).toBe(true)
+	})
+
+	it("returns true for strings", () => {
+		expect(isIterable("hello")).toBe(true)
+	})
+
+	it("returns true for Sets and Maps", () => {
+		expect(isIterable(new Set([1, 2]))).toBe(true)
+		expect(isIterable(new Map())).toBe(true)
+	})
+
+	it("returns true for generator objects", () => {
+		function* gen() {
+			yield 1
+		}
+		expect(isIterable(gen())).toBe(true)
+	})
+
+	it("returns true for objects with a [Symbol.iterator] method", () => {
+		const obj = { [Symbol.iterator]: () => [][Symbol.iterator]() }
+		expect(isIterable(obj)).toBe(true)
+	})
+
+	it("returns false for plain objects without [Symbol.iterator]", () => {
+		expect(isIterable({})).toBe(false)
+		expect(isIterable({ a: 1 })).toBe(false)
+	})
+
+	it("returns false for numbers and booleans", () => {
+		expect(isIterable(42)).toBe(false)
+		expect(isIterable(true)).toBe(false)
+	})
+
+	it("returns false for null", () => {
+		expect(isIterable(null)).toBe(false)
+	})
+
+	it("returns false for undefined", () => {
+		expect(isIterable(undefined)).toBe(false)
 	})
 })

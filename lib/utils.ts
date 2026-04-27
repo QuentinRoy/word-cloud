@@ -48,3 +48,15 @@ export function normalizeAngle(angle: number) {
 	}
 	return angle
 }
+
+/**
+ * Checks if a value is iterable (i.e., has a [Symbol.iterator] method).
+ * @param value The value to check.
+ * @returns True if the value is iterable, false otherwise.
+ */
+export function isIterable(value: unknown): value is Iterable<unknown> {
+	return (
+		typeof (value as { [Symbol.iterator]?: unknown })?.[Symbol.iterator] ===
+		"function"
+	)
+}

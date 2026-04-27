@@ -29,7 +29,12 @@ import {
 	applyAngularRestoringTorque,
 	applyMutualRepulsionForce,
 } from "./physics-utils.ts"
-import { generateRandomId, queryStrict, toPrecision } from "./utils.ts"
+import {
+	generateRandomId,
+	isIterable,
+	queryStrict,
+	toPrecision,
+} from "./utils.ts"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
 import mainTemplate from "./word-cloud-element.html?template"
 import {
@@ -316,8 +321,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Creates a rendered word element and its matching physics body, and returns
-	 * a live {@link WordHandle} handle.
+	 * Creates one or more rendered word elements with matching physics bodies.
+	 * Accepts a single options object or an iterable of options objects.
+	 * Returns a single {@link WordHandle} when given a single object, or an
+	 * array of handles when given an iterable.
 	 *
 	 * @param options.word The text content to display.
 	 * @param options.x The initial horizontal center position in pixels.
@@ -326,9 +333,21 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * @param options.checked Whether the word starts in the checked state. Defaults to `false`.
 	 * @param options.velocity The initial linear velocity applied to the body.
 	 * @param options.entryAnimation Which entry animation to run. Defaults to `"fade"`.
-	 * @returns A live {@link WordHandle} for the newly created word.
+	 * @returns A live {@link WordHandle} for the newly created word, or an array
+	 *   of handles when an iterable is provided.
 	 */
-	addWord({
+	add(options: AddWordOptions): WordHandle
+	add(options: Iterable<AddWordOptions>): WordHandle[]
+	add(
+		options: AddWordOptions | Iterable<AddWordOptions>,
+	): WordHandle | WordHandle[] {
+		if (isIterable(options)) {
+			return Array.from(options, (o) => this.#addWord(o))
+		}
+		return this.#addWord(options)
+	}
+
+	#addWord({
 		word,
 		x,
 		y,
@@ -453,23 +472,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	/**
 	 * Returns live {@link WordHandle} handles for all words currently in the cloud.
 	 * Property reads on each handle always reflect the current state.
-	 * Useful for persistence — pass the result to {@link setWords} to restore.
+	 * Useful for persistence — call {@link clear} then {@link add} to restore.
 	 */
-	getWords(): Iterable<WordHandle> {
-		return Array.from(this.#wordEntries.values(), (entry) => entry.publicHandle)
-	}
-
-	/**
-	 * Replaces the current cloud contents with the provided word data.
-	 * Accepts plain {@link WordData} objects or previously obtained
-	 * {@link WordHandle} handles (which are structurally compatible).
-	 *
-	 * @param words The words to insert after clearing the existing cloud.
-	 */
-	setWords(words: Iterable<WordData>) {
-		this.clear()
-		for (let word of words) {
-			this.addWord({ ...word, entryAnimation: "none" })
+	*getWords(): Iterable<WordHandle> {
+		for (let entry of this.#wordEntries.values()) {
+			yield entry.publicHandle
 		}
 	}
 
@@ -717,7 +724,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			let inputRect = this.#wordInput.getBoundingClientRect()
 			let x = inputRect.left - containerRect.left + inputRect.width / 2
 			let y = inputRect.top - containerRect.top + inputRect.height / 2
-			this.addWord({
+			this.#addWord({
 				word: newWord,
 				x,
 				y,
@@ -756,11 +763,13 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#handleBeforeUpdate = () => {
 		this.#applyAngularRestoringTorque()
 		const wordRepulsion = this.wordRepulsion
-		if (wordRepulsion > 0)
+		if (wordRepulsion > 0) {
 			this.#applyWordRepulsionForces({ margin: wordRepulsion })
+		}
 		const edgeRepulsion = this.edgeRepulsion
-		if (edgeRepulsion > 0)
+		if (edgeRepulsion > 0) {
 			this.#applyEdgeRepulsionForces({ margin: edgeRepulsion })
+		}
 		const inputRepulsion = this.inputRepulsion
 		if (inputRepulsion > 0) {
 			this.#applyInputRepulsionForces({ margin: inputRepulsion })

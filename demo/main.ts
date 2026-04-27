@@ -43,7 +43,8 @@ const syncControls = () => {
 	}
 }
 
-wordCloud.setWords(savedWords)
+wordCloud.clear()
+wordCloud.add(savedWords)
 syncControls()
 
 controls.addEventListener("change", (event) => {

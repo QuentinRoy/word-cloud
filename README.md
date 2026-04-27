@@ -66,7 +66,7 @@ if (!(wordCloud instanceof HTMLWordCloudElement)) {
   throw new Error("x-word-cloud not found")
 }
 
-wordCloud.setWords([
+wordCloud.add([
   { word: "TypeScript", x: 160, y: 120 },
   { word: "Web Components", x: 320, y: 180, checked: true },
   { word: "Matter.js", x: 240, y: 260, angle: 0.15 },
@@ -109,12 +109,15 @@ wordCloud.showFramerate = false
 
 ## Public API
 
-### `addWord(options)` → `WordHandle`
+### `add(options)` → `WordHandle | WordHandle[]`
 
-Adds a word to the cloud and returns a live [`WordHandle`](#wordhandle) handle.
+Adds one or more words to the cloud. Pass a single options object to get back a
+single [`WordHandle`](#wordhandle), or an iterable of options objects to get back
+an array of handles.
 
 ```ts
-const entry = wordCloud.addWord({
+// Single word:
+const entry = wordCloud.add({
   word: "Custom Element",
   x: 200,
   y: 150,
@@ -126,6 +129,12 @@ const entry = wordCloud.addWord({
 
 // Remove it later (fires word-delete):
 entry.remove()
+
+// Multiple words at once (any iterable works):
+const [a, b] = wordCloud.add([
+  { word: "Hello", x: 100, y: 100 },
+  { word: "World", x: 200, y: 200 },
+])
 ```
 
 Adding a word also fires `word-add` with the created `WordHandle`.
@@ -158,25 +167,9 @@ checked). Useful for persistence:
 const snapshot = Array.from(wordCloud.getWords())
 ```
 
-### `setWords(words)`
-
-Clears the cloud and populates it from an array of [`WordData`](#worddata)
-objects. Because `WordHandle` is structurally compatible with `WordData`, you can
-pass the output of `getWords()` directly:
-
-```ts
-wordCloud.setWords([
-  { word: "Saved", x: 120, y: 100, angle: 0, checked: false },
-  { word: "State", x: 280, y: 220, angle: 0.2, checked: true },
-])
-
-// Restore a previously obtained snapshot:
-wordCloud.setWords(Array.from(wordCloud.getWords()))
-```
-
 ## WordHandle
 
-A `WordHandle` is a live handle to a word in the cloud, returned by `addWord`
+A `WordHandle` is a live handle to a word in the cloud, returned by `add`
 and `getWords`. Its properties are always up to date — they read directly from
 the underlying physics body and DOM element.
 
@@ -190,7 +183,7 @@ the underlying physics body and DOM element.
 | `entry.remove()`  | Removes the word from the cloud and fires `word-delete`. |
 
 ```ts
-const entry = wordCloud.addWord({ word: "Hello", x: 100, y: 100 })
+const entry = wordCloud.add({ word: "Hello", x: 100, y: 100 })
 
 // Read live state:
 console.log(entry.x, entry.y, entry.checked)
@@ -207,9 +200,9 @@ entry.remove()
 
 ## WordData
 
-Plain serializable object describing a word. Accepted by `addWord` and
-`setWords`. `WordHandle` is structurally compatible with `WordData`, so handles
-obtained from `getWords()` can be passed directly to `setWords()`.
+Plain serializable object describing a word. Accepted by `add`.
+`WordHandle` is structurally compatible with `WordData`, so handles obtained
+from `getWords()` can be passed directly to `add()` (as an iterable).
 
 ```ts
 interface WordData {
@@ -232,7 +225,8 @@ localStorage.setItem("words", JSON.stringify(saved))
 
 // Restore
 const saved = JSON.parse(localStorage.getItem("words") ?? "[]")
-wordCloud.setWords(saved)
+wordCloud.clear()
+wordCloud.add(saved as WordData[])
 ```
 
 ## Events
@@ -240,7 +234,7 @@ wordCloud.setWords(saved)
 `HTMLWordCloudElement` dispatches the following bubbling events:
 
 - **`word-add`** — fired when a word is added to the cloud, including through
-  `addWord()`, `setWords()`, or the built-in input form.
+  `add()` or the built-in input form.
 - **`word-change`** — fired when a word's text changes, including
   programmatic assignment to `handle.word`.
 - **`word-check`** — fired when a word's checked state changes (user
