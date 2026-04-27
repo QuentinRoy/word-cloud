@@ -1,5 +1,13 @@
 # @quentinroy/word-cloud
 
+## 0.12.0
+
+### Minor Changes
+
+- 3fe5865: Remove `setWords`. To restore a snapshot, call `clear()` followed by `add()` (`add()` now supports both single word options and iterables).
+- 3fe5865: Rename `addWord` to `add`. The method now also accepts an iterable of word options and returns an array of `WordHandle`s in that case.
+- 3fe5865: Add `default` parameter to add that may be used to define default properties to words being added.
+
 ## 0.11.0
 
 ### Minor Changes
