@@ -48,3 +48,58 @@ export function normalizeAngle(angle: number) {
 	}
 	return angle
 }
+
+/**
+ * Checks if a value is iterable (i.e., has a [Symbol.iterator] method).
+ * @param value The value to check.
+ * @returns True if the value is iterable, false otherwise.
+ */
+export function isIterable(value: unknown): value is Iterable<unknown> {
+	return (
+		typeof (value as { [Symbol.iterator]?: unknown })?.[Symbol.iterator] ===
+		"function"
+	)
+}
+
+/**
+ * Returns a union of all keys of `T` that are required (non-optional).
+ *
+ * @template T - The object type to inspect.
+ *
+ * @example
+ * type A = { a: string; b?: number; c: boolean | undefined };
+ * type R = RequiredKeysOf<A>; // "a" | "c"
+ */
+export type RequiredKeysOf<T> = {
+	[K in keyof T]-?: undefined extends T[K] ? never : K
+}[keyof T]
+
+/**
+ * Constructs a type by making the specified keys of `T` optional,
+ * leaving all other keys unchanged.
+ *
+ * @template T - The base object type.
+ * @template Keys - The union of keys to make optional.
+ *
+ * @example
+ * type A = { a: string; b: number; c: boolean };
+ * type R = SetOptional<A, "b" | "c">; // { a: string; b?: number; c?: boolean }
+ */
+export type SetOptional<T, Keys extends keyof T> = {
+	[K in Keys]?: T[K]
+} & Omit<T, Keys>
+
+/**
+ * Constructs a type by making the specified keys of `T` required,
+ * leaving all other keys unchanged.
+ *
+ * @template T - The base object type.
+ * @template Keys - The union of keys to make required.
+ *
+ * @example
+ * type A = { a?: string; b?: number; c?: boolean };
+ * type R = SetRequired<A, "a" | "b">; // { a: string; b: number; c?: boolean }
+ */
+export type SetRequired<T, Keys extends keyof T> = {
+	[K in Keys]-?: T[K]
+} & Omit<T, Keys>

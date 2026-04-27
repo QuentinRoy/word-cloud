@@ -1,6 +1,6 @@
 /**
  * Plain serializable data that describes a word. Used as input for
- * {@link HTMLWordCloudElement.addWord} and {@link HTMLWordCloudElement.setWords}.
+ * {@link HTMLWordCloudElement.add}.
  */
 export interface WordData {
 	/** The displayed word content. */
@@ -31,7 +31,7 @@ interface WordHandleConfig {
  *
  * All property reads reflect the current physics position and DOM state —
  * there is no stale snapshot. Obtain instances via
- * {@link HTMLWordCloudElement.addWord} or {@link HTMLWordCloudElement.getWords}.
+ * {@link HTMLWordCloudElement.add} or {@link HTMLWordCloudElement.getWords}.
  */
 export class WordHandle implements Readonly<WordData> {
 	#config: WordHandleConfig

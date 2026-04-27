@@ -34,9 +34,8 @@ export class WordCloudEvent extends Event {
 
 /**
  * Fired by {@link HTMLWordCloudElement} when a new word is added to the cloud.
- * This includes direct calls to {@link HTMLWordCloudElement.addWord}, words
- * restored through {@link HTMLWordCloudElement.setWords}, and words created by
- * the built-in input form.
+ * This includes direct calls to {@link HTMLWordCloudElement.add} and words
+ * created by the built-in input form.
  *
  * Listen with `"word-add"` or {@link WordAddEvent.type}.
  */

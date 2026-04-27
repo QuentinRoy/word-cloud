@@ -30,7 +30,8 @@
 		"lint:fix": "biome check --write .",
 		"test": "vitest --config vitest.config.ts --run",
 		"test:watch": "vitest --config vitest.config.ts",
-		"release": "pnpm run build && changeset publish"
+		"release": "pnpm run build && changeset publish",
+		"changeset": "changeset"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.10",
