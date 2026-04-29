@@ -1,4 +1,7 @@
-import type { HTMLWordCloudElement } from "./word-cloud-element"
+import type {
+	HTMLWordCloudElement,
+	WordRemoveOptions,
+} from "./word-cloud-element"
 
 /**
  * Plain serializable data that describes a word. Used as input for
@@ -25,7 +28,7 @@ interface WordHandleConfig {
 	getAngle: () => number
 	getChecked: () => boolean
 	setChecked: (checked: boolean) => void
-	remove: () => void
+	remove: (options?: WordRemoveOptions) => void
 }
 
 /**
@@ -91,8 +94,13 @@ export class WordHandle implements Readonly<WordData> {
 	/**
 	 * Removes this word from the cloud.
 	 * Dispatches a `word-delete` event from the parent cloud element.
+	 *
+	 * @param options (optional) Additional options for the removal operation.
+	 * Supported options:
+	 * - `exitAnimation`: exit animation to run when the word is removed.
+	 * Supported values are `"fade"`, and `"none"`. Defaults to `"fade"`.
 	 */
-	remove(): void {
-		this.#config.remove()
+	remove(options?: WordRemoveOptions): void {
+		this.#config.remove(options)
 	}
 }
