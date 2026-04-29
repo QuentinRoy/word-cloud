@@ -194,6 +194,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#containerResizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
 		this.#updateInputVolumeBody()
+		this.#updateMouseScale()
 	})
 	#inputResizeObserver = new ResizeObserver(() => {
 		this.#updateInputVolumeBody()
@@ -311,6 +312,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#updateFrameBodies()
 		this.#updateWordsActionFromWordAction()
 		this.#updateInputVolumeFromInput()
+		this.#updateMouseScale()
 		this.#updateMouseConstraint()
 		this.#containerResizeObserver.observe(this.#container)
 		this.#inputResizeObserver.observe(this.#wordInput)
@@ -1086,6 +1088,16 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			)
 			this.#internals.states.delete("active")
 		}
+	}
+
+	#updateMouseScale() {
+		const mouse = this.#mouseConstraint.mouse
+		const rect = this.#container.getBoundingClientRect()
+		const scaleX = rect.width / this.#container.clientWidth
+		const scaleY = rect.height / this.#container.clientHeight
+		console.log("Updating mouse scale:", { scaleX, scaleY })
+		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
+		console.log(mouse.scale)
 	}
 
 	#start() {
