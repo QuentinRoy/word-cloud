@@ -410,6 +410,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let width = element.offsetWidth
 		let height = element.offsetHeight
 
+		const remove = () => {
+			this.#removeWord(entry, { exitAnimation: "fade" })
+		}
+
 		let body = Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
@@ -435,9 +439,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			setChecked: (v) => {
 				element.checked = v
 			},
-			remove: () => {
-				this.#removeWord(entry, { exitAnimation: "fade" })
-			},
+			remove,
 		})
 		const entry: InternalWordEntry = {
 			id,
@@ -449,7 +451,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			dragLock: null,
 		}
 		this.#wordEntriesByElement.set(element, entry)
-		element.addEventListener(WordElementDeleteEvent.type, publicHandle.remove)
+		element.addEventListener(WordElementDeleteEvent.type, remove)
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
 				new WordCheckEvent({ handle: publicHandle, checked: element.checked }),
