@@ -260,9 +260,8 @@ wordCloud.add(saved as WordData[], { entryAnimation: "none" })
 - **`word-check`** — fired when a word's checked state changes (user
   interaction while `wordAction` is `check`, or programmatic assignment to
   `handle.checked`).
-- **`word-delete`** — fired when the user deletes a word while `wordAction` is
-  `delete`,
-  just before the word is removed.
+- **`word-delete`** — fired just before a word is removed including through
+  user interaction or programmatic removal (`clear()` or `handle.remove()`).
 - **`word-action-change`** — fired when the element `wordAction` changes.
   Includes `wordAction` and `oldWordAction`.
 - **`word-input-toggle`** — fired when the element `wordInput`

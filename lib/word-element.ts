@@ -280,7 +280,9 @@ export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 		this.#internals.states.delete("chip-entering")
 	}
 
-	async animateExit(_animation: "fade" = "fade") {
+	// Only fade exit animation is currently implemented, but the parameter is kept
+	// as a placeholder for potential future animations
+	async animateExit(_animation: WordElementExitAnimation = "fade") {
 		this.#internals.states.add("exiting")
 		await Promise.allSettled(
 			this.getAnimations({ subtree: true }).map(

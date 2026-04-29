@@ -44,6 +44,7 @@ import {
 	WordElementCheckedChangeEvent,
 	WordElementDeleteEvent,
 	type WordElementEntryAnimation,
+	type WordElementExitAnimation,
 	WordElementValueChangeEvent,
 } from "./word-element.ts"
 import type { WordData } from "./word-handle.ts"
@@ -410,7 +411,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let height = element.offsetHeight
 
 		const remove = () => {
-			this.#removeWordById(id, { exitAnimation: "fade" })
+			this.#removeWord(entry, { exitAnimation: "fade" })
 		}
 
 		let body = Bodies.rectangle(x, y, width, height, {
@@ -440,7 +441,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			},
 			remove,
 		})
-		let entry: InternalWordEntry = {
+		const entry: InternalWordEntry = {
 			id,
 			element,
 			body,
@@ -475,39 +476,30 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return publicHandle
 	}
 
-	/**
-	 * Removes a word by id, optionally waiting for its exit animation before
-	 * detaching the DOM element.
-	 */
-	#removeWordById(
-		id: number,
-		{ exitAnimation = "none" }: { exitAnimation?: "fade" | "none" } = {},
+	async #removeWord(
+		entry: InternalWordEntry,
+		{
+			exitAnimation = "none",
+		}: { exitAnimation?: WordElementExitAnimation | "none" } = {},
 	) {
-		let entry = this.#wordEntries.get(id)
-		if (entry) {
-			if (exitAnimation !== "none") {
-				entry.element.animateExit(exitAnimation).then(() => {
-					this.#container.removeChild(entry.element)
-				})
-			} else {
-				this.#container.removeChild(entry.element)
-			}
-			this.dispatchEvent(new WordDeleteEvent({ handle: entry.publicHandle }))
-			this.#removeWordBody(entry)
-			this.#wordEntries.delete(entry.id)
+		if (exitAnimation !== "none") {
+			await entry.element.animateExit(exitAnimation)
+			this.#container.removeChild(entry.element)
+		} else {
+			this.#container.removeChild(entry.element)
 		}
+		this.dispatchEvent(new WordDeleteEvent({ handle: entry.publicHandle }))
+		this.#removeWordBody(entry)
+		this.#wordEntries.delete(entry.id)
 	}
 
 	/**
 	 * Removes all words from the cloud immediately, without exit animations.
-	 * Dispatches no {@link WordDeleteEvent} events.
 	 */
-	clear() {
+	clear(options: { exitAnimation?: WordElementExitAnimation | "none" } = {}) {
 		for (let entry of this.#wordEntries.values()) {
-			this.#removeWordBody(entry)
-			entry.element.remove()
+			this.#removeWord(entry, options)
 		}
-		this.#wordEntries.clear()
 	}
 
 	/**

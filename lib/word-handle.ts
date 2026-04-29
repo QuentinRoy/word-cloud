@@ -1,3 +1,5 @@
+import type { HTMLWordCloudElement } from "./word-cloud-element"
+
 /**
  * Plain serializable data that describes a word. Used as input for
  * {@link HTMLWordCloudElement.add}.
