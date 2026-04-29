@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.12.2
+
+### Patch Changes
+
+- c8f50af: Remove logging when updating the mouse's scale.
+
 ## 0.12.1
 
 ### Patch Changes
