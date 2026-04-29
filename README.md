@@ -174,8 +174,12 @@ Typing note: Any required field (except `word`) becomes optional in each word if
 Removes all words from the cloud.
 
 ```ts
-wordCloud.clear()
+wordCloud.clear({ exitAnimation: "fade" })
 ```
+
+Supported options:
+
+- `exitAnimation` _(optional)_: exit animation to run when the words are removed. Supported values are `"fade"`, and `"none"`. Defaults to `"none"`.
 
 ### `getWords()` → `Iterable<WordHandle>`
 
