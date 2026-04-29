@@ -410,8 +410,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let width = element.offsetWidth
 		let height = element.offsetHeight
 
-		const remove = () => {
-			this.#removeWord(entry, { exitAnimation: "fade" })
+		const remove = (options: WordRemoveOptions = {}) => {
+			options.exitAnimation = options.exitAnimation ?? "fade"
+			this.#removeWord(entry, options)
 		}
 
 		let body = Bodies.rectangle(x, y, width, height, {
@@ -451,7 +452,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			dragLock: null,
 		}
 		this.#wordEntriesByElement.set(element, entry)
-		element.addEventListener(WordElementDeleteEvent.type, remove)
+		element.addEventListener(WordElementDeleteEvent.type, () => {
+			remove()
+		})
 		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
 			this.dispatchEvent(
 				new WordCheckEvent({ handle: publicHandle, checked: element.checked }),
@@ -478,9 +481,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	async #removeWord(
 		entry: InternalWordEntry,
-		{
-			exitAnimation = "none",
-		}: { exitAnimation?: WordElementExitAnimation | "none" } = {},
+		{ exitAnimation = "none" }: WordRemoveOptions = {},
 	) {
 		if (exitAnimation !== "none") {
 			await entry.element.animateExit(exitAnimation)
@@ -496,7 +497,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	/**
 	 * Removes all words from the cloud immediately, without exit animations.
 	 */
-	clear(options: { exitAnimation?: WordElementExitAnimation | "none" } = {}) {
+	clear(options?: WordRemoveOptions) {
 		for (let entry of this.#wordEntries.values()) {
 			this.#removeWord(entry, options)
 		}
@@ -1121,4 +1122,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Runner.stop(this.#runner)
 		if (this.#debugRender != null) Render?.stop(this.#debugRender)
 	}
+}
+
+export interface WordRemoveOptions {
+	exitAnimation?: WordElementExitAnimation | "none"
 }

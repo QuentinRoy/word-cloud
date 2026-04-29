@@ -171,7 +171,13 @@ Typing note: Any required field (except `word`) becomes optional in each word if
 
 ### `clear()`
 
-Removes all words from the cloud.
+Removes all words from the cloud. This fires a `word-delete` event for each word removed.
+
+```ts
+wordCloud.clear()
+```
+
+By default, words are removed immediately without exit animations, but you can provide options to change this behavior:
 
 ```ts
 wordCloud.clear({ exitAnimation: "fade" })
@@ -199,28 +205,43 @@ the underlying physics body and DOM element.
 
 | Property / method | Description                                              |
 | ----------------- | -------------------------------------------------------- |
-| `entry.word`      | The displayed text, readable and writable.               |
-| `entry.x`         | Current horizontal center position in pixels.            |
-| `entry.y`         | Current vertical center position in pixels.              |
-| `entry.angle`     | Current rotation in radians.                             |
-| `entry.checked`   | Checked state — readable and writable.                   |
-| `entry.remove()`  | Removes the word from the cloud and fires `word-delete`. |
+| `handle.word`     | The displayed text, readable and writable.               |
+| `handle.x`        | Current horizontal center position in pixels.            |
+| `handle.y`        | Current vertical center position in pixels.              |
+| `handle.angle`    | Current rotation in radians.                             |
+| `handle.checked`  | Checked state — readable and writable.                   |
+| `handle.remove()` | Removes the word from the cloud and fires `word-delete`. |
 
 ```ts
-const entry = wordCloud.add({ word: "Hello", x: 100, y: 100 })
+const handle = wordCloud.add({ word: "Hello", x: 100, y: 100 })
 
 // Read live state:
-console.log(entry.x, entry.y, entry.checked)
+console.log(handle.x, handle.y, handle.checked)
 
 // Rename the word (fires word-change):
-entry.word = "Hello again"
+handle.word = "Hello again"
 
 // Toggle checked programmatically (fires word-check):
-entry.checked = !entry.checked
+handle.checked = !handle.checked
 
 // Remove it:
-entry.remove()
+handle.remove()
 ```
+
+### `remove()` → `void`
+
+Removes the word from the cloud. This fires a `word-delete` event.
+
+Contrarily to `wordCloud.clear()`, the word is removed with a fade animation by default. You can provide options to change this behavior:
+
+```ts
+handle.remove({ exitAnimation: "none" })
+```
+
+Supported options:
+
+- `exitAnimation` _(optional)_: exit animation to run when the words are removed. Supported values are `"fade"`, and `"none"`. Defaults to `"fade"`.
+
 
 ## WordData
 
