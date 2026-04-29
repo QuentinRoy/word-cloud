@@ -1,5 +1,12 @@
 # @quentinroy/word-cloud
 
+## 0.12.1
+
+### Patch Changes
+
+- e47a5ab: Fix rendering when x-word-cloud is scaled. Should also slightly improve performances.
+- e47a5ab: Fix dragging when scaled.
+
 ## 0.12.0
 
 ### Minor Changes
