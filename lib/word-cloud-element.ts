@@ -494,9 +494,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	/**
 	 * Removes all words from the cloud immediately, without exit animations.
 	 */
-	clear() {
+	clear(options: { exitAnimation?: WordElementExitAnimation | "none" } = {}) {
 		for (let entry of this.#wordEntries.values()) {
-			this.#removeWord(entry)
+			this.#removeWord(entry, options)
 		}
 	}
 
