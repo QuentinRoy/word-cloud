@@ -1,5 +1,17 @@
 # @quentinroy/word-cloud
 
+## 0.13.0
+
+### Minor Changes
+
+- 87aabe1: Support for exitAnimation option with `wordHandle.remove()`.
+- fd1e21d: Send remove events for each word when calling `clear()`.
+- fd1e21d: Support exitAnimation with `clear()`
+
+### Patch Changes
+
+- 765b8b0: Improve word programmatic word exit animation.
+
 ## 0.12.2
 
 ### Patch Changes
