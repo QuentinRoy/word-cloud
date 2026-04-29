@@ -194,6 +194,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#containerResizeObserver = new ResizeObserver(() => {
 		this.#updateFrameBodies()
 		this.#updateInputVolumeBody()
+		this.#updateMouseScale()
 	})
 	#inputResizeObserver = new ResizeObserver(() => {
 		this.#updateInputVolumeBody()
@@ -311,6 +312,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#updateFrameBodies()
 		this.#updateWordsActionFromWordAction()
 		this.#updateInputVolumeFromInput()
+		this.#updateMouseScale()
 		this.#updateMouseConstraint()
 		this.#containerResizeObserver.observe(this.#container)
 		this.#inputResizeObserver.observe(this.#wordInput)
@@ -691,7 +693,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	#updateFrameBodies() {
 		const { left, right, top, bottom } = this.#frameBodies
-		const { width, height } = this.#container.getBoundingClientRect()
+		const width = this.#container.offsetWidth
+		const height = this.#container.offsetHeight
 		const frameThickness = HTMLWordCloudElement.#frameThickness
 		const padding = HTMLWordCloudElement.#padding
 		const horizontalLength = Math.max(1, width + frameThickness * 2)
@@ -725,10 +728,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateInputVolumeBody() {
-		const containerRect = this.#container.getBoundingClientRect()
-		const inputRect = this.#wordInput.getBoundingClientRect()
-		const width = Math.max(INPUT_VOLUME_MIN_SIZE, inputRect.width)
-		const height = Math.max(INPUT_VOLUME_MIN_SIZE, inputRect.height)
+		const width = Math.max(INPUT_VOLUME_MIN_SIZE, this.#wordInput.offsetWidth)
+		const height = Math.max(INPUT_VOLUME_MIN_SIZE, this.#wordInput.offsetHeight)
 		const scaleX = width / this.#inputVolumeBodySize.width
 		const scaleY = height / this.#inputVolumeBodySize.height
 
@@ -738,8 +739,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 
 		Body.setPosition(this.#inputVolumeBody, {
-			x: inputRect.left - containerRect.left + width / 2,
-			y: inputRect.top - containerRect.top + height / 2,
+			x: this.#wordInput.offsetLeft + width / 2,
+			y: this.#wordInput.offsetTop + height / 2,
 		})
 	}
 
@@ -778,10 +779,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		let newWord = this.#wordInput.value.trim()
 		if (newWord !== "") {
 			if (this.#inputVolumeEnabled) this.#updateInputVolumeBody()
-			let containerRect = this.#container.getBoundingClientRect()
-			let inputRect = this.#wordInput.getBoundingClientRect()
-			let x = inputRect.left - containerRect.left + inputRect.width / 2
-			let y = inputRect.top - containerRect.top + inputRect.height / 2
+			let x = this.#wordInput.offsetLeft + this.#wordInput.offsetWidth / 2
+			let y = this.#wordInput.offsetTop + this.#wordInput.offsetHeight / 2
 			this.#addWord({
 				word: newWord,
 				x,
@@ -1091,12 +1090,21 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
+	#updateMouseScale() {
+		const mouse = this.#mouseConstraint.mouse
+		const rect = this.#container.getBoundingClientRect()
+		const scaleX = rect.width / this.#container.clientWidth
+		const scaleY = rect.height / this.#container.clientHeight
+		console.log("Updating mouse scale:", { scaleX, scaleY })
+		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
+		console.log(mouse.scale)
+	}
+
 	#start() {
 		if (this.#isRunning) return
 		this.#isRunning = true
 		Runner.run(this.#runner, this.#engine)
 		if (USE_DEBUG_RENDERER) {
-			let containerBox = this.#container.getBoundingClientRect()
 			this.#debugRender =
 				Render?.create({
 					engine: this.#engine,
@@ -1106,8 +1114,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 						HTMLElement,
 					),
 					options: {
-						width: containerBox.width,
-						height: containerBox.height,
+						width: this.#container.offsetWidth,
+						height: this.#container.offsetHeight,
 						showVelocity: true,
 						showAngleIndicator: true,
 					},
