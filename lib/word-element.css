@@ -105,6 +105,10 @@ input:focus-visible ~ label {
 	color: var(--word-delete-hover-text-color);
 	background-color: var(--word-delete-hover-background-color);
 	border-color: var(--word-delete-hover-background-color);
+	transition: all ease-out var(--word-state-transition-duration, 0s);
+}
+
+:host([action="delete"]) label:hover {
 	transition:
 		all ease-out var(--word-state-transition-duration, 0s),
 		color 0s;
