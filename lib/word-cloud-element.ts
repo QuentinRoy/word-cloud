@@ -1095,9 +1095,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		const rect = this.#container.getBoundingClientRect()
 		const scaleX = rect.width / this.#container.clientWidth
 		const scaleY = rect.height / this.#container.clientHeight
-		console.log("Updating mouse scale:", { scaleX, scaleY })
 		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
-		console.log(mouse.scale)
 	}
 
 	#start() {
