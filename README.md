@@ -470,11 +470,15 @@ This runs all unit and browser tests using Vitest.
 
 Visual regression tests in Vitest compare rendered component screenshots against baseline images. If you make intentional visual changes that require updating these screenshots, follow these steps:
 
-1. Push your changes to a branch and create a pull request
-2. Go to GitHub Actions
-3. Select the **"Update Visual Regression Screenshots"** workflow
-4. Click **"Run workflow"**
-5. Select your branch from the dropdown
-6. Click **"Run workflow"**
+1. Push your changes to a branch and open a pull request.
+2. Add the `update screenshots` label to that pull request.
 
-This will run the visual regression tests, generate new screenshots, and commit them to your PR branch.
+This triggers the **Update Visual Regression Screenshots** workflow automatically. The workflow:
+
+- checks out the PR branch,
+- runs the browser visual regression tests with screenshot updates,
+- commits and pushes updated screenshots back to the same PR branch (only if files changed),
+- posts a PR comment with a summary,
+- removes the `update screenshots` label when done.
+
+If no screenshots need updating, the workflow still posts a summary comment saying everything is already up to date.
