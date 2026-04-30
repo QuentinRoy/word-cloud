@@ -455,3 +455,26 @@ pnpm build
 ```
 
 This produces the publishable library in `dist/`.
+
+## Development
+
+### Running tests
+
+```sh
+pnpm test
+```
+
+This runs all unit and browser tests using Vitest.
+
+### Updating visual regression screenshots
+
+Visual regression tests in Vitest compare rendered component screenshots against baseline images. If you make intentional visual changes that require updating these screenshots, follow these steps:
+
+1. Push your changes to a branch and create a pull request
+2. Go to GitHub Actions
+3. Select the **"Update Visual Regression Screenshots"** workflow
+4. Click **"Run workflow"**
+5. Select your branch from the dropdown
+6. Click **"Run workflow"**
+
+This will run the visual regression tests, generate new screenshots, and commit them to your PR branch.
