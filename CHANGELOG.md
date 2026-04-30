@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.13.1
+
+### Patch Changes
+
+- 6020d60: Ignore parent's line-height (overwrite to line-height: 1).
+
 ## 0.13.0
 
 ### Minor Changes
