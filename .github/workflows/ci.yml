@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -45,7 +46,38 @@ jobs:
         run: pnpm build
 
       - name: Run Browser Tests
-        run: pnpm run test
+        id: run_tests
+        run: pnpm run test --reporter=json --outputFile=test-results.json
+        continue-on-error: true
+
+      - name: Detect visual regression failures
+        id: vr_check
+        if: steps.run_tests.outcome == 'failure' && github.event_name == 'pull_request'
+        run: |
+          VR_FAILED=$(jq '[
+            .testResults[].assertionResults[]
+            | select(.status == "failed")
+            | select(any(.failureMessages[]; contains("toMatchScreenshot")))
+          ] | length > 0' test-results.json)
+          echo "vr_failed=$VR_FAILED" >> $GITHUB_OUTPUT
+      - name: Post VR failure comment
+        if: steps.vr_check.outputs.vr_failed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr view ${{ github.event.pull_request.number }} \
+            --json comments \
+            --jq '[.comments[].body | select(contains("Visual Regression Failures Detected"))] | length')
+          
+          if [ "$EXISTING" -eq 0 ]; then
+            gh pr comment ${{ github.event.pull_request.number }} \
+              --body "### 📸 Visual Regression Failures Detected
+
+          Some screenshots don't match the stored references. If these changes are intentional, add the \`update screenshots\` label to this PR to update them automatically."
+          fi
+      - name: Fail if tests failed
+        if: steps.run_tests.outcome == 'failure'
+        run: exit 1
 
   release:
     name: Release
