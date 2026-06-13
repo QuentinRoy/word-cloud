@@ -15,6 +15,13 @@ jobs:
   verify:
     name: Lint Build And Test
     runs-on: ubuntu-24.04
+    # Run in Playwright's official image: the browser and all its OS
+    # dependencies are prebaked, so we avoid `playwright install --with-deps`,
+    # which shells out to apt and hangs on the current ubuntu-24.04 runner image
+    # (the needrestart prompt blocks the install). Keep the tag in sync with the
+    # playwright version resolved in pnpm-lock.yaml.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
     permissions:
       contents: read
       pull-requests: write
@@ -40,7 +47,10 @@ jobs:
         run: pnpm lint
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps --only-shell chromium
+        # The browser and its OS deps are already in the image; this just makes
+        # sure the binary matching the installed playwright version is present.
+        # No --with-deps, so no apt.
+        run: pnpm exec playwright install chromium
 
       - name: Build
         run: pnpm build
@@ -53,28 +63,35 @@ jobs:
       - name: Detect visual regression failures
         id: vr_check
         if: steps.run_tests.outcome == 'failure' && github.event_name == 'pull_request'
+        # node instead of jq: jq is not in the Playwright image, node is.
         run: |
-          VR_FAILED=$(jq '[
-            .testResults[].assertionResults[]
-            | select(.status == "failed")
-            | select(any(.failureMessages[]; contains("toMatchScreenshot")))
-          ] | length > 0' test-results.json)
-          echo "vr_failed=$VR_FAILED" >> $GITHUB_OUTPUT
+          VR_FAILED=$(node -e "const r=require('./test-results.json');const failed=(r.testResults||[]).some(t=>(t.assertionResults||[]).some(a=>a.status==='failed'&&(a.failureMessages||[]).some(m=>m.includes('toMatchScreenshot'))));process.stdout.write(String(failed))")
+          echo "vr_failed=$VR_FAILED" >> "$GITHUB_OUTPUT"
       - name: Post VR failure comment
         if: steps.vr_check.outputs.vr_failed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh pr view ${{ github.event.pull_request.number }} \
-            --json comments \
-            --jq '[.comments[].body | select(contains("Visual Regression Failures Detected"))] | length')
-          
-          if [ "$EXISTING" -eq 0 ]; then
-            gh pr comment ${{ github.event.pull_request.number }} \
-              --body "### 📸 Visual Regression Failures Detected
-
-          Some screenshots don't match the stored references. If these changes are intentional, add the \`update screenshots\` label to this PR to update them automatically."
-          fi
+        # actions/github-script instead of the gh CLI: gh is not in the image,
+        # this talks to the API directly with the job's GITHUB_TOKEN.
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = "Visual Regression Failures Detected"
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number },
+            )
+            if (comments.some((c) => (c.body || "").includes(marker))) return
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: [
+                `### 📸 ${marker}`,
+                "",
+                "Some screenshots don't match the stored references. If these changes are intentional, add the `update screenshots` label to this PR to update them automatically.",
+              ].join("\n"),
+            })
       - name: Fail if tests failed
         if: steps.run_tests.outcome == 'failure'
         run: exit 1
