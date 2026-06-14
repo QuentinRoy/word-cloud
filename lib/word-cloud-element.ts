@@ -701,7 +701,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#setupMouseConstraint(engine: Engine) {
-		const mouse = Mouse.create(this)
+		// Bind the mouse to the container, not the host: word bodies and DOM word
+		// positions are anchored to the container's content box, so the pointer
+		// must be measured from the same origin. Binding to the host instead lets
+		// any host border/padding shift every pointer coordinate toward the
+		// bottom-right, misaligning drag hit-testing from the grab cursor (#39).
+		const mouse = Mouse.create(this.#container)
 		return MouseConstraint.create(engine, {
 			mouse,
 			constraint: { stiffness: 0.3, render: { visible: true } },
@@ -1223,8 +1228,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#updateMouseScale() {
 		const mouse = this.#mouseConstraint.mouse
 		const rect = this.#container.getBoundingClientRect()
-		const scaleX = rect.width / this.#container.clientWidth
-		const scaleY = rect.height / this.#container.clientHeight
+		// Compare against offsetWidth/Height (border box, like getBoundingClientRect)
+		// rather than clientWidth/Height (content box, excludes any scrollbar) so the
+		// ratio reflects only the CSS transform scale and is not skewed by rounding
+		// or a scrollbar.
+		const scaleX = rect.width / this.#container.offsetWidth
+		const scaleY = rect.height / this.#container.offsetHeight
 		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
 	}
 
