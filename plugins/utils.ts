@@ -11,7 +11,9 @@ export function getSourceFilePath(id: string): string {
 }
 
 export function toVirtualId(filePath: string, virtualPrefix: string): string {
-	return `${virtualPrefix}${Buffer.from(filePath, "utf-8").toString("base64url")}`
+	return `${virtualPrefix}${Buffer.from(filePath, "utf-8").toString(
+		"base64url",
+	)}`
 }
 
 export function getFilePathFromVirtualId(
