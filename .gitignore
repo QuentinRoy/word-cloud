@@ -27,3 +27,4 @@ dist-ssr
 # Project specific
 .vitest-attachments
 tests/__screenshots__/**/*-darwin.png
+test-results.json

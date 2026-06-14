@@ -21,7 +21,7 @@ jobs:
     # the ubuntu-24.04 needrestart prompt — actions/runner-images#11347). Keep the
     # tag in sync with the playwright version resolved in pnpm-lock.yaml.
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
     permissions:
       contents: read
       pull-requests: write
@@ -101,7 +101,7 @@ jobs:
           EXISTING=$(gh pr view ${{ github.event.pull_request.number }} \
             --json comments \
             --jq '[.comments[].body | select(contains("Visual Regression Failures Detected"))] | length')
-          
+
           if [ "$EXISTING" -eq 0 ]; then
             gh pr comment ${{ github.event.pull_request.number }} \
               --body "### 📸 Visual Regression Failures Detected

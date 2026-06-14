@@ -125,10 +125,8 @@ footer {
 			transition:
 				background-color var(--transition-speed) ease,
 				color var(--transition-speed) ease;
-			/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 			@supports (corner-shape: squircle) {
 				border-radius: calc(var(--border-radius) * 2);
-				/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 				corner-shape: squircle;
 			}
 
@@ -169,11 +167,9 @@ footer {
 				border-top-left-radius: var(--border-radius);
 				border-bottom-left-radius: var(--border-radius);
 
-				/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 				@supports (corner-shape: squircle) {
 					border-top-left-radius: calc(var(--border-radius) * 2);
 					border-bottom-left-radius: calc(var(--border-radius) * 2);
-					/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 					corner-shape: squircle;
 				}
 			}
@@ -182,11 +178,9 @@ footer {
 				border-top-right-radius: var(--border-radius);
 				border-bottom-right-radius: var(--border-radius);
 
-				/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 				@supports (corner-shape: squircle) {
 					border-top-right-radius: calc(var(--border-radius) * 2);
 					border-bottom-right-radius: calc(var(--border-radius) * 2);
-					/* biome-ignore lint/correctness/noUnknownProperty: biome does not recognize this property */
 					corner-shape: squircle;
 				}
 			}
