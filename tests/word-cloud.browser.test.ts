@@ -543,4 +543,36 @@ describe("HTMLWordCloudElement user interactions", () => {
 		await flushFrames(2)
 		expect(wordElement.hasAttribute("dragged")).toBe(false)
 	})
+
+	it("sizes the word body to match the rendered chip so the body stays centered on it (#39)", async () => {
+		const { element } = await createCloudElement()
+		element.setAttribute("word-action", "drag")
+		await flushFrames(2)
+		const handle = element.add({
+			word: "Sample",
+			x: 300,
+			y: 200,
+			entryAnimation: "none",
+		})
+		await flushFrames(3)
+
+		const wordElement = getFirstWordElement(element)
+		// Force a clearly fractional rendered width. Integer-rounded sizing
+		// (offsetWidth) would make the body ~0.2px narrower than the chip and
+		// shift its center off the rendered word; sizing from the unrounded
+		// computed width keeps them aligned. The ResizeObserver re-measures.
+		wordElement.style.width = "120.6px"
+		await flushFrames(3)
+
+		const containerRect = getCloudContainer(element).getBoundingClientRect()
+		const wordRect = wordElement.getBoundingClientRect()
+		// Rendered chip center expressed in the bodies' coordinate frame.
+		const chipCenterX = wordRect.left + wordRect.width / 2 - containerRect.left
+		const chipCenterY = wordRect.top + wordRect.height / 2 - containerRect.top
+
+		// The body center (handle.x/y) must coincide with the rendered chip center,
+		// regardless of where physics has settled the word — both move together.
+		expect(Math.abs(handle.x - chipCenterX)).toBeLessThan(0.05)
+		expect(Math.abs(handle.y - chipCenterY)).toBeLessThan(0.05)
+	})
 })

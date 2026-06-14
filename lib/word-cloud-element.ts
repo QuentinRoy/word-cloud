@@ -198,6 +198,25 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	static #frameThickness = FRAME_THICKNESS
 	static #padding = PADDING
 
+	/**
+	 * Measures a word element's rendered size for its physics body. Uses the
+	 * computed-style width/height — which are sub-pixel and unaffected by CSS
+	 * transforms — rather than offsetWidth/offsetHeight, which are integer-rounded.
+	 * The body is positioned and rendered from this size (see {@link #getWordTransform}),
+	 * so a rounded value makes the body up to ~0.5px narrower/wider than the chip
+	 * the user sees, misaligning drag hit-testing from the grab cursor (#39). Falls
+	 * back to the rounded box metrics when the element is not laid out.
+	 */
+	static #measureWordSize(element: HTMLElement) {
+		const style = getComputedStyle(element)
+		const width = Number.parseFloat(style.width)
+		const height = Number.parseFloat(style.height)
+		return {
+			width: Number.isFinite(width) ? width : element.offsetWidth,
+			height: Number.isFinite(height) ? height : element.offsetHeight,
+		}
+	}
+
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
 	#container: HTMLElement
@@ -441,8 +460,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		if (entryAnimation !== "none") element.animateEntry(entryAnimation)
 		element.classList.add("word")
 		element.action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
-		let width = element.offsetWidth
-		let height = element.offsetHeight
+		let { width, height } = HTMLWordCloudElement.#measureWordSize(element)
 
 		const remove = (options: WordRemoveOptions = {}) => {
 			options.exitAnimation = options.exitAnimation ?? "fade"
@@ -740,10 +758,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateWordBodySize(entry: InternalWordEntry) {
-		const nextSize = {
-			width: entry.element.offsetWidth,
-			height: entry.element.offsetHeight,
-		}
+		const nextSize = HTMLWordCloudElement.#measureWordSize(entry.element)
 		const { width: previousWidth, height: previousHeight } = entry.bodySize
 		if (
 			nextSize.width === previousWidth &&
