@@ -18,6 +18,10 @@ env:
 jobs:
   update-screenshots:
     runs-on: ubuntu-24.04
+    # Same Playwright image as ci.yml so the regenerated screenshots are rendered
+    # in the identical environment the verify job checks them against.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
 
     # only run when the correct label is added
     if: >
@@ -39,9 +43,27 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Configure Git
+        # safe.directory: the container runs as root over a runner-owned
+        # workspace, so git would refuse to commit/push without it.
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "${{ env.AUTHOR_NAME }}"
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
+
+      - name: Install gh
+        # gh (used for the PR comment and label removal below) ships on the GitHub
+        # runner but not in this image.
+        timeout-minutes: 5
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            -o /usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            > /etc/apt/sources.list.d/github-cli.list
+          apt-get update
+          apt-get install -y --no-install-recommends gh
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -58,9 +80,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        # No --with-deps (see ci.yml): avoids the apt/needrestart hang on the
-        # ubuntu-24.04 runner; the browser's OS libraries are already present.
-        run: pnpm exec playwright install --only-shell chromium
+        # Prebaked in the image (see ci.yml); no download, no apt.
+        run: pnpm exec playwright install chromium
 
       - name: Update Visual Regression Screenshots
         run: pnpm run test --update
