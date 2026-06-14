@@ -1228,12 +1228,20 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#updateMouseScale() {
 		const mouse = this.#mouseConstraint.mouse
 		const rect = this.#container.getBoundingClientRect()
-		// Compare against offsetWidth/Height (border box, like getBoundingClientRect)
-		// rather than clientWidth/Height (content box, excludes any scrollbar) so the
-		// ratio reflects only the CSS transform scale and is not skewed by rounding
-		// or a scrollbar.
-		const scaleX = rect.width / this.#container.offsetWidth
-		const scaleY = rect.height / this.#container.offsetHeight
+		// Derive the visual scale from the container's *unrounded* layout size.
+		// getBoundingClientRect is the rendered (transform-applied) size, while the
+		// computed-style width/height are the sub-pixel layout size and are not
+		// affected by CSS transforms — so their ratio is exactly the transform
+		// scale (and exactly 1 when there is no transform). offsetWidth/clientWidth
+		// are integer-rounded, which yields a scale slightly off from 1 even with
+		// no transform; that biases the pointer mapping proportionally to the
+		// distance from the container's top-left origin and misaligns drag
+		// hit-testing from the grab cursor (#39).
+		const style = getComputedStyle(this.#container)
+		const layoutWidth = Number.parseFloat(style.width)
+		const layoutHeight = Number.parseFloat(style.height)
+		const scaleX = layoutWidth > 0 ? rect.width / layoutWidth : 1
+		const scaleY = layoutHeight > 0 ? rect.height / layoutHeight : 1
 		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
 	}
 
