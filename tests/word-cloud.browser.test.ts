@@ -91,6 +91,14 @@ function getFirstWordElement(element: HTMLWordCloudElement) {
 	return word
 }
 
+function getCloudContainer(element: HTMLWordCloudElement) {
+	const container = getCloudShadow(element).querySelector(".word-cloud")
+	if (!(container instanceof HTMLElement)) {
+		throw new Error("Expected word cloud container")
+	}
+	return container
+}
+
 function getWordLabel(wordElement: HTMLElement) {
 	const shadowRoot = wordElement.shadowRoot
 	if (shadowRoot == null) {
@@ -490,5 +498,81 @@ describe("HTMLWordCloudElement user interactions", () => {
 		wordElement.setAttribute("dragged", "")
 		await flushFrames(1)
 		await expect.element(locator).toMatchScreenshot("word-drag-grabbed.png")
+	})
+
+	it("initiates a drag at a word's visual center even when the host has a border and padding (#39)", async () => {
+		const { element } = await createCloudElement()
+		// #39 trigger: a host border/padding offsets the host border-box from the
+		// container's content box, where word bodies and DOM words are anchored.
+		// A large inset makes the previously-buggy host-relative pointer mapping
+		// land fully outside the word body.
+		element.style.border = "40px solid black"
+		element.style.padding = "20px"
+		element.setAttribute("word-action", "drag")
+		await flushFrames(2)
+
+		element.add({ word: "Hi", x: 200, y: 200, entryAnimation: "none" })
+		await flushFrames(3)
+
+		const container = getCloudContainer(element)
+		const wordElement = getFirstWordElement(element)
+		const rect = wordElement.getBoundingClientRect()
+		const centerX = rect.left + rect.width / 2
+		const centerY = rect.top + rect.height / 2
+
+		// Matter binds its mouse listeners directly to the container and derives
+		// the pointer position from the event's page coordinates. Dispatching a
+		// synthetic MouseEvent therefore drives the real grab path deterministically,
+		// without depending on the browser runner's pointer plumbing (which never
+		// reliably reaches Matter's element-bound listeners through the test iframe).
+		const fire = (type: string, clientX: number, clientY: number) =>
+			container.dispatchEvent(
+				new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY }),
+			)
+
+		fire("mousemove", centerX, centerY)
+		fire("mousedown", centerX, centerY)
+		await flushFrames(3) // let the MouseConstraint grab on the next engine tick
+
+		// The pointer maps into the container frame, so the visual center grabs the
+		// body. Before the fix the pointer was measured from the host border-box and
+		// landed ~60px (border + padding) past the body, so the grab never happened.
+		expect(wordElement.hasAttribute("dragged")).toBe(true)
+
+		fire("mouseup", centerX, centerY)
+		await flushFrames(2)
+		expect(wordElement.hasAttribute("dragged")).toBe(false)
+	})
+
+	it("sizes the word body to match the rendered chip so the body stays centered on it (#39)", async () => {
+		const { element } = await createCloudElement()
+		element.setAttribute("word-action", "drag")
+		await flushFrames(2)
+		const handle = element.add({
+			word: "Sample",
+			x: 300,
+			y: 200,
+			entryAnimation: "none",
+		})
+		await flushFrames(3)
+
+		const wordElement = getFirstWordElement(element)
+		// Force a clearly fractional rendered width. Integer-rounded sizing
+		// (offsetWidth) would make the body ~0.2px narrower than the chip and
+		// shift its center off the rendered word; sizing from the unrounded
+		// computed width keeps them aligned. The ResizeObserver re-measures.
+		wordElement.style.width = "120.6px"
+		await flushFrames(3)
+
+		const containerRect = getCloudContainer(element).getBoundingClientRect()
+		const wordRect = wordElement.getBoundingClientRect()
+		// Rendered chip center expressed in the bodies' coordinate frame.
+		const chipCenterX = wordRect.left + wordRect.width / 2 - containerRect.left
+		const chipCenterY = wordRect.top + wordRect.height / 2 - containerRect.top
+
+		// The body center (handle.x/y) must coincide with the rendered chip center,
+		// regardless of where physics has settled the word — both move together.
+		expect(Math.abs(handle.x - chipCenterX)).toBeLessThan(0.05)
+		expect(Math.abs(handle.y - chipCenterY)).toBeLessThan(0.05)
 	})
 })

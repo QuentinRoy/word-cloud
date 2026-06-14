@@ -198,6 +198,25 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	static #frameThickness = FRAME_THICKNESS
 	static #padding = PADDING
 
+	/**
+	 * Measures a word element's rendered size for its physics body. Uses the
+	 * computed-style width/height — which are sub-pixel and unaffected by CSS
+	 * transforms — rather than offsetWidth/offsetHeight, which are integer-rounded.
+	 * The body is positioned and rendered from this size (see {@link #getWordTransform}),
+	 * so a rounded value makes the body up to ~0.5px narrower/wider than the chip
+	 * the user sees, misaligning drag hit-testing from the grab cursor (#39). Falls
+	 * back to the rounded box metrics when the element is not laid out.
+	 */
+	static #measureWordSize(element: HTMLElement) {
+		const style = getComputedStyle(element)
+		const width = Number.parseFloat(style.width)
+		const height = Number.parseFloat(style.height)
+		return {
+			width: Number.isFinite(width) ? width : element.offsetWidth,
+			height: Number.isFinite(height) ? height : element.offsetHeight,
+		}
+	}
+
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
 	#container: HTMLElement
@@ -441,8 +460,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		if (entryAnimation !== "none") element.animateEntry(entryAnimation)
 		element.classList.add("word")
 		element.action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
-		let width = element.offsetWidth
-		let height = element.offsetHeight
+		let { width, height } = HTMLWordCloudElement.#measureWordSize(element)
 
 		const remove = (options: WordRemoveOptions = {}) => {
 			options.exitAnimation = options.exitAnimation ?? "fade"
@@ -701,7 +719,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#setupMouseConstraint(engine: Engine) {
-		const mouse = Mouse.create(this)
+		// Bind the mouse to the container, not the host: word bodies and DOM word
+		// positions are anchored to the container's content box, so the pointer
+		// must be measured from the same origin. Binding to the host instead lets
+		// any host border/padding shift every pointer coordinate toward the
+		// bottom-right, misaligning drag hit-testing from the grab cursor (#39).
+		const mouse = Mouse.create(this.#container)
 		return MouseConstraint.create(engine, {
 			mouse,
 			constraint: { stiffness: 0.3, render: { visible: true } },
@@ -735,10 +758,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateWordBodySize(entry: InternalWordEntry) {
-		const nextSize = {
-			width: entry.element.offsetWidth,
-			height: entry.element.offsetHeight,
-		}
+		const nextSize = HTMLWordCloudElement.#measureWordSize(entry.element)
 		const { width: previousWidth, height: previousHeight } = entry.bodySize
 		if (
 			nextSize.width === previousWidth &&
@@ -1223,8 +1243,20 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#updateMouseScale() {
 		const mouse = this.#mouseConstraint.mouse
 		const rect = this.#container.getBoundingClientRect()
-		const scaleX = rect.width / this.#container.clientWidth
-		const scaleY = rect.height / this.#container.clientHeight
+		// Derive the visual scale from the container's *unrounded* layout size.
+		// getBoundingClientRect is the rendered (transform-applied) size, while the
+		// computed-style width/height are the sub-pixel layout size and are not
+		// affected by CSS transforms — so their ratio is exactly the transform
+		// scale (and exactly 1 when there is no transform). offsetWidth/clientWidth
+		// are integer-rounded, which yields a scale slightly off from 1 even with
+		// no transform; that biases the pointer mapping proportionally to the
+		// distance from the container's top-left origin and misaligns drag
+		// hit-testing from the grab cursor (#39).
+		const style = getComputedStyle(this.#container)
+		const layoutWidth = Number.parseFloat(style.width)
+		const layoutHeight = Number.parseFloat(style.height)
+		const scaleX = layoutWidth > 0 ? rect.width / layoutWidth : 1
+		const scaleY = layoutHeight > 0 ? rect.height / layoutHeight : 1
 		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
 	}
 
