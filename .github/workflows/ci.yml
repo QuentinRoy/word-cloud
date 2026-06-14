@@ -15,12 +15,43 @@ jobs:
   verify:
     name: Lint Build And Test
     runs-on: ubuntu-24.04
+    # Run in Playwright's official image: the browser is prebaked, so there is no
+    # download from cdn.playwright.dev (which stalls intermittently on the
+    # runners) and no `playwright install --with-deps` apt step (which hangs on
+    # the ubuntu-24.04 needrestart prompt — actions/runner-images#11347). Keep the
+    # tag in sync with the playwright version resolved in pnpm-lock.yaml.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
+
+      - name: Trust the workspace for git
+        # The container runs as root over a workspace owned by the runner user, so
+        # git would refuse with "dubious ownership"; `vite build` shells out to
+        # `git rev-parse` to stamp the commit, and gh reads the remote below.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install jq and gh
+        # The screenshot-reporting steps use jq and gh, which the GitHub runner
+        # ships but this image does not. The image has no needrestart and apt is
+        # uncontended here, so this is fast; the timeout is just a safety net.
+        timeout-minutes: 5
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends jq
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            -o /usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            > /etc/apt/sources.list.d/github-cli.list
+          apt-get update
+          apt-get install -y --no-install-recommends gh
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -40,7 +71,9 @@ jobs:
         run: pnpm lint
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps --only-shell chromium
+        # Prebaked in the image; this just verifies the matching binary is present
+        # (no download, no apt).
+        run: pnpm exec playwright install chromium
 
       - name: Build
         run: pnpm build
