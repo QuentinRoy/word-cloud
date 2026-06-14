@@ -58,7 +58,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps --only-shell chromium
+        # No --with-deps (see ci.yml): avoids the apt/needrestart hang on the
+        # ubuntu-24.04 runner; the browser's OS libraries are already present.
+        run: pnpm exec playwright install --only-shell chromium
 
       - name: Update Visual Regression Screenshots
         run: pnpm run test --update

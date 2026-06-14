@@ -40,7 +40,11 @@ jobs:
         run: pnpm lint
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps --only-shell chromium
+        # No --with-deps: the browser's OS libraries are already present on the
+        # GitHub-hosted ubuntu runner. --with-deps shells out to apt, which hangs
+        # on the current ubuntu-24.04 image (the needrestart prompt blocks the
+        # install — actions/runner-images#11347).
+        run: pnpm exec playwright install --only-shell chromium
 
       - name: Build
         run: pnpm build
