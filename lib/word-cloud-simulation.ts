@@ -247,15 +247,9 @@ export class WordCloudSimulation {
 		this.#frameBodySize = { horizontalLength, verticalLength }
 
 		Body.setPosition(left, { x: -FRAME_THICKNESS / 2, y: height / 2 })
-		Body.setPosition(right, {
-			x: width + FRAME_THICKNESS / 2,
-			y: height / 2,
-		})
+		Body.setPosition(right, { x: width + FRAME_THICKNESS / 2, y: height / 2 })
 		Body.setPosition(top, { x: width / 2, y: -FRAME_THICKNESS / 2 })
-		Body.setPosition(bottom, {
-			x: width / 2,
-			y: height + FRAME_THICKNESS / 2,
-		})
+		Body.setPosition(bottom, { x: width / 2, y: height + FRAME_THICKNESS / 2 })
 	}
 
 	/**
@@ -328,7 +322,11 @@ export class WordCloudSimulation {
 		} else {
 			this.#mouseEnabled = false
 			this.unlockAllDrags()
-			Composite.remove(this.#engine.world, this.#mouseConstraint.constraint, true)
+			Composite.remove(
+				this.#engine.world,
+				this.#mouseConstraint.constraint,
+				true,
+			)
 		}
 	}
 
