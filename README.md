@@ -107,6 +107,30 @@ wordCloud.physicsPaused = false
 wordCloud.showFramerate = false
 ```
 
+## Spacing
+
+Three numeric attributes control how much empty space, **in pixels**, the cloud
+tries to keep around words. Each is a soft margin: words are pushed apart when
+they come closer than this distance, so it is an approximate buffer rather than a
+guaranteed gap. All three default to `5`.
+
+- `word-spacing`: spacing kept between words.
+- `edge-spacing`: spacing kept between words and the cloud edges.
+- `input-spacing`: spacing kept between words and the built-in input area.
+
+```html
+<x-word-cloud word-spacing="12" edge-spacing="8" input-spacing="20"></x-word-cloud>
+```
+
+As with the interaction settings, each can be read or set via the matching
+camelCase property:
+
+```ts
+wordCloud.wordSpacing = 12
+wordCloud.edgeSpacing = 8
+wordCloud.inputSpacing = 20
+```
+
 ## Public API
 
 ### `add(options, defaults?)` → `WordHandle | WordHandle[]`
