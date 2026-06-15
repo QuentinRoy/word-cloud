@@ -292,7 +292,7 @@ export class WordCloudSimulation {
 			this.unlockAllDrags()
 			Composite.remove(
 				this.#engine.world,
-				this.#mouseConstraint.constraint,
+				this.#mouseConstraint,
 				true,
 			)
 		}
