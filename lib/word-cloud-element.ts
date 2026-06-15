@@ -184,9 +184,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	wordInput: boolean(),
 	showFramerate: boolean(),
 	physicsPaused: boolean(),
-	wordRepulsion: number({ default: REPULSION_MARGIN }),
-	edgeRepulsion: number({ default: REPULSION_MARGIN }),
-	inputRepulsion: number({ default: REPULSION_MARGIN }),
+	// Spacing margins, in pixels: the distance within which the soft repulsion
+	// keeps words apart from each other, the frame, and the input volume.
+	wordSpacing: number({ default: REPULSION_MARGIN }),
+	edgeSpacing: number({ default: REPULSION_MARGIN }),
+	inputSpacing: number({ default: REPULSION_MARGIN }),
 }) {
 	static #elementActionMaps: Record<WordAction, HTMLWordElement["action"]> = {
 		none: null,
@@ -1007,9 +1009,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		// margin then gates the actual force, so over-detection is free. Reach and
 		// margins change rarely, so resizing on change is cheap.
 		const reach = Math.max(
-			this.wordRepulsion,
-			this.edgeRepulsion,
-			this.inputRepulsion,
+			this.wordSpacing,
+			this.edgeSpacing,
+			this.inputSpacing,
 			0,
 		)
 		if (reach !== this.#sensorReach) {
@@ -1028,7 +1030,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 			if (entryA != null && entryB != null) {
 				this.#applyPairRepulsion(pair, {
-					margin: this.wordRepulsion,
+					margin: this.wordSpacing,
 					inflation: 2 * reach,
 					wordA: entryA,
 					wordB: entryB,
@@ -1043,7 +1045,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			const isInput = otherBody === this.#inputVolumeBody
 			if (isInput && wordEntry.ignoreInputVolumeUntilExit) continue
 			this.#applyPairRepulsion(pair, {
-				margin: isInput ? this.inputRepulsion : this.edgeRepulsion,
+				margin: isInput ? this.inputSpacing : this.edgeSpacing,
 				inflation: reach,
 				wordA: entryA != null ? wordEntry : null,
 				wordB: entryB != null ? wordEntry : null,

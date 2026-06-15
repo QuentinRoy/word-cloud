@@ -55,9 +55,9 @@ async function createCloudElement() {
 	element.style.display = "block"
 	element.style.width = "900px"
 	element.style.height = "600px"
-	element.wordRepulsion = 0
-	element.edgeRepulsion = 0
-	element.inputRepulsion = 0
+	element.wordSpacing = 0
+	element.edgeSpacing = 0
+	element.inputSpacing = 0
 	// Force all transitions and animations to 0s so tests don't depend on
 	// real-time waiting for CSS animations inherited from the word-cloud element.
 	element.style.setProperty("--slow-animation", "0s")
