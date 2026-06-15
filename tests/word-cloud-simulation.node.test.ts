@@ -281,10 +281,15 @@ describe("WordCloudSimulation", () => {
 			sim.lockDrag(a.id)
 			sim.lockDrag(b.id)
 
+			const released: (number | null)[] = []
+			sim.onWordRelease = (id) => released.push(id)
+
 			sim.unlockAllDrags()
 
 			expect(a.inertia).not.toBe(Infinity)
 			expect(b.inertia).not.toBe(Infinity)
+			// One "all released" notification, not one per word.
+			expect(released).toEqual([null])
 		})
 
 		it("keeps the body frozen across a resize while locked", () => {
@@ -346,29 +351,19 @@ describe("WordCloudSimulation", () => {
 	})
 
 	describe("mouse", () => {
-		it("creates the constraint on attachMouse but leaves it disabled", () => {
-			expect(sim.mouseConstraint).toBeNull()
+		it("adds no constraint to the world until the mouse is enabled", () => {
 			sim.attachMouse(createStubMouse())
-			expect(sim.mouseConstraint).not.toBeNull()
-			expect(sim.mouseEnabled).toBe(false)
-			expect(Composite.allConstraints(sim.engine.world)).not.toContain(
-				sim.mouseConstraint?.constraint,
-			)
+			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(0)
 		})
 
 		it("adds and removes the constraint as it is enabled and disabled", () => {
 			sim.attachMouse(createStubMouse())
-			const constraint = sim.mouseConstraint?.constraint
 
 			sim.setMouseEnabled(true)
-			expect(sim.mouseEnabled).toBe(true)
-			expect(Composite.allConstraints(sim.engine.world)).toContain(constraint)
+			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(1)
 
 			sim.setMouseEnabled(false)
-			expect(sim.mouseEnabled).toBe(false)
-			expect(Composite.allConstraints(sim.engine.world)).not.toContain(
-				constraint,
-			)
+			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(0)
 		})
 
 		it("unlocks active drags when the mouse is disabled", () => {
@@ -388,9 +383,20 @@ describe("WordCloudSimulation", () => {
 			expect(body.inertia).not.toBe(Infinity)
 		})
 
+		it("notifies onWordRelease(null) when the mouse is disabled", () => {
+			sim.attachMouse(createStubMouse())
+			sim.setMouseEnabled(true)
+			const released: (number | null)[] = []
+			sim.onWordRelease = (id) => released.push(id)
+
+			sim.setMouseEnabled(false)
+
+			expect(released).toEqual([null])
+		})
+
 		it("is a no-op to enable the mouse before one is attached", () => {
 			expect(() => sim.setMouseEnabled(true)).not.toThrow()
-			expect(sim.mouseEnabled).toBe(false)
+			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(0)
 		})
 	})
 
