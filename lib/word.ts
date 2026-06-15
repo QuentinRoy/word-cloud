@@ -14,11 +14,6 @@ export interface WordSize {
 	height: number
 }
 
-/** Frozen rotational inertia captured while a word is drag-locked. */
-export interface DragLock {
-	initialInertia: number
-}
-
 /**
  * Callbacks the cloud supplies so a {@link Word} can route its element's events
  * out without referencing the cloud's `dispatchEvent` directly. This keeps the
@@ -40,8 +35,6 @@ export interface WordOptions extends WordCallbacks {
 	element: HTMLWordElement
 	/** The measured layout size of {@link element}, tracked separately. */
 	bodySize: WordSize
-	/** Whether the word still ignores the input volume (freshly-spawned grace). */
-	ignoreInputVolumeUntilExit: boolean
 	/** Removes this word from the cloud (used by the public handle). */
 	remove: (options?: WordRemoveOptions) => void
 }
@@ -64,17 +57,12 @@ export class Word {
 	/** The measured layout size of {@link element}, tracked separately because a
 	 * Matter body does not carry the laid-out width/height. */
 	bodySize: WordSize
-	/** Cleared once a freshly-spawned word has left the input volume once. */
-	ignoreInputVolumeUntilExit: boolean
-	/** Non-null while the word is held by a drag; stores its pre-lock inertia. */
-	dragLock: DragLock | null = null
 	#detachElementListeners: () => void
 
 	constructor({
 		body,
 		element,
 		bodySize,
-		ignoreInputVolumeUntilExit,
 		remove,
 		onDelete,
 		onCheckedChange,
@@ -84,7 +72,6 @@ export class Word {
 		this.body = body
 		this.element = element
 		this.bodySize = bodySize
-		this.ignoreInputVolumeUntilExit = ignoreInputVolumeUntilExit
 		this.handle = new WordHandle({
 			getWord: () => element.value ?? "",
 			setWord: (value) => {

@@ -1,6 +1,6 @@
 # Plan: Extract a DOM-free WordCloudSimulation
 
-> **Status:** in progress — Step 0 done ([#60](https://github.com/QuentinRoy/word-cloud/pull/60)). Live progress tracked in [#59](https://github.com/QuentinRoy/word-cloud/issues/59).
+> **Status:** done — all four steps complete ([#60](https://github.com/QuentinRoy/word-cloud/pull/60), [#61](https://github.com/QuentinRoy/word-cloud/pull/61), [#62](https://github.com/QuentinRoy/word-cloud/pull/62)). Live progress tracked in [#59](https://github.com/QuentinRoy/word-cloud/issues/59).
 > **See also:** [`docs/adr/0001-dom-free-simulation-seam.md`](../../adr/0001-dom-free-simulation-seam.md) (the decision + rejected alternatives), [`CONTEXT.md`](../../../CONTEXT.md) (glossary).
 
 ## Goal
@@ -18,7 +18,7 @@ The work is split into four ordered steps. **Step 3 is the destination** — Ste
 | 0 | — | node vitest project (real engine, no DOM) + tests for the untested `physics-utils` helpers | ✅ [#60](https://github.com/QuentinRoy/word-cloud/pull/60) |
 | 1 | `SpacingModel` | extract sensors + reach + pairs + the repulsion force out of the element | ✅ |
 | 2 | `Word` | extract the body + element + handle + `dragLock` unit; collapse the lookup maps into one registry | ✅ |
-| 3 | `WordCloudSimulation` | extract the DOM-free seam; the element becomes the adapter | ☐ |
+| 3 | `WordCloudSimulation` | extract the DOM-free seam; the element becomes the adapter | ✅ |
 
 ## Decisions
 
