@@ -70,6 +70,9 @@ jobs:
       - name: Run Lint
         run: pnpm lint
 
+      - name: Run Typecheck
+        run: pnpm typecheck
+
       - name: Install Playwright Chromium
         # Prebaked in the image; this just verifies the matching binary is present
         # (no download, no apt).

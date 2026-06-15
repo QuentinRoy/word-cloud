@@ -23,9 +23,10 @@
 	"homepage": "https://github.com/QuentinRoy/word-cloud",
 	"scripts": {
 		"dev": "vite",
-		"build": "vite build && tsc -p tsconfig.lib.json && tsc -p tsconfig.node.json",
+		"build": "vite build && tsc -p tsconfig.lib.json",
 		"build:demo": "vite build --mode demo",
 		"preview": "vite preview --mode demo",
+		"typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"test": "vitest --config vitest.config.ts --run",
