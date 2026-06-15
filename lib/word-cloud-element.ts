@@ -5,25 +5,12 @@ import {
 	WithAttributeProps,
 } from "@quentinroy/custom-element-mixins"
 import {
-	Bodies,
-	Body,
-	Composite,
-	Engine,
 	Events,
 	type IEvent,
 	Mouse,
-	MouseConstraint,
+	type MouseConstraint,
 	Render,
-	Runner,
 } from "matter-js"
-import {
-	DEFAULT_WORD_COLLISION_MASK,
-	FRAME_COLLISION_CATEGORY,
-	FRAME_COLLISION_MASK,
-	INPUT_VOLUME_COLLISION_CATEGORY,
-	INPUT_VOLUME_COLLISION_MASK,
-	WORD_COLLISION_CATEGORY,
-} from "./collision.ts"
 import {
 	PhysicsPauseEvent,
 	WordActionChangeEvent,
@@ -33,8 +20,7 @@ import {
 	WordDeleteEvent,
 	WordInputToggleEvent,
 } from "./events.ts"
-import { applyAngularRestoringTorque } from "./physics-utils.ts"
-import { REPULSION_MARGIN, SpacingModel } from "./spacing-model.ts"
+import { REPULSION_MARGIN } from "./spacing-model.ts"
 import {
 	generateRandomId,
 	isIterable,
@@ -46,6 +32,7 @@ import {
 import { Word, WordRegistry } from "./word.ts"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
 import mainTemplate from "./word-cloud-element.html?template"
+import { CHAMFER_RADIUS, WordCloudSimulation } from "./word-cloud-simulation.ts"
 import {
 	HTMLWordElement,
 	type WordElementEntryAnimation,
@@ -54,21 +41,10 @@ import {
 import type { WordData, WordHandle } from "./word-handle.ts"
 
 const USE_DEBUG_RENDERER = false
-const CHAMFER_RADIUS = 8
-const FRAME_THICKNESS = 1000
 const MIN_RANDOM_VELOCITY = 10
 const MAX_RANDOM_VELOCITY = 40
-const PADDING = 0
-const INPUT_VOLUME_MIN_SIZE = 1
 const TRANSLATE_PRECISION = 1
 const ROTATE_PRECISION = 3
-const ANGULAR_REST_ANGLE = 0
-const ANGULAR_REST_ANGLE_EPSILON = 0.001
-const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.4
-const ANGULAR_DAMPING_COEFFICIENT = 0.2
-const ANGULAR_SPRING_WIDTH_REFERENCE = 150
-const WORD_AIR_FRICTION = 0.04
-const WORD_RESTITUTION = 0.2
 
 let scopedElementRegistry: CustomElementRegistry | null = null
 let wordElementTagName = "x-word"
@@ -160,9 +136,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		delete: "delete",
 	}
 
-	static #frameThickness = FRAME_THICKNESS
-	static #padding = PADDING
-
 	/**
 	 * Measures a word element's rendered size for its physics body. Uses the
 	 * computed-style width/height — which are sub-pixel and unaffected by CSS
@@ -185,28 +158,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
 	#container: HTMLElement
-	#engine: Engine
-	#runner: Runner
-	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
-	#frameBodySize = { horizontalLength: 1, verticalLength: 1 }
-	#inputVolumeBody: Body
-	#inputVolumeBodySize = {
-		width: INPUT_VOLUME_MIN_SIZE,
-		height: INPUT_VOLUME_MIN_SIZE,
-	}
-	#inputVolumeEnabled = false
-	#spacingModel: SpacingModel
+	#sim = new WordCloudSimulation()
 	#words = new WordRegistry()
-	#mouseConstraint: MouseConstraint
-	#mouseEnabled = false
 	#framerateDisplay: HTMLElement
 	#containerResizeObserver = new ResizeObserver(() => {
-		this.#updateFrameBodies()
-		this.#updateInputVolumeBody()
+		this.#sim.setFrameSize({
+			width: this.#container.offsetWidth,
+			height: this.#container.offsetHeight,
+		})
+		this.#syncInputVolume()
 		this.#updateMouseScale()
 	})
 	#inputResizeObserver = new ResizeObserver(() => {
-		this.#updateInputVolumeBody()
+		this.#syncInputVolume()
 	})
 	#wordResizeObserver = new ResizeObserver((entries) => {
 		for (const { target } of entries) {
@@ -217,11 +181,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	})
 	#internals = this.attachInternals()
 	#debugRender: Render | null = null
-	#isRunning = false
 
 	/**
 	 * Creates a word cloud instance and initializes its shadow DOM, physics
-	 * engine, boundary bodies, and mouse interaction.
+	 * simulation, and mouse interaction.
 	 */
 	constructor() {
 		super()
@@ -232,22 +195,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#wordInput = wordInput
 		this.#framerateDisplay = framerateDisplay
 
-		const { engine, runner } = this.#setupPhysics()
-		this.#engine = engine
-		this.#runner = runner
-
-		this.#frameBodies = this.#setupFrameBodies(this.#engine)
-		this.#inputVolumeBody = this.#setupInputVolumeBody()
-		this.#spacingModel = new SpacingModel(this.#engine, {
-			inputVolumeBody: this.#inputVolumeBody,
-		})
 		this.#setupContainerStyles()
-
-		this.#mouseConstraint = this.#setupMouseConstraint(this.#engine)
+		this.#sim.attachMouse(this.#setupMouse())
 	}
 
 	static get observedAttributes() {
-		return ["word-action", "word-input", "physics-paused"] as const
+		return [
+			"word-action",
+			"word-input",
+			"physics-paused",
+			"word-spacing",
+			"edge-spacing",
+			"input-spacing",
+		] as const
 	}
 
 	/**
@@ -284,7 +244,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			case "word-input": {
 				const oldWordInput = oldValue !== null
 				const wordInput = newValue !== null
-				this.#updateInputVolumeFromInput()
+				this.#syncInputVolume()
 				if (oldWordInput !== wordInput) {
 					this.dispatchEvent(
 						new WordInputToggleEvent({ oldWordInput, wordInput }),
@@ -308,6 +268,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}
 				break
 			}
+			case "word-spacing":
+			case "edge-spacing":
+			case "input-spacing":
+				this.#syncSpacing()
+				break
 		}
 	}
 
@@ -317,13 +282,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	connectedCallback() {
 		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
-		Events.on(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
-		Events.on(this.#runner, "tick", this.#handleTick)
-		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
-		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
-		this.#updateFrameBodies()
+		Events.on(this.#sim.runner, "tick", this.#handleTick)
+		const { mouseConstraint } = this.#sim
+		if (mouseConstraint != null) {
+			Events.on(mouseConstraint, "startdrag", this.#handleStartDragging)
+			Events.on(mouseConstraint, "enddrag", this.#handleEndDragging)
+		}
+		this.#sim.setFrameSize({
+			width: this.#container.offsetWidth,
+			height: this.#container.offsetHeight,
+		})
 		this.#updateWordsActionFromWordAction()
-		this.#updateInputVolumeFromInput()
+		this.#syncInputVolume()
+		this.#syncSpacing()
 		this.#updateMouseScale()
 		this.#updateMouseConstraint()
 		this.#containerResizeObserver.observe(this.#container)
@@ -341,10 +312,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
-		Events.off(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
-		Events.off(this.#runner, "tick", this.#handleTick)
-		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
-		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
+		Events.off(this.#sim.runner, "tick", this.#handleTick)
+		const { mouseConstraint } = this.#sim
+		if (mouseConstraint != null) {
+			Events.off(mouseConstraint, "startdrag", this.#handleStartDragging)
+			Events.off(mouseConstraint, "enddrag", this.#handleEndDragging)
+		}
 		this.#containerResizeObserver.unobserve(this.#container)
 		this.#inputResizeObserver.unobserve(this.#wordInput)
 		for (const { element } of this.#words.values()) {
@@ -426,23 +399,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			this.#removeWord(word, options)
 		}
 
-		let body = Bodies.rectangle(x, y, width, height, {
-			chamfer: { radius: CHAMFER_RADIUS },
+		let body = this.#sim.addWord({
+			x,
+			y,
+			width,
+			height,
 			angle,
-			frictionAir: WORD_AIR_FRICTION,
-			restitution: WORD_RESTITUTION,
-			collisionFilter: {
-				category: WORD_COLLISION_CATEGORY,
-				mask: this.#getWordCollisionMask({
-					ignoreInputVolume: ignoreInputVolumeUntilExit,
-				}),
-			},
+			velocity,
+			ignoreInputVolumeUntilExit,
 		})
 		word = new Word({
 			body,
 			element,
 			bodySize: { width, height },
-			ignoreInputVolumeUntilExit,
 			remove,
 			onDelete: () => remove(),
 			onCheckedChange: (checked) => {
@@ -455,14 +424,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			},
 		})
 		element.style.transform = this.#getWordTransform(word)
-		if (velocity) Body.setVelocity(body, velocity)
-		Composite.add(this.#engine.world, body)
-		this.#spacingModel.addWord(body, {
-			width,
-			height,
-			isRepellable: () => !body.isStatic && word.dragLock == null,
-			ignoresInputVolume: () => word.ignoreInputVolumeUntilExit,
-		})
 		this.#words.add(word)
 		this.#wordResizeObserver.observe(element)
 		this.dispatchEvent(new WordAddEvent({ handle: word.handle }))
@@ -568,67 +529,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		return { container, wordForm, wordInput, framerateDisplay }
 	}
 
-	#setupPhysics() {
-		const engine = Engine.create()
-		engine.gravity.y = 0
-		engine.gravity.scale = 0
-		// Once a region of the cloud settles, Matter sleeps those bodies and the
-		// broadphase skips them entirely. The repulsion pass and the angular
-		// restoring torque both skip sleeping bodies, so nothing fights this.
-		engine.enableSleeping = true
-		const runner = Runner.create()
-		return { engine, runner }
-	}
-
-	#setupFrameBodies(engine: Engine) {
-		const frameThickness = HTMLWordCloudElement.#frameThickness
-		const collisionFilter = {
-			category: FRAME_COLLISION_CATEGORY,
-			mask: FRAME_COLLISION_MASK,
-		}
-		const frameBodies = {
-			left: Bodies.rectangle(0, 0, frameThickness, 1, {
-				isStatic: true,
-				collisionFilter,
-			}),
-			right: Bodies.rectangle(0, 0, frameThickness, 1, {
-				isStatic: true,
-				collisionFilter,
-			}),
-			top: Bodies.rectangle(0, 0, 1, frameThickness, {
-				isStatic: true,
-				collisionFilter,
-			}),
-			bottom: Bodies.rectangle(0, 0, 1, frameThickness, {
-				isStatic: true,
-				collisionFilter,
-			}),
-		}
-		Composite.add(engine.world, [
-			frameBodies.left,
-			frameBodies.right,
-			frameBodies.top,
-			frameBodies.bottom,
-		])
-		return frameBodies
-	}
-
-	#setupInputVolumeBody() {
-		return Bodies.rectangle(
-			0,
-			0,
-			INPUT_VOLUME_MIN_SIZE,
-			INPUT_VOLUME_MIN_SIZE,
-			{
-				isStatic: true,
-				collisionFilter: {
-					category: INPUT_VOLUME_COLLISION_CATEGORY,
-					mask: INPUT_VOLUME_COLLISION_MASK,
-				},
-			},
-		)
-	}
-
 	#setupContainerStyles() {
 		this.#container.style.setProperty("--chamfer-radius", `${CHAMFER_RADIUS}px`)
 		if (USE_DEBUG_RENDERER) {
@@ -636,30 +536,18 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#setupMouseConstraint(engine: Engine) {
+	#setupMouse() {
 		// Bind the mouse to the container, not the host: word bodies and DOM word
 		// positions are anchored to the container's content box, so the pointer
 		// must be measured from the same origin. Binding to the host instead lets
 		// any host border/padding shift every pointer coordinate toward the
 		// bottom-right, misaligning drag hit-testing from the grab cursor (#39).
-		const mouse = Mouse.create(this.#container)
-		return MouseConstraint.create(engine, {
-			mouse,
-			constraint: { stiffness: 0.3, render: { visible: true } },
-			// Only grab real word bodies — never the oversized sensors.
-			collisionFilter: {
-				category: WORD_COLLISION_CATEGORY,
-				mask: WORD_COLLISION_CATEGORY,
-				group: 0,
-			},
-		})
+		return Mouse.create(this.#container)
 	}
 
 	#removeWordBody(word: Word) {
-		this.#unlockDraggedEntry(word)
 		this.#wordResizeObserver.unobserve(word.element)
-		this.#spacingModel.removeWord(word.id)
-		Composite.remove(this.#engine.world, word.body)
+		this.#sim.removeWord(word.id)
 	}
 
 	#updateWordBodySize(word: Word) {
@@ -671,25 +559,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		) {
 			return
 		}
-
-		const dragLock = word.dragLock
-		if (dragLock != null) {
-			Body.setInertia(word.body, dragLock.initialInertia)
-		}
-
-		Body.scale(
-			word.body,
-			nextSize.width / previousWidth,
-			nextSize.height / previousHeight,
-		)
+		this.#sim.setWordSize(word.id, nextSize)
 		word.bodySize = nextSize
-		this.#spacingModel.setWordSize(word.id, nextSize)
-
-		if (dragLock != null) {
-			dragLock.initialInertia = word.body.inertia
-			Body.setInertia(word.body, Infinity)
-			Body.setAngularVelocity(word.body, 0)
-		}
 	}
 
 	#pickRandomVelocity() {
@@ -701,98 +572,40 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	/**
-	 * Scales all four frame bodies to match the current container dimensions,
-	 * repositioning them so they tightly bound the container on all sides.
-	 * Should be called whenever the container is resized.
+	 * Measures the input element and pushes its rect to the simulation, or
+	 * clears the input volume entirely when word-input is disabled.
 	 */
-	#updateFrameBodies() {
-		const { left, right, top, bottom } = this.#frameBodies
-		const width = this.#container.offsetWidth
-		const height = this.#container.offsetHeight
-		const frameThickness = HTMLWordCloudElement.#frameThickness
-		const padding = HTMLWordCloudElement.#padding
-		const horizontalLength = Math.max(1, width + frameThickness * 2)
-		const verticalLength = Math.max(1, height + frameThickness * 2)
-
-		const scaleHorizontal =
-			horizontalLength / this.#frameBodySize.horizontalLength
-		const scaleVertical = verticalLength / this.#frameBodySize.verticalLength
-
-		if (scaleVertical !== 1) {
-			Body.scale(left, 1, scaleVertical)
-			Body.scale(right, 1, scaleVertical)
+	#syncInputVolume() {
+		if (!this.wordInput) {
+			this.#sim.setInputVolume(null)
+			return
 		}
-		if (scaleHorizontal !== 1) {
-			Body.scale(top, scaleHorizontal, 1)
-			Body.scale(bottom, scaleHorizontal, 1)
-		}
-
-		this.#frameBodySize = { horizontalLength, verticalLength }
-
-		Body.setPosition(left, { x: -frameThickness / 2 + padding, y: height / 2 })
-		Body.setPosition(right, {
-			x: width + frameThickness / 2 - padding,
-			y: height / 2,
+		const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = this.#wordInput
+		this.#sim.setInputVolume({
+			x: offsetLeft + offsetWidth / 2,
+			y: offsetTop + offsetHeight / 2,
+			width: offsetWidth,
+			height: offsetHeight,
 		})
-		Body.setPosition(top, { x: width / 2, y: -frameThickness / 2 + padding })
-		Body.setPosition(bottom, {
-			x: width / 2,
-			y: height + frameThickness / 2 - padding,
-		})
-	}
-
-	#updateInputVolumeBody() {
-		const width = Math.max(INPUT_VOLUME_MIN_SIZE, this.#wordInput.offsetWidth)
-		const height = Math.max(INPUT_VOLUME_MIN_SIZE, this.#wordInput.offsetHeight)
-		const scaleX = width / this.#inputVolumeBodySize.width
-		const scaleY = height / this.#inputVolumeBodySize.height
-
-		if (scaleX !== 1 || scaleY !== 1) {
-			Body.scale(this.#inputVolumeBody, scaleX, scaleY)
-			this.#inputVolumeBodySize = { width, height }
-		}
-
-		Body.setPosition(this.#inputVolumeBody, {
-			x: this.#wordInput.offsetLeft + width / 2,
-			y: this.#wordInput.offsetTop + height / 2,
-		})
-	}
-
-	#getWordCollisionMask({ ignoreInputVolume }: { ignoreInputVolume: boolean }) {
-		if (!ignoreInputVolume) return DEFAULT_WORD_COLLISION_MASK
-		return DEFAULT_WORD_COLLISION_MASK & ~INPUT_VOLUME_COLLISION_CATEGORY
 	}
 
 	/**
-	 * Checks each word that has `ignoreInputVolumeUntilExit` set and clears
-	 * the flag once the body is no longer overlapping the input volume.
-	 * Called every physics tick.
+	 * Pushes the current spacing attributes to the simulation. `setSpacing`
+	 * only resizes sensors when the derived reach actually changes.
 	 */
-	#updateWordCollisionMask(word: Word) {
-		word.body.collisionFilter.mask =
-			word.dragLock != null
-				? 0
-				: this.#getWordCollisionMask({
-						ignoreInputVolume: word.ignoreInputVolumeUntilExit,
-					})
-	}
-
-	#isOverlappingInputVolume(body: Body) {
-		const a = body.bounds
-		const b = this.#inputVolumeBody.bounds
-		return (
-			a.min.x <= b.max.x &&
-			a.max.x >= b.min.x &&
-			a.min.y <= b.max.y &&
-			a.max.y >= b.min.y
-		)
+	#syncSpacing() {
+		this.#sim.setSpacing({
+			word: this.wordSpacing,
+			edge: this.edgeSpacing,
+			input: this.inputSpacing,
+		})
 	}
 
 	#handleFormSubmit = (e: SubmitEvent) => {
 		e.preventDefault()
 		let newWord = this.#wordInput.value.trim()
 		if (newWord !== "") {
-			if (this.#inputVolumeEnabled) this.#updateInputVolumeBody()
+			if (this.wordInput) this.#syncInputVolume()
 			let x = this.#wordInput.offsetLeft + this.#wordInput.offsetWidth / 2
 			let y = this.#wordInput.offsetTop + this.#wordInput.offsetHeight / 2
 			this.#addWord({
@@ -810,7 +623,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#handleStartDragging = (event: IEvent<MouseConstraint>) => {
-		if (!this.#mouseEnabled) return
+		if (!this.#sim.mouseEnabled) return
 		const body = event.source.body
 		if (body != null) {
 			const word = this.#words.get(body.id)
@@ -820,7 +633,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#handleEndDragging = (event: IEvent<MouseConstraint>) => {
-		if (!this.#mouseEnabled) return
+		if (!this.#sim.mouseEnabled) return
 		const body = event.source.body
 		if (body != null) {
 			const word = this.#words.get(body.id)
@@ -831,60 +644,18 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#internals.states.delete("active")
 	}
 
-	#handleBeforeUpdate = () => {
-		this.#applyAngularRestoringTorque()
-		// The spacing margins are reactive attributes read live each tick, so push
-		// the current values before applying forces; setSpacing only resizes
-		// sensors when the derived reach actually changes.
-		this.#spacingModel.setSpacing({
-			word: this.wordSpacing,
-			edge: this.edgeSpacing,
-			input: this.inputSpacing,
-		})
-		this.#spacingModel.applyForces()
-	}
-
 	#handleTick = () => {
-		this.#updateWordInputCollisions()
 		this.#updateWordPositions()
 		if (this.showFramerate) this.#updateFramerateDisplay()
 	}
 
 	#updateFramerateDisplay() {
-		const delta = this.#runner.frameDelta
+		const delta = this.#sim.runner.frameDelta
 		this.#setFrameRateDisplay(1000 / delta)
 	}
 
 	#setFrameRateDisplay(fps: number) {
 		this.#framerateDisplay.textContent = `${Math.round(fps)} fps`
-	}
-
-	#applyAngularRestoringTorque() {
-		for (let {
-			body,
-			bodySize: { width, height },
-		} of this.#words.values()) {
-			applyAngularRestoringTorque({
-				body,
-				bodySize: { width, height },
-				restAngle: ANGULAR_REST_ANGLE,
-				restAngleEpsilon: ANGULAR_REST_ANGLE_EPSILON,
-				springTorqueStiffness: ANGULAR_SPRING_TORQUE_STIFFNESS,
-				dampingCoefficient: ANGULAR_DAMPING_COEFFICIENT,
-				springWidthReference: ANGULAR_SPRING_WIDTH_REFERENCE,
-			})
-		}
-	}
-
-	#updateWordInputCollisions() {
-		if (this.#inputVolumeEnabled) {
-			for (let word of this.#words.values()) {
-				if (!word.ignoreInputVolumeUntilExit) continue
-				if (this.#isOverlappingInputVolume(word.body)) continue
-				word.ignoreInputVolumeUntilExit = false
-				this.#updateWordCollisionMask(word)
-			}
-		}
 	}
 
 	#updateWordPositions() {
@@ -899,11 +670,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * No-op if the entry is already locked.
 	 */
 	#lockDraggedEntry(word: Word) {
-		if (word.dragLock != null) return
-		word.dragLock = { initialInertia: word.body.inertia }
-		this.#updateWordCollisionMask(word)
-		Body.setInertia(word.body, Infinity)
-		Body.setAngularVelocity(word.body, 0)
+		this.#sim.lockDrag(word.id)
 		word.element.dragged = true
 	}
 
@@ -912,17 +679,14 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * No-op if the entry is not locked.
 	 */
 	#unlockDraggedEntry(word: Word) {
-		if (word.dragLock == null) return
-		Body.setInertia(word.body, word.dragLock.initialInertia)
-		Body.setAngularVelocity(word.body, 0)
-		word.dragLock = null
-		this.#updateWordCollisionMask(word)
+		this.#sim.unlockDrag(word.id)
 		word.element.dragged = false
 	}
 
 	#unlockAllDraggedBodies() {
+		this.#sim.unlockAllDrags()
 		for (const word of this.#words.values()) {
-			this.#unlockDraggedEntry(word)
+			word.element.dragged = false
 		}
 	}
 
@@ -948,43 +712,19 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#updateInputVolumeFromInput() {
-		if (this.wordInput) {
-			if (this.#inputVolumeEnabled) return
-			this.#updateInputVolumeBody()
-			Composite.add(this.#engine.world, this.#inputVolumeBody)
-			this.#inputVolumeEnabled = true
-			return
-		}
-		if (!this.#inputVolumeEnabled) return
-		Composite.remove(this.#engine.world, this.#inputVolumeBody)
-		for (let word of this.#words.values()) {
-			if (!word.ignoreInputVolumeUntilExit) continue
-			word.ignoreInputVolumeUntilExit = false
-			this.#updateWordCollisionMask(word)
-		}
-		this.#inputVolumeEnabled = false
-	}
-
 	#updateMouseConstraint() {
-		if (this.wordAction === "drag") {
-			if (this.#mouseEnabled) return
-			this.#mouseEnabled = true
-			Composite.add(this.#engine.world, this.#mouseConstraint)
-		} else {
-			this.#mouseEnabled = false
+		const enabled = this.wordAction === "drag"
+		if (!enabled) {
 			this.#unlockAllDraggedBodies()
-			Composite.remove(
-				this.#engine.world,
-				this.#mouseConstraint.constraint,
-				true,
-			)
 			this.#internals.states.delete("active")
 		}
+		this.#sim.setMouseEnabled(enabled)
 	}
 
 	#updateMouseScale() {
-		const mouse = this.#mouseConstraint.mouse
+		const { mouseConstraint } = this.#sim
+		if (mouseConstraint == null) return
+		const mouse = mouseConstraint.mouse
 		const rect = this.#container.getBoundingClientRect()
 		// Derive the visual scale from the container's *unrounded* layout size.
 		// getBoundingClientRect is the rendered (transform-applied) size, while the
@@ -1004,13 +744,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#start() {
-		if (this.#isRunning) return
-		this.#isRunning = true
-		Runner.run(this.#runner, this.#engine)
-		if (USE_DEBUG_RENDERER) {
+		this.#sim.start()
+		if (USE_DEBUG_RENDERER && this.#debugRender == null) {
 			this.#debugRender =
 				Render?.create({
-					engine: this.#engine,
+					engine: this.#sim.engine,
 					element: queryStrict(
 						this.#container,
 						".word-cloud-debug",
@@ -1028,10 +766,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#stop() {
-		if (!this.#isRunning) return
-		this.#isRunning = false
 		this.#unlockAllDraggedBodies()
-		Runner.stop(this.#runner)
+		this.#sim.stop()
 		if (this.#debugRender != null) Render?.stop(this.#debugRender)
 	}
 }
