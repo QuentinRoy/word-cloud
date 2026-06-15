@@ -7,22 +7,20 @@ import { cssStylesheetPlugin } from "./plugins/css-stylesheet-plugin.ts"
 import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
-let gitVersionResult = (await execSync("git rev-parse --short HEAD"))
-	.toString()
-	.trim()
+let gitVersionResult = execSync("git rev-parse --short HEAD").toString().trim()
 
-function normalizeBasePath(basePath) {
+function normalizeBasePath(basePath: string | undefined) {
 	if (!basePath || basePath === "/") {
 		return "/"
 	}
 	return `/${basePath.replace(/^\/+|\/+$/g, "")}/`
 }
 
-function createTemplatePlugins({ minify }) {
+function createTemplatePlugins({ minify }: { minify: boolean }) {
 	return [cssStylesheetPlugin({ minify }), htmlTemplatePlugin({ minify })]
 }
 
-export default defineConfig(async ({ command, mode }) => {
+export default defineConfig(({ command, mode }) => {
 	const plugins = createTemplatePlugins({ minify: true })
 
 	const define = {
