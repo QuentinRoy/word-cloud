@@ -11,13 +11,19 @@ import {
 	Engine,
 	Events,
 	type IEvent,
-	type IEventCollision,
 	Mouse,
 	MouseConstraint,
-	type Pair,
 	Render,
 	Runner,
 } from "matter-js"
+import {
+	DEFAULT_WORD_COLLISION_MASK,
+	FRAME_COLLISION_CATEGORY,
+	FRAME_COLLISION_MASK,
+	INPUT_VOLUME_COLLISION_CATEGORY,
+	INPUT_VOLUME_COLLISION_MASK,
+	WORD_COLLISION_CATEGORY,
+} from "./collision.ts"
 import {
 	PhysicsPauseEvent,
 	WordActionChangeEvent,
@@ -27,10 +33,8 @@ import {
 	WordDeleteEvent,
 	WordInputToggleEvent,
 } from "./events.ts"
-import {
-	applyAngularRestoringTorque,
-	getRepulsionStrength,
-} from "./physics-utils.ts"
+import { applyAngularRestoringTorque } from "./physics-utils.ts"
+import { REPULSION_MARGIN, SpacingModel } from "./spacing-model.ts"
 import {
 	generateRandomId,
 	isIterable,
@@ -66,30 +70,8 @@ const ANGULAR_REST_ANGLE_EPSILON = 0.001
 const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.4
 const ANGULAR_DAMPING_COEFFICIENT = 0.2
 const ANGULAR_SPRING_WIDTH_REFERENCE = 150
-const REPULSION_MARGIN = 5
-const REPULSION_FORCE = 0.0003
 const WORD_AIR_FRICTION = 0.04
 const WORD_RESTITUTION = 0.2
-const WORD_COLLISION_CATEGORY = 0x0001
-const INPUT_VOLUME_COLLISION_CATEGORY = 0x0002
-const SENSOR_COLLISION_CATEGORY = 0x0004
-const FRAME_COLLISION_CATEGORY = 0x0008
-// Real words resolve collisions against each other, the frame, and the input
-// volume, but never against the proximity sensors (those only feed repulsion).
-const DEFAULT_WORD_COLLISION_MASK =
-	WORD_COLLISION_CATEGORY |
-	FRAME_COLLISION_CATEGORY |
-	INPUT_VOLUME_COLLISION_CATEGORY
-// Sensors detect other sensors, the frame, and the input volume, but never the
-// real word bodies (so the only pairs they form involve at least one sensor).
-const SENSOR_COLLISION_MASK =
-	SENSOR_COLLISION_CATEGORY |
-	FRAME_COLLISION_CATEGORY |
-	INPUT_VOLUME_COLLISION_CATEGORY
-// The frame and input volume are collided by real words and detected by sensors.
-const FRAME_COLLISION_MASK = WORD_COLLISION_CATEGORY | SENSOR_COLLISION_CATEGORY
-const INPUT_VOLUME_COLLISION_MASK =
-	WORD_COLLISION_CATEGORY | SENSOR_COLLISION_CATEGORY
 
 let scopedElementRegistry: CustomElementRegistry | null = null
 let wordElementTagName = "x-word"
@@ -108,12 +90,6 @@ interface InternalWordEntry {
 	id: number
 	body: Body
 	bodySize: { width: number; height: number }
-	/**
-	 * An oversized, non-resolving body that tracks {@link body}. Its overlaps,
-	 * reported by Matter's broadphase, drive the short-range repulsion forces.
-	 */
-	sensorBody: Body
-	sensorSize: { width: number; height: number }
 	element: HTMLWordElement
 	publicHandle: WordHandle
 	ignoreInputVolumeUntilExit: boolean
@@ -232,14 +208,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		height: INPUT_VOLUME_MIN_SIZE,
 	}
 	#inputVolumeEnabled = false
+	#spacingModel: SpacingModel
 	#wordEntries: Map<InternalWordEntry["id"], InternalWordEntry> = new Map()
 	#wordEntriesByElement: WeakMap<HTMLWordElement, InternalWordEntry> =
 		new WeakMap()
-	#entriesBySensorId: Map<number, InternalWordEntry> = new Map()
-	/** Currently-overlapping sensor pairs, maintained from collision events. */
-	#sensorPairs: Set<Pair> = new Set()
-	/** How far each sensor extends past its word on every side, in pixels. */
-	#sensorReach = REPULSION_MARGIN
 	#mouseConstraint: MouseConstraint
 	#mouseEnabled = false
 	#framerateDisplay: HTMLElement
@@ -281,6 +253,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 		this.#frameBodies = this.#setupFrameBodies(this.#engine)
 		this.#inputVolumeBody = this.#setupInputVolumeBody()
+		this.#spacingModel = new SpacingModel(this.#engine, {
+			inputVolumeBody: this.#inputVolumeBody,
+		})
 		this.#setupContainerStyles()
 
 		this.#mouseConstraint = this.#setupMouseConstraint(this.#engine)
@@ -358,8 +333,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	connectedCallback() {
 		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
 		Events.on(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
-		Events.on(this.#engine, "collisionStart", this.#handleCollisionStart)
-		Events.on(this.#engine, "collisionEnd", this.#handleCollisionEnd)
 		Events.on(this.#runner, "tick", this.#handleTick)
 		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
@@ -384,8 +357,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
 		Events.off(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
-		Events.off(this.#engine, "collisionStart", this.#handleCollisionStart)
-		Events.off(this.#engine, "collisionEnd", this.#handleCollisionEnd)
 		Events.off(this.#runner, "tick", this.#handleTick)
 		Events.off(this.#mouseConstraint, "startdrag", this.#handleStartDragging)
 		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
@@ -482,24 +453,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			},
 		})
 		let id = body.id
-		const sensorSize = this.#getSensorSize({ width, height })
-		const sensorBody = Bodies.rectangle(
-			x,
-			y,
-			sensorSize.width,
-			sensorSize.height,
-			{
-				angle,
-				isSensor: true,
-				// Never let Matter sleep the sensor on its own; its sleep state is
-				// mirrored from the word body in #syncSensorBodies instead.
-				sleepThreshold: Infinity,
-				collisionFilter: {
-					category: SENSOR_COLLISION_CATEGORY,
-					mask: SENSOR_COLLISION_MASK,
-				},
-			},
-		)
 		let publicHandle = new WordHandle({
 			getWord: () => element.value ?? "",
 			setWord: (v) => {
@@ -519,14 +472,11 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			element,
 			body,
 			bodySize: { width, height },
-			sensorBody,
-			sensorSize,
 			publicHandle,
 			ignoreInputVolumeUntilExit,
 			dragLock: null,
 		}
 		this.#wordEntriesByElement.set(element, entry)
-		this.#entriesBySensorId.set(sensorBody.id, entry)
 		element.addEventListener(WordElementDeleteEvent.type, () => {
 			remove()
 		})
@@ -547,7 +497,13 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		})
 		element.style.transform = this.#getWordTransform(entry)
 		if (velocity) Body.setVelocity(body, velocity)
-		Composite.add(this.#engine.world, [body, sensorBody])
+		Composite.add(this.#engine.world, body)
+		this.#spacingModel.addWord(body, {
+			width,
+			height,
+			isRepellable: () => !body.isStatic && entry.dragLock == null,
+			ignoresInputVolume: () => entry.ignoreInputVolumeUntilExit,
+		})
 		this.#wordEntries.set(id, entry)
 		this.#wordResizeObserver.observe(element)
 		this.dispatchEvent(new WordAddEvent({ handle: publicHandle }))
@@ -742,21 +698,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#removeWordBody(entry: InternalWordEntry) {
 		this.#unlockDraggedEntry(entry)
 		this.#wordResizeObserver.unobserve(entry.element)
-		this.#entriesBySensorId.delete(entry.sensorBody.id)
-		// Drop any lingering sensor pairs that reference the removed sensor in
-		// case their collisionEnd event has not fired yet.
-		for (const pair of this.#sensorPairs) {
-			if (pair.bodyA === entry.sensorBody || pair.bodyB === entry.sensorBody) {
-				this.#sensorPairs.delete(pair)
-			}
-		}
-		Composite.remove(this.#engine.world, [entry.body, entry.sensorBody])
-	}
-
-	/** The sensor dimensions for a word of the given size at the current reach. */
-	#getSensorSize({ width, height }: { width: number; height: number }) {
-		const reach = this.#sensorReach
-		return { width: width + 2 * reach, height: height + 2 * reach }
+		this.#spacingModel.removeWord(entry.id)
+		Composite.remove(this.#engine.world, entry.body)
 	}
 
 	#updateWordBodySize(entry: InternalWordEntry) {
@@ -780,29 +723,13 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			nextSize.height / previousHeight,
 		)
 		entry.bodySize = nextSize
-		this.#resizeSensorBody(entry)
+		this.#spacingModel.setWordSize(entry.id, nextSize)
 
 		if (dragLock != null) {
 			dragLock.initialInertia = entry.body.inertia
 			Body.setInertia(entry.body, Infinity)
 			Body.setAngularVelocity(entry.body, 0)
 		}
-	}
-
-	/**
-	 * Scales an entry's sensor body so it again extends {@link #sensorReach}
-	 * pixels past the word on every side. No-op when already the right size.
-	 */
-	#resizeSensorBody(entry: InternalWordEntry) {
-		const target = this.#getSensorSize(entry.bodySize)
-		const { width: current, height: currentHeight } = entry.sensorSize
-		if (target.width === current && target.height === currentHeight) return
-		Body.scale(
-			entry.sensorBody,
-			target.width / current,
-			target.height / currentHeight,
-		)
-		entry.sensorSize = target
 	}
 
 	#pickRandomVelocity() {
@@ -946,19 +873,15 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#handleBeforeUpdate = () => {
 		this.#applyAngularRestoringTorque()
-		this.#applySensorRepulsionForces()
-	}
-
-	#handleCollisionStart = (event: IEventCollision<Engine>) => {
-		for (const pair of event.pairs) {
-			if (pair.isSensor) this.#sensorPairs.add(pair)
-		}
-	}
-
-	#handleCollisionEnd = (event: IEventCollision<Engine>) => {
-		for (const pair of event.pairs) {
-			if (pair.isSensor) this.#sensorPairs.delete(pair)
-		}
+		// The spacing margins are reactive attributes read live each tick, so push
+		// the current values before applying forces; setSpacing only resizes
+		// sensors when the derived reach actually changes.
+		this.#spacingModel.setSpacing({
+			word: this.wordSpacing,
+			edge: this.edgeSpacing,
+			input: this.inputSpacing,
+		})
+		this.#spacingModel.applyForces()
 	}
 
 	#handleTick = () => {
@@ -991,145 +914,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				springWidthReference: ANGULAR_SPRING_WIDTH_REFERENCE,
 			})
 		}
-	}
-
-	/**
-	 * Applies the short-range soft repulsion that keeps words spaced from each
-	 * other, the frame, and the input volume.
-	 *
-	 * Each word carries an oversized sensor body; Matter's broadphase reports the
-	 * sensor overlaps (without resolving them) via {@link #sensorPairs}. For each
-	 * overlap we recover the true gap from the SAT penetration depth, feed it to
-	 * the same soft-strength curve as before, and push the words apart along the
-	 * collision normal. This replaces the previous hand-rolled broadphase and
-	 * closest-point geometry, which duplicated work Matter already does.
-	 */
-	#applySensorRepulsionForces() {
-		// Sensors reach far enough to cover the largest active margin; the per-pair
-		// margin then gates the actual force, so over-detection is free. Reach and
-		// margins change rarely, so resizing on change is cheap.
-		const reach = Math.max(
-			this.wordSpacing,
-			this.edgeSpacing,
-			this.inputSpacing,
-			0,
-		)
-		if (reach !== this.#sensorReach) {
-			this.#sensorReach = reach
-			for (const entry of this.#wordEntries.values()) {
-				this.#resizeSensorBody(entry)
-			}
-		}
-
-		this.#syncSensorBodies()
-
-		for (const pair of this.#sensorPairs) {
-			if (!pair.isActive) continue
-			const entryA = this.#entriesBySensorId.get(pair.bodyA.id)
-			const entryB = this.#entriesBySensorId.get(pair.bodyB.id)
-
-			if (entryA != null && entryB != null) {
-				this.#applyPairRepulsion(pair, {
-					margin: this.wordSpacing,
-					inflation: 2 * reach,
-					wordA: entryA,
-					wordB: entryB,
-				})
-				continue
-			}
-
-			// One side is a word sensor, the other the frame or the input volume.
-			const wordEntry = entryA ?? entryB
-			if (wordEntry == null) continue
-			const otherBody = entryA != null ? pair.bodyB : pair.bodyA
-			const isInput = otherBody === this.#inputVolumeBody
-			if (isInput && wordEntry.ignoreInputVolumeUntilExit) continue
-			this.#applyPairRepulsion(pair, {
-				margin: isInput ? this.inputSpacing : this.edgeSpacing,
-				inflation: reach,
-				wordA: entryA != null ? wordEntry : null,
-				wordB: entryB != null ? wordEntry : null,
-			})
-		}
-	}
-
-	/**
-	 * Moves each sensor onto its word.
-	 *
-	 * Sleeping words are skipped (they have not moved), but their sensors stay
-	 * awake so a still-penetrating neighbour is always detected: the repulsion
-	 * then wakes the sleeper and separates it, instead of freezing an overlap.
-	 * Only words that are far enough from everything to receive no force settle
-	 * and sleep, which is where the broadphase savings come from.
-	 */
-	#syncSensorBodies() {
-		for (const entry of this.#wordEntries.values()) {
-			const { body, sensorBody } = entry
-			if (body.isSleeping) continue
-			Body.setPosition(sensorBody, body.position)
-			Body.setAngle(sensorBody, body.angle)
-		}
-	}
-
-	/**
-	 * Applies a single soft repulsion impulse for one sensor pair.
-	 *
-	 * `inflation` is the combined sensor reach across the pair, used to turn the
-	 * SAT penetration depth back into the real gap between the word bodies. A null
-	 * `wordA`/`wordB` marks the static frame or input side, which is not pushed.
-	 */
-	#applyPairRepulsion(
-		pair: Pair,
-		{
-			margin,
-			inflation,
-			wordA,
-			wordB,
-		}: {
-			margin: number
-			inflation: number
-			wordA: InternalWordEntry | null
-			wordB: InternalWordEntry | null
-		},
-	) {
-		// A dragged or static word neither pushes nor is pushed; skip the pair if
-		// either participant is excluded. Sleeping words are intentionally NOT
-		// excluded: applying the force wakes a still-overlapping sleeper so it can
-		// separate, rather than leaving the overlap frozen.
-		if (wordA != null && !this.#isRepellable(wordA)) return
-		if (wordB != null && !this.#isRepellable(wordB)) return
-
-		const collision = pair.collision
-		const gap = inflation - collision.depth
-		const strength = getRepulsionStrength({ margin, gap })
-		if (strength == null) return
-
-		// Orient the collision normal so it points from body A to body B.
-		let nx = collision.normal.x
-		let ny = collision.normal.y
-		const deltaX = pair.bodyB.position.x - pair.bodyA.position.x
-		const deltaY = pair.bodyB.position.y - pair.bodyA.position.y
-		if (nx * deltaX + ny * deltaY < 0) {
-			nx = -nx
-			ny = -ny
-		}
-
-		const magnitude = strength * REPULSION_FORCE
-		const fx = nx * magnitude
-		const fy = ny * magnitude
-
-		// Applied at each word's centre: a pure separating push, leaving
-		// orientation entirely to the angular restoring torque.
-		if (wordA != null) {
-			Body.applyForce(wordA.body, wordA.body.position, { x: -fx, y: -fy })
-		}
-		if (wordB != null) {
-			Body.applyForce(wordB.body, wordB.body.position, { x: fx, y: fy })
-		}
-	}
-
-	#isRepellable(entry: InternalWordEntry) {
-		return !entry.body.isStatic && entry.dragLock == null
 	}
 
 	#updateWordInputCollisions() {
