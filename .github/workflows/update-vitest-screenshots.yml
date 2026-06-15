@@ -21,7 +21,7 @@ jobs:
     # Same Playwright image as ci.yml so the regenerated screenshots are rendered
     # in the identical environment the verify job checks them against.
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
 
     # only run when the correct label is added
     if: >
@@ -67,13 +67,11 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .tool-versions
           cache: pnpm
 
       - name: Install dependencies

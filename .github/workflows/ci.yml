@@ -55,13 +55,11 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
-      - name: Set up Node.js 24
+      - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .tool-versions
           cache: pnpm
 
       - name: Install Dependencies
@@ -131,13 +129,11 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
-      - name: Setup Node.js 24
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .tool-versions
           cache: pnpm
 
       - name: Install Dependencies
@@ -152,32 +148,25 @@ jobs:
           createGithubReleases: true
           commit: version packages
 
-  build-demo:
-    name: Build Demo
+  deploy-demo:
+    name: Deploy Demo
     needs: verify
     if: "(github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'"
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
-      pages: write
-      id-token: write
+      contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .tool-versions
           cache: pnpm
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -187,22 +176,10 @@ jobs:
           PAGES_BASE_PATH: /${{ github.event.repository.name }}/
         run: pnpm build:demo
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy demo to GitHub Pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: dist-demo
-
-  deploy-pages:
-    name: Deploy Demo To GitHub Pages
-    needs: build-demo
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          branch: gh-pages
+          folder: dist-demo
+          clean-exclude: |
+            pr-preview
