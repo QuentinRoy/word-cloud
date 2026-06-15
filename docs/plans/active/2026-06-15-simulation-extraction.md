@@ -17,7 +17,7 @@ The work is split into four ordered steps. **Step 3 is the destination** — Ste
 |------|--------|------|--------|
 | 0 | — | node vitest project (real engine, no DOM) + tests for the untested `physics-utils` helpers | ✅ [#60](https://github.com/QuentinRoy/word-cloud/pull/60) |
 | 1 | `SpacingModel` | extract sensors + reach + pairs + the repulsion force out of the element | ✅ |
-| 2 | `Word` | extract the body + element + handle + `dragLock` unit; collapse the lookup maps into one registry | ☐ |
+| 2 | `Word` | extract the body + element + handle + `dragLock` unit; collapse the lookup maps into one registry | ✅ |
 | 3 | `WordCloudSimulation` | extract the DOM-free seam; the element becomes the adapter | ☐ |
 
 ## Decisions
