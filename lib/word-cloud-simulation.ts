@@ -4,24 +4,23 @@ import {
 	Composite,
 	Engine,
 	Events,
+	type IEvent,
 	type Mouse,
 	MouseConstraint,
 	Runner,
 } from "matter-js"
 import {
-	DEFAULT_WORD_COLLISION_MASK,
 	FRAME_COLLISION_CATEGORY,
 	FRAME_COLLISION_MASK,
-	INPUT_VOLUME_COLLISION_CATEGORY,
-	INPUT_VOLUME_COLLISION_MASK,
 	WORD_COLLISION_CATEGORY,
+	wordCollisionMask,
 } from "./collision.ts"
+import { InputVolume } from "./input-volume.ts"
 import { applyAngularRestoringTorque } from "./physics-utils.ts"
 import { SpacingModel } from "./spacing-model.ts"
 
 export const CHAMFER_RADIUS = 8
 
-const INPUT_VOLUME_MIN_SIZE = 1
 const FRAME_THICKNESS = 1000
 const ANGULAR_REST_ANGLE = 0
 const ANGULAR_REST_ANGLE_EPSILON = 0.001
@@ -57,7 +56,6 @@ interface WordEntry {
 	body: Body
 	bodySize: Size
 	dragLock: DragLock | null
-	ignoreInputVolumeUntilExit: boolean
 }
 
 export interface AddWordOptions {
@@ -77,7 +75,7 @@ export interface AddWordOptions {
 /**
  * The DOM-free Matter.js simulation behind {@link HTMLWordCloudElement}.
  *
- * Owns the engine, runner, the four frame bodies, the input-volume body, the
+ * Owns the engine, runner, the four frame bodies, the {@link InputVolume}, the
  * {@link SpacingModel}, the `MouseConstraint`, and the drag-lock state. The
  * element drives it through this API and reads word body positions back
  * (via the `Body` returned from {@link addWord}) to write CSS transforms.
@@ -90,17 +88,22 @@ export class WordCloudSimulation {
 	#runner: Runner
 	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
 	#frameBodySize = { horizontalLength: 1, verticalLength: 1 }
-	#inputVolumeBody: Body
-	#inputVolumeBodySize = {
-		width: INPUT_VOLUME_MIN_SIZE,
-		height: INPUT_VOLUME_MIN_SIZE,
-	}
-	#inputVolumeEnabled = false
+	#inputVolume: InputVolume
 	#spacingModel: SpacingModel
 	#words = new Map<number, WordEntry>()
 	#mouseConstraint: MouseConstraint | null = null
 	#mouseEnabled = false
 	#isRunning = false
+
+	/** Invoked once per simulation frame with the frame delta in milliseconds.
+	 * The element writes word transforms and the framerate display from it. */
+	onTick: ((frameDelta: number) => void) | null = null
+	/** Invoked when the pointer grabs a word, with its id. The drag is already
+	 * locked by the time this fires; the element mirrors it to the DOM. */
+	onWordGrab: ((id: number) => void) | null = null
+	/** Invoked when a drag is released — with the word id, or `null` when every
+	 * drag was released at once. The word is already unlocked when this fires. */
+	onWordRelease: ((id: number | null) => void) | null = null
 
 	constructor() {
 		this.#engine = Engine.create()
@@ -112,36 +115,20 @@ export class WordCloudSimulation {
 		this.#engine.enableSleeping = true
 		this.#runner = Runner.create()
 		this.#frameBodies = this.#setupFrameBodies()
-		this.#inputVolumeBody = this.#setupInputVolumeBody()
+		this.#inputVolume = new InputVolume(this.#engine)
 		this.#spacingModel = new SpacingModel(this.#engine, {
-			inputVolumeBody: this.#inputVolumeBody,
+			inputVolumeBody: this.#inputVolume.body,
 		})
 		Events.on(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
+		Events.on(this.#runner, "tick", this.#handleTick)
 	}
 
-	/** The Matter engine, exposed read-only so the element can attach its own
-	 * listeners (framerate display, debug renderer) without the simulation
-	 * itself touching the DOM. */
+	/** The Matter engine, exposed read-only as the one escape hatch for the
+	 * element's dev-flagged debug `Render`. Everything else crosses the seam as
+	 * intent ({@link onTick}/{@link onWordGrab}/{@link onWordRelease}) so the
+	 * element never names a Matter event. */
 	get engine(): Engine {
 		return this.#engine
-	}
-
-	/** The Matter runner, exposed read-only for the element's tick listeners. */
-	get runner(): Runner {
-		return this.#runner
-	}
-
-	/** The mouse constraint created by {@link attachMouse}, or `null` before
-	 * a mouse has been attached. */
-	get mouseConstraint(): MouseConstraint | null {
-		return this.#mouseConstraint
-	}
-
-	/** Whether the mouse constraint is currently in the world (set by
-	 * {@link setMouseEnabled}). The element reads this to gate its drag
-	 * handlers, which can still fire as the constraint is being torn down. */
-	get mouseEnabled(): boolean {
-		return this.#mouseEnabled
 	}
 
 	/**
@@ -172,15 +159,15 @@ export class WordCloudSimulation {
 			body,
 			bodySize: { width, height },
 			dragLock: null,
-			ignoreInputVolumeUntilExit,
 		}
 		this.#words.set(body.id, entry)
-		this.#updateWordCollisionMask(entry)
+		if (ignoreInputVolumeUntilExit) this.#inputVolume.beginGrace(body)
+		this.#applyWordMask(body.id)
 		this.#spacingModel.addWord(body, {
 			width,
 			height,
 			isRepellable: () => !body.isStatic && entry.dragLock == null,
-			ignoresInputVolume: () => entry.ignoreInputVolumeUntilExit,
+			ignoresInputVolume: () => this.#inputVolume.ignores(body.id),
 		})
 		return body
 	}
@@ -191,6 +178,7 @@ export class WordCloudSimulation {
 		const entry = this.#words.get(id)
 		if (entry == null) return
 		this.unlockDrag(id)
+		this.#inputVolume.forget(id)
 		this.#spacingModel.removeWord(id)
 		Composite.remove(this.#engine.world, entry.body)
 		this.#words.delete(id)
@@ -253,36 +241,13 @@ export class WordCloudSimulation {
 	}
 
 	/**
-	 * Enables/resizes/repositions the input-volume body from a measured rect,
-	 * or disables it when `rect` is `null`. Disabling clears
-	 * `ignoreInputVolumeUntilExit` on every word that still had it set.
+	 * Enables/resizes/repositions the input volume from a measured rect, or
+	 * disables it when `rect` is `null`. Disabling ends input grace for every
+	 * word that still had it; the freed words are re-masked here.
 	 */
 	setInputVolume(rect: Rect | null) {
-		if (rect == null) {
-			if (!this.#inputVolumeEnabled) return
-			Composite.remove(this.#engine.world, this.#inputVolumeBody)
-			this.#inputVolumeEnabled = false
-			for (const entry of this.#words.values()) {
-				if (!entry.ignoreInputVolumeUntilExit) continue
-				entry.ignoreInputVolumeUntilExit = false
-				this.#updateWordCollisionMask(entry)
-			}
-			return
-		}
-
-		const width = Math.max(INPUT_VOLUME_MIN_SIZE, rect.width)
-		const height = Math.max(INPUT_VOLUME_MIN_SIZE, rect.height)
-		const scaleX = width / this.#inputVolumeBodySize.width
-		const scaleY = height / this.#inputVolumeBodySize.height
-		if (scaleX !== 1 || scaleY !== 1) {
-			Body.scale(this.#inputVolumeBody, scaleX, scaleY)
-			this.#inputVolumeBodySize = { width, height }
-		}
-		Body.setPosition(this.#inputVolumeBody, { x: rect.x, y: rect.y })
-
-		if (!this.#inputVolumeEnabled) {
-			Composite.add(this.#engine.world, this.#inputVolumeBody)
-			this.#inputVolumeEnabled = true
+		for (const id of this.#inputVolume.setRect(rect)) {
+			this.#applyWordMask(id)
 		}
 	}
 
@@ -294,8 +259,9 @@ export class WordCloudSimulation {
 		this.#spacingModel.setSpacing(spacing)
 	}
 
-	/** Creates the `MouseConstraint` from a `Mouse` the element created. Not
-	 * added to the world until {@link setMouseEnabled} is called. */
+	/** Creates the `MouseConstraint` from a `Mouse` the element created and wires
+	 * its own grab/release handlers. Not added to the world until
+	 * {@link setMouseEnabled} is called. */
 	attachMouse(mouse: Mouse) {
 		this.#mouseConstraint = MouseConstraint.create(this.#engine, {
 			mouse,
@@ -307,6 +273,8 @@ export class WordCloudSimulation {
 				group: 0,
 			},
 		})
+		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDrag)
+		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDrag)
 	}
 
 	/**
@@ -338,7 +306,7 @@ export class WordCloudSimulation {
 		const entry = this.#words.get(id)
 		if (entry == null || entry.dragLock != null) return
 		entry.dragLock = { initialInertia: entry.body.inertia }
-		this.#updateWordCollisionMask(entry)
+		this.#applyWordMask(id)
 		this.#freezeRotation(entry.body)
 	}
 
@@ -352,12 +320,14 @@ export class WordCloudSimulation {
 		Body.setInertia(entry.body, entry.dragLock.initialInertia)
 		Body.setAngularVelocity(entry.body, 0)
 		entry.dragLock = null
-		this.#updateWordCollisionMask(entry)
+		this.#applyWordMask(id)
 	}
 
-	/** Unlocks every drag-locked word. */
+	/** Unlocks every drag-locked word and notifies via {@link onWordRelease}
+	 * with `null` ("all released"). */
 	unlockAllDrags() {
 		for (const id of this.#words.keys()) this.unlockDrag(id)
+		this.onWordRelease?.(null)
 	}
 
 	/** Starts the runner, advancing the simulation each frame. No-op if
@@ -407,35 +377,16 @@ export class WordCloudSimulation {
 		return frameBodies
 	}
 
-	#setupInputVolumeBody() {
-		return Bodies.rectangle(
-			0,
-			0,
-			INPUT_VOLUME_MIN_SIZE,
-			INPUT_VOLUME_MIN_SIZE,
-			{
-				isStatic: true,
-				collisionFilter: {
-					category: INPUT_VOLUME_COLLISION_CATEGORY,
-					mask: INPUT_VOLUME_COLLISION_MASK,
-				},
-			},
-		)
-	}
-
-	/**
-	 * Recomputes a word's collision mask from its current state: a drag-locked
-	 * word collides with nothing; a freshly-spawned word that still ignores the
-	 * input volume drops that one category; otherwise the full default mask.
-	 */
-	#updateWordCollisionMask(entry: WordEntry) {
-		if (entry.dragLock != null) {
-			entry.body.collisionFilter.mask = 0
-			return
-		}
-		entry.body.collisionFilter.mask = entry.ignoreInputVolumeUntilExit
-			? DEFAULT_WORD_COLLISION_MASK & ~INPUT_VOLUME_COLLISION_CATEGORY
-			: DEFAULT_WORD_COLLISION_MASK
+	/** Re-derives and applies a word's collision mask from its current state —
+	 * drag-lock and input grace. The single place a word mask is written; see
+	 * {@link wordCollisionMask}. No-op for an unknown id. */
+	#applyWordMask(id: number) {
+		const entry = this.#words.get(id)
+		if (entry == null) return
+		entry.body.collisionFilter.mask = wordCollisionMask({
+			dragLocked: entry.dragLock != null,
+			ignoresInput: this.#inputVolume.ignores(id),
+		})
 	}
 
 	/** Pins a body's rotation while it is drag-locked: infinite inertia so it
@@ -443,31 +394,6 @@ export class WordCloudSimulation {
 	#freezeRotation(body: Body) {
 		Body.setInertia(body, Infinity)
 		Body.setAngularVelocity(body, 0)
-	}
-
-	#isOverlappingInputVolume(body: Body) {
-		const a = body.bounds
-		const b = this.#inputVolumeBody.bounds
-		return (
-			a.min.x <= b.max.x &&
-			a.max.x >= b.min.x &&
-			a.min.y <= b.max.y &&
-			a.max.y >= b.min.y
-		)
-	}
-
-	/**
-	 * Checks each word that has `ignoreInputVolumeUntilExit` set and clears
-	 * the flag once the body is no longer overlapping the input volume.
-	 */
-	#updateWordInputCollisions() {
-		if (!this.#inputVolumeEnabled) return
-		for (const entry of this.#words.values()) {
-			if (!entry.ignoreInputVolumeUntilExit) continue
-			if (this.#isOverlappingInputVolume(entry.body)) continue
-			entry.ignoreInputVolumeUntilExit = false
-			this.#updateWordCollisionMask(entry)
-		}
 	}
 
 	#applyAngularRestoringTorque() {
@@ -489,7 +415,35 @@ export class WordCloudSimulation {
 
 	#handleBeforeUpdate = () => {
 		this.#applyAngularRestoringTorque()
-		this.#updateWordInputCollisions()
+		for (const id of this.#inputVolume.releaseExitedWords()) {
+			this.#applyWordMask(id)
+		}
 		this.#spacingModel.applyForces()
+	}
+
+	#handleTick = () => {
+		this.onTick?.(this.#runner.frameDelta)
+	}
+
+	/** Locks the grabbed word's drag, then notifies the element to mirror it. */
+	#handleStartDrag = (event: IEvent<MouseConstraint>) => {
+		if (!this.#mouseEnabled) return
+		const body = event.source.body
+		if (body == null) return
+		this.lockDrag(body.id)
+		this.onWordGrab?.(body.id)
+	}
+
+	/** Unlocks the released word (or all, when no body is reported), then
+	 * notifies the element. */
+	#handleEndDrag = (event: IEvent<MouseConstraint>) => {
+		if (!this.#mouseEnabled) return
+		const body = event.source.body
+		if (body != null) {
+			this.unlockDrag(body.id)
+			this.onWordRelease?.(body.id)
+		} else {
+			this.unlockAllDrags()
+		}
 	}
 }

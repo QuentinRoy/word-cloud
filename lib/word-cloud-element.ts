@@ -4,13 +4,7 @@ import {
 	pickList,
 	WithAttributeProps,
 } from "@quentinroy/custom-element-mixins"
-import {
-	Events,
-	type IEvent,
-	Mouse,
-	type MouseConstraint,
-	Render,
-} from "matter-js"
+import { Mouse, Render } from "matter-js"
 import {
 	PhysicsPauseEvent,
 	WordActionChangeEvent,
@@ -158,6 +152,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#wordForm: HTMLFormElement
 	#wordInput: HTMLInputElement
 	#container: HTMLElement
+	#mouse: Mouse
 	#sim = new WordCloudSimulation()
 	#words = new WordRegistry()
 	#framerateDisplay: HTMLElement
@@ -196,7 +191,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#framerateDisplay = framerateDisplay
 
 		this.#setupContainerStyles()
-		this.#sim.attachMouse(this.#setupMouse())
+		this.#mouse = this.#setupMouse()
+		this.#sim.attachMouse(this.#mouse)
 	}
 
 	static get observedAttributes() {
@@ -282,12 +278,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	connectedCallback() {
 		this.#wordForm.addEventListener("submit", this.#handleFormSubmit)
-		Events.on(this.#sim.runner, "tick", this.#handleTick)
-		const { mouseConstraint } = this.#sim
-		if (mouseConstraint != null) {
-			Events.on(mouseConstraint, "startdrag", this.#handleStartDragging)
-			Events.on(mouseConstraint, "enddrag", this.#handleEndDragging)
-		}
+		this.#sim.onTick = this.#handleTick
+		this.#sim.onWordGrab = this.#handleWordGrab
+		this.#sim.onWordRelease = this.#handleWordRelease
 		this.#sim.setFrameSize({
 			width: this.#container.offsetWidth,
 			height: this.#container.offsetHeight,
@@ -312,18 +305,17 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 */
 	disconnectedCallback() {
 		this.#wordForm.removeEventListener("submit", this.#handleFormSubmit)
-		Events.off(this.#sim.runner, "tick", this.#handleTick)
-		const { mouseConstraint } = this.#sim
-		if (mouseConstraint != null) {
-			Events.off(mouseConstraint, "startdrag", this.#handleStartDragging)
-			Events.off(mouseConstraint, "enddrag", this.#handleEndDragging)
-		}
 		this.#containerResizeObserver.unobserve(this.#container)
 		this.#inputResizeObserver.unobserve(this.#wordInput)
 		for (const { element } of this.#words.values()) {
 			this.#wordResizeObserver.unobserve(element)
 		}
+		// Stop first: its unlockAllDrags fires onWordRelease(null), clearing the
+		// dragged state through the handler that is still wired here.
 		this.#stop()
+		this.#sim.onTick = null
+		this.#sim.onWordGrab = null
+		this.#sim.onWordRelease = null
 	}
 
 	/**
@@ -622,36 +614,29 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#wordInput.value = ""
 	}
 
-	#handleStartDragging = (event: IEvent<MouseConstraint>) => {
-		if (!this.#sim.mouseEnabled) return
-		const body = event.source.body
-		if (body != null) {
-			const word = this.#words.get(body.id)
-			if (word != null) this.#lockDraggedEntry(word)
-		}
+	/** Mirrors a grab into the DOM. The simulation has already locked the drag;
+	 * this only marks the word element and the host's active state. */
+	#handleWordGrab = (id: number) => {
+		const word = this.#words.get(id)
+		if (word != null) word.element.dragged = true
 		this.#internals.states.add("active")
 	}
 
-	#handleEndDragging = (event: IEvent<MouseConstraint>) => {
-		if (!this.#sim.mouseEnabled) return
-		const body = event.source.body
-		if (body != null) {
-			const word = this.#words.get(body.id)
-			if (word != null) this.#unlockDraggedEntry(word)
+	/** Mirrors a release into the DOM. `id` is `null` when every drag was
+	 * released at once (mouse disabled, stop). The word is already unlocked. */
+	#handleWordRelease = (id: number | null) => {
+		if (id == null) {
+			for (const word of this.#words.values()) word.element.dragged = false
 		} else {
-			this.#unlockAllDraggedBodies()
+			const word = this.#words.get(id)
+			if (word != null) word.element.dragged = false
 		}
 		this.#internals.states.delete("active")
 	}
 
-	#handleTick = () => {
+	#handleTick = (frameDelta: number) => {
 		this.#updateWordPositions()
-		if (this.showFramerate) this.#updateFramerateDisplay()
-	}
-
-	#updateFramerateDisplay() {
-		const delta = this.#sim.runner.frameDelta
-		this.#setFrameRateDisplay(1000 / delta)
+		if (this.showFramerate) this.#setFrameRateDisplay(1000 / frameDelta)
 	}
 
 	#setFrameRateDisplay(fps: number) {
@@ -661,32 +646,6 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#updateWordPositions() {
 		for (let word of this.#words.values()) {
 			word.element.style.transform = this.#getWordTransform(word)
-		}
-	}
-
-	/**
-	 * Locks a dragged entry: freezes its rotational inertia, disables collisions,
-	 * and marks the word element as dragged.
-	 * No-op if the entry is already locked.
-	 */
-	#lockDraggedEntry(word: Word) {
-		this.#sim.lockDrag(word.id)
-		word.element.dragged = true
-	}
-
-	/**
-	 * Restores a previously locked entry to normal physics behavior.
-	 * No-op if the entry is not locked.
-	 */
-	#unlockDraggedEntry(word: Word) {
-		this.#sim.unlockDrag(word.id)
-		word.element.dragged = false
-	}
-
-	#unlockAllDraggedBodies() {
-		this.#sim.unlockAllDrags()
-		for (const word of this.#words.values()) {
-			word.element.dragged = false
 		}
 	}
 
@@ -713,18 +672,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#updateMouseConstraint() {
-		const enabled = this.wordAction === "drag"
-		if (!enabled) {
-			this.#unlockAllDraggedBodies()
-			this.#internals.states.delete("active")
-		}
-		this.#sim.setMouseEnabled(enabled)
+		// Disabling drag unlocks every word in the sim, which fires
+		// onWordRelease(null) → clears the dragged + active DOM state.
+		this.#sim.setMouseEnabled(this.wordAction === "drag")
 	}
 
 	#updateMouseScale() {
-		const { mouseConstraint } = this.#sim
-		if (mouseConstraint == null) return
-		const mouse = mouseConstraint.mouse
 		const rect = this.#container.getBoundingClientRect()
 		// Derive the visual scale from the container's *unrounded* layout size.
 		// getBoundingClientRect is the rendered (transform-applied) size, while the
@@ -740,7 +693,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		const layoutHeight = Number.parseFloat(style.height)
 		const scaleX = layoutWidth > 0 ? rect.width / layoutWidth : 1
 		const scaleY = layoutHeight > 0 ? rect.height / layoutHeight : 1
-		Mouse.setScale(mouse, { x: 1 / scaleX, y: 1 / scaleY })
+		Mouse.setScale(this.#mouse, { x: 1 / scaleX, y: 1 / scaleY })
 	}
 
 	#start() {
@@ -766,7 +719,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#stop() {
-		this.#unlockAllDraggedBodies()
+		this.#sim.unlockAllDrags()
 		this.#sim.stop()
 		if (this.#debugRender != null) Render?.stop(this.#debugRender)
 	}

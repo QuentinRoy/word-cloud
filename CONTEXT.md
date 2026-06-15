@@ -48,3 +48,10 @@ _Avoid_: walls, edges, bounds
 **Input volume**:
 A static body matching the text input box, so words are repelled away from where
 the user is typing. _input spacing_ is the spacing kept from it.
+
+**Input grace**:
+The period during which a freshly-spawned word ignores the input volume — it
+neither collides with nor is repelled by it — lasting until the word has left the
+input volume once. Lets a word created at the input escape outward instead of
+being shoved back through the area being typed in.
+_Avoid_: ignore-input flag, input cooldown
