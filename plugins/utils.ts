@@ -1,4 +1,15 @@
 import { relative } from "node:path"
+import { fileURLToPath } from "node:url"
+
+/**
+ * Absolute path to the runtime module the generated asset modules import from.
+ * Both asset plugins reference this single constant so every `*.html?template`
+ * and `*.css?stylesheet` import resolves to the same specifier — that shared
+ * identity is what makes the runtime helpers bundle and inject exactly once.
+ */
+export const TEMPLATE_RUNTIME_PATH = fileURLToPath(
+	new URL("./template-runtime.ts", import.meta.url),
+)
 
 export function hasQueryFlag(id: string, flag: string): boolean {
 	const [, query] = id.split("?", 2)
