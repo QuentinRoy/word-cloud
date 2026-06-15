@@ -1,5 +1,22 @@
 # @quentinroy/word-cloud
 
+## 0.14.0
+
+### Minor Changes
+
+- 2e90bbd: Rename the word-spacing attributes so their names convey that the values are distances in pixels:
+
+  - `word-repulsion` → `word-spacing`
+  - `edge-repulsion` → `edge-spacing`
+  - `input-repulsion` → `input-spacing`
+
+  The matching camelCase properties are renamed too (`wordRepulsion` → `wordSpacing`, `edgeRepulsion` → `edgeSpacing`, `inputRepulsion` → `inputSpacing`). Behaviour and default (`5`) are unchanged.
+
+### Patch Changes
+
+- 172a5d9: Improve sub-pixel precision when dragging words, including when the element is CSS-scaled or the host has a border or padding. (This does not fix the cursor offset reported in #39.)
+- 4f487d5: Improve performance with large word clouds, and let settled clouds go idle to lower CPU usage when nothing is moving. Word spacing behaviour is unchanged.
+
 ## 0.13.1
 
 ### Patch Changes
