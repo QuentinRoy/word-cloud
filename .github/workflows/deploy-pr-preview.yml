@@ -1,0 +1,55 @@
+name: Deploy PR Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    name: Deploy PR Preview
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        if: github.event.action != 'closed'
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node
+        if: github.event.action != 'closed'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: github.event.action != 'closed'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build demo
+        if: github.event.action != 'closed'
+        run: pnpm run build:demo
+        env:
+          PAGES_BASE_PATH: /word-cloud/pr-preview/pr-${{ github.event.pull_request.number }}/
+
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: dist-demo
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          action: auto
+          comment: true
+          wait-for-pages-deployment: true
