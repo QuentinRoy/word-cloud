@@ -12,10 +12,10 @@ SAT / sleeping-body path.
 
 ## Considered options
 
-- **Fake bodies (the architecture review's proposal):** feed hand-built `Pair`
-  and body objects to the modules. Faster and more isolated, but it asserts
-  against a mock of Matter's contract, which drifts from real Matter behavior.
-  Rejected — the value is in testing the real engine path.
+- **Fake/mock bodies:** feed hand-built `Pair` and body objects to the modules.
+  Faster and more isolated, but it asserts against a mock of Matter's contract,
+  which drifts from real Matter behavior. Rejected — the value is in testing the
+  real engine path.
 - **Browser-only (status quo):** keep exercising all physics through the element
   in Playwright/Chromium. Rejected — slow, DOM-bound, and it gives the
   extractions no faster test surface, abandoning the main reason to do them.
