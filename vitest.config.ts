@@ -20,18 +20,37 @@ const resetMouse: BrowserCommand<[]> = async (ctx) => {
 }
 
 export default defineConfig({
-	plugins: [
-		cssStylesheetPlugin({ minify: false }),
-		htmlTemplatePlugin({ minify: false }),
-	],
 	test: {
-		include: ["tests/**/*.browser.test.ts"],
-		browser: {
-			enabled: true,
-			provider: playwright(),
-			headless: true,
-			instances: [{ browser: "chromium" }],
-			commands: { resetMouse },
-		},
+		projects: [
+			{
+				// DOM-free code — the pure physics helpers today, the extracted
+				// simulation modules tomorrow — runs here against a real Matter
+				// engine, with no browser and no shadow DOM. See ADR-0001.
+				test: {
+					name: "node",
+					environment: "node",
+					include: ["tests/**/*.node.test.ts"],
+				},
+			},
+			{
+				// The custom element and its DOM/measurement integration need a real
+				// browser; Playwright/Chromium drives these.
+				plugins: [
+					cssStylesheetPlugin({ minify: false }),
+					htmlTemplatePlugin({ minify: false }),
+				],
+				test: {
+					name: "browser",
+					include: ["tests/**/*.browser.test.ts"],
+					browser: {
+						enabled: true,
+						provider: playwright(),
+						headless: true,
+						instances: [{ browser: "chromium" }],
+						commands: { resetMouse },
+					},
+				},
+			},
+		],
 	},
 })
