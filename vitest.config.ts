@@ -1,13 +1,8 @@
-import { resolve } from "node:path"
-import { fileURLToPath } from "node:url"
 import { playwright } from "@vitest/browser-playwright"
 import { defineConfig } from "vitest/config"
 import type { BrowserCommand } from "vitest/node"
 import { cssStylesheetPlugin } from "./plugins/css-stylesheet-plugin.ts"
 import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
-
-const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
-const templateModulePath = resolve(workspaceRoot, "lib/template.ts")
 
 /**
  * Moves the Playwright cursor to (0, 0) so CSS :hover is cleared between
@@ -26,8 +21,8 @@ const resetMouse: BrowserCommand<[]> = async (ctx) => {
 
 export default defineConfig({
 	plugins: [
-		cssStylesheetPlugin({ templateModulePath, minify: false }),
-		htmlTemplatePlugin({ templateModulePath, minify: false }),
+		cssStylesheetPlugin({ minify: false }),
+		htmlTemplatePlugin({ minify: false }),
 	],
 	test: {
 		include: ["tests/**/*.browser.test.ts"],

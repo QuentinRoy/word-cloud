@@ -8,11 +8,11 @@ import {
 	getFilePathFromVirtualId,
 	getSourceFilePath,
 	hasQueryFlag,
+	TEMPLATE_RUNTIME_PATH,
 	toVirtualId,
 } from "./utils"
 
 interface CssStylesheetPluginOptions {
-	templateModulePath: string
 	minify?: boolean
 }
 
@@ -32,7 +32,6 @@ function getFilePathFromStylesheetId(id: string): string | null {
  * stylesheet via `createCssStylesheet(content)`.
  */
 export function cssStylesheetPlugin({
-	templateModulePath,
 	minify,
 }: CssStylesheetPluginOptions): Plugin {
 	return {
@@ -64,7 +63,7 @@ export function cssStylesheetPlugin({
 
 			return {
 				code: [
-					`import { createCssStylesheet } from ${JSON.stringify(templateModulePath)};`,
+					`import { createCssStylesheet } from ${JSON.stringify(TEMPLATE_RUNTIME_PATH)};`,
 					`export default createCssStylesheet(${JSON.stringify(content)});`,
 				].join("\n"),
 				map: createModuleSourceMap({ id, filePath, sourceContent }),

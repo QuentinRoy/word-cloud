@@ -6,11 +6,11 @@ import {
 	getFilePathFromVirtualId,
 	getSourceFilePath,
 	hasQueryFlag,
+	TEMPLATE_RUNTIME_PATH,
 	toVirtualId,
 } from "./utils"
 
 interface HTMLTemplatePluginOptions {
-	templateModulePath: string
 	minify?: boolean
 }
 
@@ -21,7 +21,6 @@ const VIRTUAL_PREFIX = "template:"
  * fragment via `createHtmlTemplate(content)`.
  */
 export function htmlTemplatePlugin({
-	templateModulePath,
 	minify,
 }: HTMLTemplatePluginOptions): Plugin {
 	return {
@@ -62,7 +61,7 @@ export function htmlTemplatePlugin({
 
 			return {
 				code: [
-					`import { createHtmlTemplate } from ${JSON.stringify(templateModulePath)};`,
+					`import { createHtmlTemplate } from ${JSON.stringify(TEMPLATE_RUNTIME_PATH)};`,
 					`export default createHtmlTemplate(${JSON.stringify(content)});`,
 				].join("\n"),
 				map: createModuleSourceMap({ id, filePath, sourceContent }),

@@ -7,7 +7,6 @@ import { cssStylesheetPlugin } from "./plugins/css-stylesheet-plugin.ts"
 import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
-const templateModulePath = resolve(workspaceRoot, "lib/template.ts")
 let gitVersionResult = (await execSync("git rev-parse --short HEAD"))
 	.toString()
 	.trim()
@@ -20,10 +19,7 @@ function normalizeBasePath(basePath) {
 }
 
 function createTemplatePlugins({ minify }) {
-	return [
-		cssStylesheetPlugin({ templateModulePath, minify }),
-		htmlTemplatePlugin({ templateModulePath, minify }),
-	]
+	return [cssStylesheetPlugin({ minify }), htmlTemplatePlugin({ minify })]
 }
 
 export default defineConfig(async ({ command, mode }) => {
