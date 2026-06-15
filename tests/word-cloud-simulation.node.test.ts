@@ -1,4 +1,4 @@
-import { Composite, Engine } from "matter-js"
+import { Composite, Engine, Mouse } from "matter-js"
 import { beforeEach, describe, expect, it } from "vitest"
 import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
 
@@ -14,6 +14,21 @@ const WORD_HEIGHT = 20
 
 function step(engine: Engine, times = 1) {
 	for (let i = 0; i < times; i++) Engine.update(engine, 1000 / 60)
+}
+
+/**
+ * The element creates a DOM-bound `Mouse` and hands it to the sim. In node
+ * there is no DOM, so this is the minimal surface `Mouse.create` touches
+ * (`getAttribute` for the pixel ratio, `addEventListener` to bind handlers
+ * that never fire here).
+ */
+function createStubMouse(): Mouse {
+	const element = {
+		getAttribute: () => null,
+		addEventListener: () => {},
+		removeEventListener: () => {},
+	} as unknown as HTMLElement
+	return Mouse.create(element)
 }
 
 describe("WordCloudSimulation", () => {
@@ -47,6 +62,21 @@ describe("WordCloudSimulation", () => {
 		})
 		expect(body.velocity.x).toBeCloseTo(10, 5)
 		expect(body.velocity.y).toBeCloseTo(-5, 5)
+	})
+
+	it("applies the initial angle to a newly added word", () => {
+		const body = sim.addWord({
+			x: 100,
+			y: 100,
+			width: WORD_WIDTH,
+			height: WORD_HEIGHT,
+			angle: Math.PI / 4,
+		})
+		expect(body.angle).toBeCloseTo(Math.PI / 4, 5)
+	})
+
+	it("ignores removeWord for an unknown id", () => {
+		expect(() => sim.removeWord(123456)).not.toThrow()
 	})
 
 	it("pushes two overlapping words apart", () => {
@@ -124,6 +154,25 @@ describe("WordCloudSimulation", () => {
 		expect(b.position.x).toBeGreaterThan(155)
 	})
 
+	it("uses the edge spacing to push a word away from the frame", () => {
+		// Frame is 400 wide, so the right wall's inner edge sits at x=400. Place a
+		// 40-wide word with its right edge at 396 — a 4px gap, no hard collision —
+		// and widen the edge reach so the word's sensor overlaps the wall and is
+		// pushed back inward.
+		const word = sim.addWord({
+			x: 376,
+			y: 150,
+			width: WORD_WIDTH,
+			height: WORD_HEIGHT,
+		})
+		sim.setSpacing({ word: 5, edge: 25, input: 5 })
+
+		step(sim.engine, 60)
+
+		expect(word.position.x).toBeLessThan(376)
+		expect(word.position.y).toBeCloseTo(150, 0)
+	})
+
 	describe("input volume", () => {
 		it("adds and removes the input-volume body from the world", () => {
 			sim.setInputVolume({ x: 200, y: 150, width: 50, height: 30 })
@@ -132,6 +181,25 @@ describe("WordCloudSimulation", () => {
 			const before = Composite.allBodies(sim.engine.world).length
 			sim.setInputVolume(null)
 			expect(Composite.allBodies(sim.engine.world).length).toBe(before - 1)
+		})
+
+		it("uses the input spacing to repel a non-ignoring word", () => {
+			// Input volume is 50 wide at x=200, so its right edge sits at 225. Place
+			// a word to its right with a 10px gap (left edge at 235) and widen the
+			// input reach so only that margin overlaps the sensor.
+			sim.setInputVolume({ x: 200, y: 150, width: 50, height: 60 })
+			const word = sim.addWord({
+				x: 255,
+				y: 150,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			sim.setSpacing({ word: 5, edge: 5, input: 20 })
+
+			step(sim.engine, 60)
+
+			// Pushed away from the input volume (to the right).
+			expect(word.position.x).toBeGreaterThan(255)
 		})
 
 		it("clears ignoreInputVolumeUntilExit on every word when disabled", () => {
@@ -217,6 +285,112 @@ describe("WordCloudSimulation", () => {
 
 			expect(a.inertia).not.toBe(Infinity)
 			expect(b.inertia).not.toBe(Infinity)
+		})
+
+		it("keeps the body frozen across a resize while locked", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			const initialInertia = body.inertia
+
+			sim.lockDrag(body.id)
+			// Resizing restores the inertia so Body.scale can recompute it, then
+			// re-freezes — the word must still be pinned afterward.
+			sim.setWordSize(body.id, { width: WORD_WIDTH * 2, height: WORD_HEIGHT })
+			expect(body.inertia).toBe(Infinity)
+
+			// Unlocking restores the inertia recomputed at the *new* size, not the
+			// original — so it differs from the pre-resize value.
+			sim.unlockDrag(body.id)
+			expect(body.inertia).not.toBe(Infinity)
+			expect(body.inertia).not.toBeCloseTo(initialInertia, 5)
+		})
+
+		it("does not lose the saved inertia when locked twice", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			const initialInertia = body.inertia
+
+			sim.lockDrag(body.id)
+			// A second lock must be a no-op: capturing the now-frozen inertia would
+			// leave the word permanently pinned after unlock.
+			sim.lockDrag(body.id)
+			sim.unlockDrag(body.id)
+
+			expect(body.inertia).toBeCloseTo(initialInertia, 5)
+		})
+
+		it("unlocks a drag-locked word when it is removed", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			const initialInertia = body.inertia
+
+			sim.lockDrag(body.id)
+			expect(body.inertia).toBe(Infinity)
+			// removeWord unlocks first, restoring the body's real inertia before it
+			// leaves the world.
+			sim.removeWord(body.id)
+			expect(body.inertia).toBeCloseTo(initialInertia, 5)
+		})
+	})
+
+	describe("mouse", () => {
+		it("creates the constraint on attachMouse but leaves it disabled", () => {
+			expect(sim.mouseConstraint).toBeNull()
+			sim.attachMouse(createStubMouse())
+			expect(sim.mouseConstraint).not.toBeNull()
+			expect(sim.mouseEnabled).toBe(false)
+			expect(Composite.allConstraints(sim.engine.world)).not.toContain(
+				sim.mouseConstraint?.constraint,
+			)
+		})
+
+		it("adds and removes the constraint as it is enabled and disabled", () => {
+			sim.attachMouse(createStubMouse())
+			const constraint = sim.mouseConstraint?.constraint
+
+			sim.setMouseEnabled(true)
+			expect(sim.mouseEnabled).toBe(true)
+			expect(Composite.allConstraints(sim.engine.world)).toContain(constraint)
+
+			sim.setMouseEnabled(false)
+			expect(sim.mouseEnabled).toBe(false)
+			expect(Composite.allConstraints(sim.engine.world)).not.toContain(
+				constraint,
+			)
+		})
+
+		it("unlocks active drags when the mouse is disabled", () => {
+			sim.attachMouse(createStubMouse())
+			sim.setMouseEnabled(true)
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			sim.lockDrag(body.id)
+			expect(body.inertia).toBe(Infinity)
+
+			sim.setMouseEnabled(false)
+
+			expect(body.inertia).not.toBe(Infinity)
+		})
+
+		it("is a no-op to enable the mouse before one is attached", () => {
+			expect(() => sim.setMouseEnabled(true)).not.toThrow()
+			expect(sim.mouseEnabled).toBe(false)
 		})
 	})
 
