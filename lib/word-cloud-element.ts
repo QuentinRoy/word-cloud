@@ -43,18 +43,15 @@ import {
 	type SetOptional,
 	toPrecision,
 } from "./utils.ts"
+import { Word, WordRegistry } from "./word.ts"
 import mainStylesheet from "./word-cloud-element.css?stylesheet"
 import mainTemplate from "./word-cloud-element.html?template"
 import {
 	HTMLWordElement,
-	WordElementCheckedChangeEvent,
-	WordElementDeleteEvent,
 	type WordElementEntryAnimation,
 	type WordElementExitAnimation,
-	WordElementValueChangeEvent,
 } from "./word-element.ts"
-import type { WordData } from "./word-handle.ts"
-import { WordHandle } from "./word-handle.ts"
+import type { WordData, WordHandle } from "./word-handle.ts"
 
 const USE_DEBUG_RENDERER = false
 const CHAMFER_RADIUS = 8
@@ -84,16 +81,6 @@ try {
 	// with a random tag name to avoid conflicts
 	wordElementTagName = `x-word-${generateRandomId()}`
 	customElements.define(wordElementTagName, HTMLWordElement)
-}
-
-interface InternalWordEntry {
-	id: number
-	body: Body
-	bodySize: { width: number; height: number }
-	element: HTMLWordElement
-	publicHandle: WordHandle
-	ignoreInputVolumeUntilExit: boolean
-	dragLock: { initialInertia: number } | null
 }
 
 /** Linear velocity vector applied to a word body on creation. */
@@ -209,9 +196,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 	#inputVolumeEnabled = false
 	#spacingModel: SpacingModel
-	#wordEntries: Map<InternalWordEntry["id"], InternalWordEntry> = new Map()
-	#wordEntriesByElement: WeakMap<HTMLWordElement, InternalWordEntry> =
-		new WeakMap()
+	#words = new WordRegistry()
 	#mouseConstraint: MouseConstraint
 	#mouseEnabled = false
 	#framerateDisplay: HTMLElement
@@ -226,8 +211,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#wordResizeObserver = new ResizeObserver((entries) => {
 		for (const { target } of entries) {
 			if (!(target instanceof HTMLWordElement)) continue
-			const entry = this.#wordEntriesByElement.get(target)
-			if (entry != null) this.#updateWordBodySize(entry)
+			const word = this.#words.getByElement(target)
+			if (word != null) this.#updateWordBodySize(word)
 		}
 	})
 	#internals = this.attachInternals()
@@ -343,9 +328,9 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#updateMouseConstraint()
 		this.#containerResizeObserver.observe(this.#container)
 		this.#inputResizeObserver.observe(this.#wordInput)
-		for (const entry of this.#wordEntries.values()) {
-			this.#wordResizeObserver.observe(entry.element)
-			this.#updateWordBodySize(entry)
+		for (const word of this.#words.values()) {
+			this.#wordResizeObserver.observe(word.element)
+			this.#updateWordBodySize(word)
 		}
 		if (!this.physicsPaused) this.#start()
 	}
@@ -362,7 +347,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		Events.off(this.#mouseConstraint, "enddrag", this.#handleEndDragging)
 		this.#containerResizeObserver.unobserve(this.#container)
 		this.#inputResizeObserver.unobserve(this.#wordInput)
-		for (const { element } of this.#wordEntries.values()) {
+		for (const { element } of this.#words.values()) {
 			this.#wordResizeObserver.unobserve(element)
 		}
 		this.#stop()
@@ -415,7 +400,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	}
 
 	#addWord({
-		word,
+		word: text,
 		x,
 		y,
 		angle = 0,
@@ -428,16 +413,17 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		// It seems we need to add element before setting the checked property
 		// otherwise it does not update the attribute properly.
 		this.#container.appendChild(element)
-		element.value = word
+		element.value = text
 		element.checked = checked
 		if (entryAnimation !== "none") element.animateEntry(entryAnimation)
 		element.classList.add("word")
 		element.action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
 		let { width, height } = HTMLWordCloudElement.#measureWordSize(element)
 
+		let word: Word
 		const remove = (options: WordRemoveOptions = {}) => {
 			options.exitAnimation = options.exitAnimation ?? "fade"
-			this.#removeWord(entry, options)
+			this.#removeWord(word, options)
 		}
 
 		let body = Bodies.rectangle(x, y, width, height, {
@@ -452,85 +438,59 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 				}),
 			},
 		})
-		let id = body.id
-		let publicHandle = new WordHandle({
-			getWord: () => element.value ?? "",
-			setWord: (v) => {
-				element.value = v
-			},
-			getX: () => body.position.x,
-			getY: () => body.position.y,
-			getAngle: () => body.angle,
-			getChecked: () => element.checked,
-			setChecked: (v) => {
-				element.checked = v
-			},
-			remove,
-		})
-		const entry: InternalWordEntry = {
-			id,
-			element,
+		word = new Word({
 			body,
+			element,
 			bodySize: { width, height },
-			publicHandle,
 			ignoreInputVolumeUntilExit,
-			dragLock: null,
-		}
-		this.#wordEntriesByElement.set(element, entry)
-		element.addEventListener(WordElementDeleteEvent.type, () => {
-			remove()
+			remove,
+			onDelete: () => remove(),
+			onCheckedChange: (checked) => {
+				this.dispatchEvent(new WordCheckEvent({ handle: word.handle, checked }))
+			},
+			onValueChange: ({ value, oldValue }) => {
+				this.dispatchEvent(
+					new WordChangeEvent({ handle: word.handle, value, oldValue }),
+				)
+			},
 		})
-		element.addEventListener(WordElementCheckedChangeEvent.type, () => {
-			this.dispatchEvent(
-				new WordCheckEvent({ handle: publicHandle, checked: element.checked }),
-			)
-		})
-		element.addEventListener(WordElementValueChangeEvent.type, (event) => {
-			const valueChangeEvent = event as WordElementValueChangeEvent
-			this.dispatchEvent(
-				new WordChangeEvent({
-					handle: publicHandle,
-					value: valueChangeEvent.value,
-					oldValue: valueChangeEvent.oldValue,
-				}),
-			)
-		})
-		element.style.transform = this.#getWordTransform(entry)
+		element.style.transform = this.#getWordTransform(word)
 		if (velocity) Body.setVelocity(body, velocity)
 		Composite.add(this.#engine.world, body)
 		this.#spacingModel.addWord(body, {
 			width,
 			height,
-			isRepellable: () => !body.isStatic && entry.dragLock == null,
-			ignoresInputVolume: () => entry.ignoreInputVolumeUntilExit,
+			isRepellable: () => !body.isStatic && word.dragLock == null,
+			ignoresInputVolume: () => word.ignoreInputVolumeUntilExit,
 		})
-		this.#wordEntries.set(id, entry)
+		this.#words.add(word)
 		this.#wordResizeObserver.observe(element)
-		this.dispatchEvent(new WordAddEvent({ handle: publicHandle }))
-		return publicHandle
+		this.dispatchEvent(new WordAddEvent({ handle: word.handle }))
+		return word.handle
 	}
 
 	async #removeWord(
-		entry: InternalWordEntry,
+		word: Word,
 		{ exitAnimation = "none" }: WordRemoveOptions = {},
 	) {
 		if (exitAnimation !== "none") {
-			await entry.element.animateExit(exitAnimation)
-			this.#container.removeChild(entry.element)
+			await word.element.animateExit(exitAnimation)
+			this.#container.removeChild(word.element)
 		} else {
-			this.#container.removeChild(entry.element)
+			this.#container.removeChild(word.element)
 		}
-		this.dispatchEvent(new WordDeleteEvent({ handle: entry.publicHandle }))
-		this.#removeWordBody(entry)
-		this.#wordEntries.delete(entry.id)
+		this.dispatchEvent(new WordDeleteEvent({ handle: word.handle }))
+		this.#removeWordBody(word)
+		word.dispose()
+		this.#words.delete(word)
 	}
 
 	/**
 	 * Removes all words from the cloud immediately, without exit animations.
 	 */
 	clear(options?: WordRemoveOptions) {
-		for (let entry of this.#wordEntries.values()) {
-			this.#removeWord(entry, options)
+		for (let word of this.#words.values()) {
+			this.#removeWord(word, options)
 		}
 	}
 
@@ -549,8 +509,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * cloud.add(snapshot);
 	 */
 	*getWords(): Iterable<WordHandle> {
-		for (let entry of this.#wordEntries.values()) {
-			yield entry.publicHandle
+		for (let word of this.#words.values()) {
+			yield word.handle
 		}
 	}
 
@@ -695,16 +655,16 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		})
 	}
 
-	#removeWordBody(entry: InternalWordEntry) {
-		this.#unlockDraggedEntry(entry)
-		this.#wordResizeObserver.unobserve(entry.element)
-		this.#spacingModel.removeWord(entry.id)
-		Composite.remove(this.#engine.world, entry.body)
+	#removeWordBody(word: Word) {
+		this.#unlockDraggedEntry(word)
+		this.#wordResizeObserver.unobserve(word.element)
+		this.#spacingModel.removeWord(word.id)
+		Composite.remove(this.#engine.world, word.body)
 	}
 
-	#updateWordBodySize(entry: InternalWordEntry) {
-		const nextSize = HTMLWordCloudElement.#measureWordSize(entry.element)
-		const { width: previousWidth, height: previousHeight } = entry.bodySize
+	#updateWordBodySize(word: Word) {
+		const nextSize = HTMLWordCloudElement.#measureWordSize(word.element)
+		const { width: previousWidth, height: previousHeight } = word.bodySize
 		if (
 			nextSize.width === previousWidth &&
 			nextSize.height === previousHeight
@@ -712,23 +672,23 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			return
 		}
 
-		const dragLock = entry.dragLock
+		const dragLock = word.dragLock
 		if (dragLock != null) {
-			Body.setInertia(entry.body, dragLock.initialInertia)
+			Body.setInertia(word.body, dragLock.initialInertia)
 		}
 
 		Body.scale(
-			entry.body,
+			word.body,
 			nextSize.width / previousWidth,
 			nextSize.height / previousHeight,
 		)
-		entry.bodySize = nextSize
-		this.#spacingModel.setWordSize(entry.id, nextSize)
+		word.bodySize = nextSize
+		this.#spacingModel.setWordSize(word.id, nextSize)
 
 		if (dragLock != null) {
-			dragLock.initialInertia = entry.body.inertia
-			Body.setInertia(entry.body, Infinity)
-			Body.setAngularVelocity(entry.body, 0)
+			dragLock.initialInertia = word.body.inertia
+			Body.setInertia(word.body, Infinity)
+			Body.setAngularVelocity(word.body, 0)
 		}
 	}
 
@@ -808,12 +768,12 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * the flag once the body is no longer overlapping the input volume.
 	 * Called every physics tick.
 	 */
-	#updateWordCollisionMask(entry: InternalWordEntry) {
-		entry.body.collisionFilter.mask =
-			entry.dragLock != null
+	#updateWordCollisionMask(word: Word) {
+		word.body.collisionFilter.mask =
+			word.dragLock != null
 				? 0
 				: this.#getWordCollisionMask({
-						ignoreInputVolume: entry.ignoreInputVolumeUntilExit,
+						ignoreInputVolume: word.ignoreInputVolumeUntilExit,
 					})
 	}
 
@@ -853,8 +813,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		if (!this.#mouseEnabled) return
 		const body = event.source.body
 		if (body != null) {
-			const entry = this.#wordEntries.get(body.id)
-			if (entry != null) this.#lockDraggedEntry(entry)
+			const word = this.#words.get(body.id)
+			if (word != null) this.#lockDraggedEntry(word)
 		}
 		this.#internals.states.add("active")
 	}
@@ -863,8 +823,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		if (!this.#mouseEnabled) return
 		const body = event.source.body
 		if (body != null) {
-			const entry = this.#wordEntries.get(body.id)
-			if (entry != null) this.#unlockDraggedEntry(entry)
+			const word = this.#words.get(body.id)
+			if (word != null) this.#unlockDraggedEntry(word)
 		} else {
 			this.#unlockAllDraggedBodies()
 		}
@@ -903,7 +863,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		for (let {
 			body,
 			bodySize: { width, height },
-		} of this.#wordEntries.values()) {
+		} of this.#words.values()) {
 			applyAngularRestoringTorque({
 				body,
 				bodySize: { width, height },
@@ -918,18 +878,18 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#updateWordInputCollisions() {
 		if (this.#inputVolumeEnabled) {
-			for (let entry of this.#wordEntries.values()) {
-				if (!entry.ignoreInputVolumeUntilExit) continue
-				if (this.#isOverlappingInputVolume(entry.body)) continue
-				entry.ignoreInputVolumeUntilExit = false
-				this.#updateWordCollisionMask(entry)
+			for (let word of this.#words.values()) {
+				if (!word.ignoreInputVolumeUntilExit) continue
+				if (this.#isOverlappingInputVolume(word.body)) continue
+				word.ignoreInputVolumeUntilExit = false
+				this.#updateWordCollisionMask(word)
 			}
 		}
 	}
 
 	#updateWordPositions() {
-		for (let entry of this.#wordEntries.values()) {
-			entry.element.style.transform = this.#getWordTransform(entry)
+		for (let word of this.#words.values()) {
+			word.element.style.transform = this.#getWordTransform(word)
 		}
 	}
 
@@ -938,38 +898,35 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	 * and marks the word element as dragged.
 	 * No-op if the entry is already locked.
 	 */
-	#lockDraggedEntry(entry: InternalWordEntry) {
-		if (entry.dragLock != null) return
-		entry.dragLock = { initialInertia: entry.body.inertia }
-		this.#updateWordCollisionMask(entry)
-		Body.setInertia(entry.body, Infinity)
-		Body.setAngularVelocity(entry.body, 0)
-		entry.element.dragged = true
+	#lockDraggedEntry(word: Word) {
+		if (word.dragLock != null) return
+		word.dragLock = { initialInertia: word.body.inertia }
+		this.#updateWordCollisionMask(word)
+		Body.setInertia(word.body, Infinity)
+		Body.setAngularVelocity(word.body, 0)
+		word.element.dragged = true
 	}
 
 	/**
 	 * Restores a previously locked entry to normal physics behavior.
 	 * No-op if the entry is not locked.
 	 */
-	#unlockDraggedEntry(entry: InternalWordEntry) {
-		if (entry.dragLock == null) return
-		Body.setInertia(entry.body, entry.dragLock.initialInertia)
-		Body.setAngularVelocity(entry.body, 0)
-		entry.dragLock = null
-		this.#updateWordCollisionMask(entry)
-		entry.element.dragged = false
+	#unlockDraggedEntry(word: Word) {
+		if (word.dragLock == null) return
+		Body.setInertia(word.body, word.dragLock.initialInertia)
+		Body.setAngularVelocity(word.body, 0)
+		word.dragLock = null
+		this.#updateWordCollisionMask(word)
+		word.element.dragged = false
 	}
 
 	#unlockAllDraggedBodies() {
-		for (const entry of this.#wordEntries.values()) {
-			this.#unlockDraggedEntry(entry)
+		for (const word of this.#words.values()) {
+			this.#unlockDraggedEntry(word)
 		}
 	}
 
-	#getWordTransform({
-		body,
-		bodySize: { width, height },
-	}: InternalWordEntry): string {
+	#getWordTransform({ body, bodySize: { width, height } }: Word): string {
 		let angle = toPrecision(body.angle, ROTATE_PRECISION)
 		let translateX = toPrecision(
 			body.position.x - width / 2,
@@ -986,7 +943,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#updateWordsActionFromWordAction() {
 		let action = HTMLWordCloudElement.#elementActionMaps[this.wordAction]
-		for (let { element } of this.#wordEntries.values()) {
+		for (let { element } of this.#words.values()) {
 			element.action = action
 		}
 	}
@@ -1001,10 +958,10 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 		if (!this.#inputVolumeEnabled) return
 		Composite.remove(this.#engine.world, this.#inputVolumeBody)
-		for (let entry of this.#wordEntries.values()) {
-			if (!entry.ignoreInputVolumeUntilExit) continue
-			entry.ignoreInputVolumeUntilExit = false
-			this.#updateWordCollisionMask(entry)
+		for (let word of this.#words.values()) {
+			if (!word.ignoreInputVolumeUntilExit) continue
+			word.ignoreInputVolumeUntilExit = false
+			this.#updateWordCollisionMask(word)
 		}
 		this.#inputVolumeEnabled = false
 	}
