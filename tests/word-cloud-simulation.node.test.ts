@@ -1,7 +1,7 @@
 import { Composite, Engine } from "matter-js"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
 import { normalizeAngle } from "../lib/utils.ts"
+import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
 
 /**
  * WordCloudSimulation wires together SpacingModel, the frame/input-volume
