@@ -1,6 +1,7 @@
 import { Composite, Engine } from "matter-js"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
+import { normalizeAngle } from "../lib/utils.ts"
 
 /**
  * WordCloudSimulation wires together SpacingModel, the frame/input-volume
@@ -84,6 +85,33 @@ describe("WordCloudSimulation", () => {
 		expect(a.position.x).toBeLessThan(100)
 		expect(b.position.x).toBeGreaterThan(144)
 		expect(b.position.x - a.position.x).toBeGreaterThan(initialGap)
+	})
+
+	it("never sleeps a word while it is still tilted, and aligns it", () => {
+		const body = sim.addWord({
+			x: 200,
+			y: 150,
+			width: WORD_WIDTH,
+			height: WORD_HEIGHT,
+			angle: 0.3,
+		})
+
+		// Long enough that an ungated body would have slept mid-rotation: Matter
+		// sleeps after ~60 low-motion frames, and a lone narrow word rotates back
+		// slowly enough to dip under the motion threshold while still tilted.
+		for (let i = 0; i < 600; i++) {
+			Engine.update(sim.engine, 1000 / 60)
+			// Invariant: a sleeping word is always aligned. 0.01 comfortably
+			// exceeds the simulation's rest epsilon (0.001) while still being far
+			// below the 0.3 starting tilt, so a body frozen mid-rotation would trip
+			// this.
+			if (body.isSleeping) {
+				expect(Math.abs(normalizeAngle(body.angle))).toBeLessThan(0.01)
+			}
+		}
+
+		// It actually reaches horizontal rather than stalling part-way.
+		expect(Math.abs(normalizeAngle(body.angle))).toBeLessThan(0.01)
 	})
 
 	it("keeps a word inside the frame", () => {
