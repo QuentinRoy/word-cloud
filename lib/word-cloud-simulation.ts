@@ -16,6 +16,7 @@ import {
 import { InputVolume } from "./input-volume.ts"
 import { applyAngularRestoringTorque } from "./physics-utils.ts"
 import { SpacingModel } from "./spacing-model.ts"
+import { normalizeAngle } from "./utils.ts"
 
 export const CHAMFER_RADIUS = 8
 
@@ -25,6 +26,10 @@ const ANGULAR_REST_ANGLE_EPSILON = 0.001
 const ANGULAR_SPRING_TORQUE_STIFFNESS = 0.4
 const ANGULAR_DAMPING_COEFFICIENT = 0.2
 const ANGULAR_SPRING_WIDTH_REFERENCE = 150
+/** Matter's default `body.sleepThreshold`: the number of low-motion frames a
+ * body must accumulate before it sleeps. We restore this once a word is back to
+ * horizontal; until then we set the threshold to Infinity so it can't sleep. */
+const DEFAULT_SLEEP_THRESHOLD = 60
 const WORD_AIR_FRICTION = 0.04
 const WORD_RESTITUTION = 0.2
 
@@ -102,6 +107,14 @@ export class WordCloudSimulation {
 		// Once a region of the cloud settles, Matter sleeps those bodies and the
 		// broadphase skips them entirely. The repulsion pass and the angular
 		// restoring torque both skip sleeping bodies, so nothing fights this.
+		//
+		// Matter decides to sleep purely from a body's motion (speed² +
+		// angularSpeed²), which is decoupled from how far a word still is from
+		// horizontal. A word rotating slowly back to level — especially a narrow
+		// one, whose restoring torque is scaled down — can dip below the motion
+		// threshold and sleep while still tilted, freezing it mid-rotation since
+		// the torque then skips it. #gateSleepingByAlignment closes that gap by
+		// keeping a word awake until it is actually horizontal.
 		this.#engine.enableSleeping = true
 		this.#runner = Runner.create()
 		this.#frameBodies = this.#setupFrameBodies()
@@ -377,6 +390,28 @@ export class WordCloudSimulation {
 		Body.setAngularVelocity(body, 0)
 	}
 
+	/**
+	 * Makes horizontal alignment a precondition for sleeping: a word that is
+	 * still tilted beyond the rest epsilon is kept awake (and woken if Matter
+	 * already slept it), so {@link applyAngularRestoringTorque} keeps acting on
+	 * it until it is level. Aligned words get the normal sleep threshold back and
+	 * are free to settle. Static/frame bodies are untouched.
+	 */
+	#gateSleepingByAlignment() {
+		for (const { body } of this.#words.values()) {
+			if (body.isStatic) continue
+			const angleError = Math.abs(
+				normalizeAngle(body.angle) - ANGULAR_REST_ANGLE,
+			)
+			if (angleError <= ANGULAR_REST_ANGLE_EPSILON) {
+				body.sleepThreshold = DEFAULT_SLEEP_THRESHOLD
+			} else {
+				body.sleepThreshold = Infinity
+				if (body.isSleeping) Sleeping.set(body, false)
+			}
+		}
+	}
+
 	#applyAngularRestoringTorque() {
 		for (const {
 			body,
@@ -395,6 +430,7 @@ export class WordCloudSimulation {
 	}
 
 	#handleBeforeUpdate = () => {
+		this.#gateSleepingByAlignment()
 		this.#applyAngularRestoringTorque()
 		for (const id of this.#inputVolume.releaseExitedWords()) {
 			this.#applyWordMask(id)
