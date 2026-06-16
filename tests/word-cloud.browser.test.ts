@@ -117,6 +117,28 @@ function getAllWordElements(element: HTMLWordCloudElement) {
 	) as HTMLElement[]
 }
 
+// DragController binds its pointer listeners directly to the container.
+// Dispatching synthetic PointerEvents drives the grab path deterministically,
+// without depending on the browser runner's pointer plumbing through the
+// test iframe.
+function firePointer(
+	container: HTMLElement,
+	type: string,
+	clientX: number,
+	clientY: number,
+) {
+	container.dispatchEvent(
+		new PointerEvent(type, {
+			bubbles: true,
+			button: 0,
+			clientX,
+			clientY,
+			pointerId: 1,
+			isPrimary: true,
+		}),
+	)
+}
+
 afterEach(async () => {
 	document.body.innerHTML = ""
 	// Reset the real cursor so CSS :hover doesn't bleed into the next test.
@@ -520,23 +542,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const centerX = rect.left + rect.width / 2
 		const centerY = rect.top + rect.height / 2
 
-		// DragController binds its pointer listeners directly to the container.
-		// Dispatching synthetic PointerEvents drives the grab path deterministically,
-		// without depending on the browser runner's pointer plumbing through the
-		// test iframe.
-		const fire = (type: string, clientX: number, clientY: number) =>
-			container.dispatchEvent(
-				new PointerEvent(type, {
-					bubbles: true,
-					button: 0,
-					clientX,
-					clientY,
-					pointerId: 1,
-					isPrimary: true,
-				}),
-			)
-
-		fire("pointerdown", centerX, centerY)
+		firePointer(container, "pointerdown", centerX, centerY)
 		await flushFrames(2)
 
 		// toContainerPoint maps the pointer into the container frame, so the visual
@@ -544,7 +550,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		// host border-box and landed ~60px past the body, so the grab never happened.
 		expect(wordElement.hasAttribute("dragged")).toBe(true)
 
-		fire("pointerup", centerX, centerY)
+		firePointer(container, "pointerup", centerX, centerY)
 		await flushFrames(2)
 		expect(wordElement.hasAttribute("dragged")).toBe(false)
 	})
@@ -562,28 +568,16 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const cx = rect.left + rect.width / 2
 		const cy = rect.top + rect.height / 2
 
-		const fire = (type: string, clientX: number, clientY: number) =>
-			container.dispatchEvent(
-				new PointerEvent(type, {
-					bubbles: true,
-					button: 0,
-					clientX,
-					clientY,
-					pointerId: 1,
-					isPrimary: true,
-				}),
-			)
-
 		expect(wordElement.hasAttribute("dragged")).toBe(false)
-		fire("pointerdown", cx, cy)
+		firePointer(container, "pointerdown", cx, cy)
 		await flushFrames(2)
 		expect(wordElement.hasAttribute("dragged")).toBe(true)
 
-		fire("pointermove", cx + 30, cy)
+		firePointer(container, "pointermove", cx + 30, cy)
 		await flushFrames(1)
 		expect(wordElement.hasAttribute("dragged")).toBe(true)
 
-		fire("pointerup", cx + 30, cy)
+		firePointer(container, "pointerup", cx + 30, cy)
 		await flushFrames(2)
 		expect(wordElement.hasAttribute("dragged")).toBe(false)
 	})
@@ -601,16 +595,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const cx = rect.left + rect.width / 2
 		const cy = rect.top + rect.height / 2
 
-		container.dispatchEvent(
-			new PointerEvent("pointerdown", {
-				bubbles: true,
-				button: 0,
-				clientX: cx,
-				clientY: cy,
-				pointerId: 1,
-				isPrimary: true,
-			}),
-		)
+		firePointer(container, "pointerdown", cx, cy)
 		await flushFrames(2)
 		expect(wordElement.hasAttribute("dragged")).toBe(true)
 
@@ -634,31 +619,19 @@ describe("HTMLWordCloudElement user interactions", () => {
 		await flushFrames(3)
 
 		const container = getCloudContainer(element)
+		const containerRect = container.getBoundingClientRect()
 		const wordElement = getFirstWordElement(element)
 		const rect = wordElement.getBoundingClientRect()
-		const containerRect = getCloudContainer(element).getBoundingClientRect()
 		const cx = rect.left + rect.width / 2
 		const cy = rect.top + rect.height / 2
 		const targetClientX = containerRect.left + 100
 		const targetClientY = containerRect.top + 100
 
-		const fire = (type: string, clientX: number, clientY: number) =>
-			container.dispatchEvent(
-				new PointerEvent(type, {
-					bubbles: true,
-					button: 0,
-					clientX,
-					clientY,
-					pointerId: 1,
-					isPrimary: true,
-				}),
-			)
-
-		fire("pointerdown", cx, cy)
+		firePointer(container, "pointerdown", cx, cy)
 		await flushFrames(2)
-		fire("pointermove", targetClientX, targetClientY)
+		firePointer(container, "pointermove", targetClientX, targetClientY)
 		await flushFrames(2)
-		fire("pointerup", targetClientX, targetClientY)
+		firePointer(container, "pointerup", targetClientX, targetClientY)
 		await flushFrames(2)
 
 		// The drop point in container space. The grab offset is ~zero because the
