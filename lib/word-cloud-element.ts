@@ -155,7 +155,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 	#container: HTMLElement
 	#sim = new WordCloudSimulation()
 	#words = new WordRegistry()
-	#dragController!: DragController<Word>
+	#dragController: DragController<Word>
 	#dragOffset = { x: 0, y: 0 }
 	#framerateDisplay: HTMLElement
 	#containerResizeObserver = new ResizeObserver(() => {
@@ -192,7 +192,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#framerateDisplay = framerateDisplay
 
 		this.#setupContainerStyles()
-		this.#setupDragController()
+		this.#dragController = this.#createDragController()
 	}
 
 	static get observedAttributes() {
@@ -637,8 +637,8 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	}
 
-	#setupDragController() {
-		this.#dragController = new DragController<Word>(this.#container, {
+	#createDragController() {
+		return new DragController<Word>(this.#container, {
 			resolveWord: (clientX, clientY) => {
 				const root = this.#container.getRootNode()
 				const hit =
