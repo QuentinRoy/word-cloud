@@ -2,4 +2,4 @@
 "@quentinroy/word-cloud": patch
 ---
 
-Fix drag: grabbed words now snap to the pointer at their visual centre (#39) and throw in the direction of the drag gesture (#66). Drag also works while physics is paused.
+Fix drag: a grabbed word now tracks the pointer accurately from the exact point you grabbed it (#39) and is thrown in the direction of the drag gesture on release (#66). Dragging also works while physics is paused.
