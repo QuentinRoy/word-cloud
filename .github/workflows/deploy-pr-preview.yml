@@ -63,7 +63,7 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const pullRequest = context.payload.pull_request;
-            const environment = `pr-preview-${pullRequest.number}`;
+            const environment = "pr-preview";
 
             const deployment = await github.rest.repos.createDeployment({
               owner,
@@ -71,6 +71,10 @@ jobs:
               ref: pullRequest.head.sha,
               environment,
               description: `Preview for PR #${pullRequest.number}`,
+              payload: {
+                pull_request: pullRequest.number,
+                preview_path: `pr-preview/pr-${pullRequest.number}`,
+              },
               auto_merge: false,
               required_contexts: [],
               transient_environment: true,
@@ -88,14 +92,14 @@ jobs:
               auto_inactive: false,
             });
 
-      - name: Deactivate closed PR preview
+      - name: Mark closed PR preview deployment inactive
         if: github.event.action == 'closed'
         uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
             const pullRequest = context.payload.pull_request;
-            const environment = `pr-preview-${pullRequest.number}`;
+            const environment = "pr-preview";
 
             const deployments = await github.paginate(
               github.rest.repos.listDeployments,
@@ -107,8 +111,13 @@ jobs:
               },
             );
 
+            const previewDeployments = deployments.filter(
+              (deployment) =>
+                deployment.payload?.pull_request === pullRequest.number,
+            );
+
             await Promise.all(
-              deployments.map((deployment) =>
+              previewDeployments.map((deployment) =>
                 github.rest.repos.createDeploymentStatus({
                   owner,
                   repo,
@@ -119,15 +128,3 @@ jobs:
                 }),
               ),
             );
-
-            try {
-              await github.request("DELETE /repos/{owner}/{repo}/environments/{environment_name}", {
-                owner,
-                repo,
-                environment_name: environment,
-              });
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-            }
