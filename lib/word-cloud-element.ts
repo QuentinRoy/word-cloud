@@ -656,7 +656,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 					y: word.body.position.y - point.y,
 				}
 				this.#sim.grabWord(word.id)
-				word.element.dragged = true
+				word.element.grabbed = true
 				this.#internals.states.add("active")
 			},
 			onMove: (word, point) => {
@@ -668,7 +668,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 			},
 			onRelease: (word, velocity) => {
 				this.#sim.releaseWord(word.id, velocity)
-				word.element.dragged = false
+				word.element.grabbed = false
 				this.#internals.states.delete("active")
 			},
 		})

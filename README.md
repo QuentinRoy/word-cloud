@@ -376,13 +376,13 @@ x-word-cloud {
   --word-checked-background-color: #e5e7eb;
   --word-delete-hover-text-color: #991b1b;
   --word-delete-hover-background-color: #fee2e2;
-  --word-dragged-background-color: #dbeafe;
-  --word-dragged-border-color: #bfdbfe;
-  --word-dragged-text-color: #1d4ed8;
-  --word-dragged-shadow-blur: 8px;
-  --word-dragged-shadow-color: rgba(0, 0, 0, 0.15);
-  --word-dragged-scale-factor: 1.05;
-  --word-dragged-scaling-duration: 80ms;
+  --word-grabbed-background-color: #dbeafe;
+  --word-grabbed-border-color: #bfdbfe;
+  --word-grabbed-text-color: #1d4ed8;
+  --word-grabbed-shadow-blur: 8px;
+  --word-grabbed-shadow-color: rgba(0, 0, 0, 0.15);
+  --word-grabbed-scale-factor: 1.05;
+  --word-grabbed-scaling-duration: 80ms;
   --input-background-color: #ffffff;
   --input-text-color: #111827;
   --input-border-color: #9ca3af;
@@ -444,13 +444,13 @@ Supported variables:
 | `--word-checked-text-color`            | `hwb(276 54% 31%)`                | Checked word text color.                                         |
 | `--word-checked-background-color`      | `hwb(276 98% 0%)`                 | Checked word background and border color.                        |
 | `--word-checked-hover-text-color`      | `hwb(276 21% 21%)`                | Word text color while hovered in check mode.                     |
-| `--word-dragged-background-color`      | `hwb(212 90% 0%)`                 | Dragged word background.                                         |
-| `--word-dragged-border-color`          | `hwb(212 76% 0%)`                 | Dragged word border.                                             |
-| `--word-dragged-text-color`            | `hwb(211 5% 70%)`                 | Dragged word text color.                                         |
-| `--word-dragged-shadow-blur`           | `5px`                             | Blur radius of the drop-shadow on a dragged word.                |
-| `--word-dragged-shadow-color`          | `hwb(0 0% 100% / 0.05)`           | Drop-shadow color on a dragged word.                             |
-| `--word-dragged-scale-factor`          | `1.1`                             | Scale applied to a word while it is being dragged.               |
-| `--word-dragged-scaling-duration`      | `var(--fast-animation)`           | Transition duration for the drag scale-up / scale-down effect.   |
+| `--word-grabbed-background-color`      | `hwb(212 90% 0%)`                 | Grabbed word background.                                         |
+| `--word-grabbed-border-color`          | `hwb(212 76% 0%)`                 | Grabbed word border.                                             |
+| `--word-grabbed-text-color`            | `hwb(211 5% 70%)`                 | Grabbed word text color.                                         |
+| `--word-grabbed-shadow-blur`           | `5px`                             | Blur radius of the drop-shadow on a grabbed word.                |
+| `--word-grabbed-shadow-color`          | `hwb(0 0% 100% / 0.05)`           | Drop-shadow color on a grabbed word.                             |
+| `--word-grabbed-scale-factor`          | `1.1`                             | Scale applied to a word while it is being grabbed.               |
+| `--word-grabbed-scaling-duration`      | `var(--fast-animation)`           | Transition duration for the grab scale-up / scale-down effect.   |
 | `--word-chip-fade-duration`            | `var(--extra-slow-animation)`     | Chip color fade duration for words created with `"chip-fade"`.   |
 | `--word-fade-in-duration`              | `var(--slow-animation)`           | Opacity fade-in duration for newly created words.                |
 | `--word-fade-out-duration`             | `var(--slow-animation)`           | Opacity fade-out duration for deleted words.                     |

@@ -15,12 +15,21 @@ _Avoid_: entry, chip, item, label
 **Word cloud**:
 The container element that owns the simulation and hosts the words.
 
+**Grab**:
+The start and held contact of a drag: the pointer has taken hold of a word at a
+specific point inside its rendered box. The grab point or grab offset is local
+to the word and is useful for DOM presentation details such as scaling from the
+contact point. A grab does not name the whole gesture; it is one phase of a
+_drag_.
+
 **Drag**:
 Holding a word and moving it with the pointer. A dragged word follows the
 pointer exactly and is otherwise inert — it passes over other words without
 colliding with them, repelling them, or being repelled, and the simulation does
 not move it. It rejoins the simulation only on _release_.
-_Avoid_: grab (that names the start of a drag), pin
+Use _grab_ for the start/held contact and its local anchor; use _drag_ for the
+full gesture.
+_Avoid_: pin
 
 **Release**:
 The end of a _drag_, when the word rejoins the simulation. A release while the

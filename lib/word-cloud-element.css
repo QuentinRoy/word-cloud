@@ -78,20 +78,20 @@
 	/* Text color of a word chip while hovered in check mode. */
 	--word-checked-hover-text-color: hwb(276 21% 21%);
 
-	/* Background color of a word chip while being dragged. */
-	--word-dragged-background-color: hwb(212 90% 0%);
-	/* Border color of a word chip while being dragged. */
-	--word-dragged-border-color: hwb(212 76% 0%);
-	/* Text color of a word chip while being dragged. */
-	--word-dragged-text-color: hwb(211 5% 70%);
-	/* Blur radius of the drop-shadow applied to a dragged word chip. */
-	--word-dragged-shadow-blur: 5px;
-	/* Color of the drop-shadow applied to a dragged word chip. */
-	--word-dragged-shadow-color: hwb(0 0% 100% / 0.05);
-	/* Scale factor applied to a word chip while it is being dragged. */
-	--word-dragged-scale-factor: 1.1;
+	/* Background color of a word chip while being grabbed. */
+	--word-grabbed-background-color: hwb(212 90% 0%);
+	/* Border color of a word chip while being grabbed. */
+	--word-grabbed-border-color: hwb(212 76% 0%);
+	/* Text color of a word chip while being grabbed. */
+	--word-grabbed-text-color: hwb(211 5% 70%);
+	/* Blur radius of the drop-shadow applied to a grabbed word chip. */
+	--word-grabbed-shadow-blur: 5px;
+	/* Color of the drop-shadow applied to a grabbed word chip. */
+	--word-grabbed-shadow-color: hwb(0 0% 100% / 0.05);
+	/* Scale factor applied to a word chip while it is being grabbed. */
+	--word-grabbed-scale-factor: 1.1;
 	/* Duration of the scale-up / scale-down transition when dragging starts or ends. */
-	--word-dragged-scaling-duration: var(--fast-animation);
+	--word-grabbed-scaling-duration: var(--fast-animation);
 
 	/* Duration of the fade-in entry animation for newly spawned word chips. */
 	--word-chip-fade-duration: var(--extra-slow-animation);
@@ -199,7 +199,7 @@ form {
 		cursor: grab;
 		user-select: none;
 	}
-	.word[dragged] {
+	.word[grabbed] {
 		z-index: 5;
 		cursor: grabbing;
 	}
