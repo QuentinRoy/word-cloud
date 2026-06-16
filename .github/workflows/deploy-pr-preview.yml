@@ -53,6 +53,7 @@ jobs:
           umbrella-dir: pr-preview
           action: auto
           comment: false
+          wait-for-pages-deployment: true
 
       - name: Record preview deployment
         if: github.event.action != 'closed'
