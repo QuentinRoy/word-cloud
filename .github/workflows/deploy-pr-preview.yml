@@ -63,12 +63,13 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const pullRequest = context.payload.pull_request;
+            const environment = `pr-preview-${pullRequest.number}`;
 
             const deployment = await github.rest.repos.createDeployment({
               owner,
               repo,
               ref: pullRequest.head.sha,
-              environment: `preview/pr-${pullRequest.number}`,
+              environment,
               description: `Preview for PR #${pullRequest.number}`,
               auto_merge: false,
               required_contexts: [],
@@ -86,3 +87,47 @@ jobs:
               description: "PR preview deployed",
               auto_inactive: false,
             });
+
+      - name: Deactivate closed PR preview
+        if: github.event.action == 'closed'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pullRequest = context.payload.pull_request;
+            const environment = `pr-preview-${pullRequest.number}`;
+
+            const deployments = await github.paginate(
+              github.rest.repos.listDeployments,
+              {
+                owner,
+                repo,
+                environment,
+                per_page: 100,
+              },
+            );
+
+            await Promise.all(
+              deployments.map((deployment) =>
+                github.rest.repos.createDeploymentStatus({
+                  owner,
+                  repo,
+                  deployment_id: deployment.id,
+                  state: "inactive",
+                  description: "PR preview marked inactive",
+                  auto_inactive: false,
+                }),
+              ),
+            );
+
+            try {
+              await github.request("DELETE /repos/{owner}/{repo}/environments/{environment_name}", {
+                owner,
+                repo,
+                environment_name: environment,
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
