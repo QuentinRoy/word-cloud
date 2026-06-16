@@ -4,9 +4,6 @@ import {
 	Composite,
 	Engine,
 	Events,
-	type IEvent,
-	type Mouse,
-	MouseConstraint,
 	Runner,
 	Sleeping,
 } from "matter-js"
@@ -77,12 +74,12 @@ export interface AddWordOptions {
  * The DOM-free Matter.js simulation behind {@link HTMLWordCloudElement}.
  *
  * Owns the engine, runner, the four frame bodies, the {@link InputVolume}, the
- * {@link SpacingModel}, the `MouseConstraint`, and the drag-lock state. The
- * element drives it through this API and reads word body positions back
- * (via the `Body` returned from {@link addWord}) to write CSS transforms.
+ * {@link SpacingModel}, and the drag-lock state. The element drives it through
+ * this API and reads word body positions back (via the `Body` returned from
+ * {@link addWord}) to write CSS transforms.
  *
  * Stays DOM-free: never reads `document`/`window`/elements. The element
- * supplies measured sizes and a `Mouse` it created itself.
+ * supplies measured sizes and drives drag through the kinematic verbs.
  */
 export class WordCloudSimulation {
 	#engine: Engine
@@ -92,19 +89,11 @@ export class WordCloudSimulation {
 	#inputVolume: InputVolume
 	#spacingModel: SpacingModel
 	#words = new Map<number, WordEntry>()
-	#mouseConstraint: MouseConstraint | null = null
-	#mouseEnabled = false
 	#isRunning = false
 
 	/** Invoked once per simulation frame with the frame delta in milliseconds.
 	 * The element writes word transforms and the framerate display from it. */
 	onTick: ((frameDelta: number) => void) | null = null
-	/** Invoked when the pointer grabs a word, with its id. The drag is already
-	 * locked by the time this fires; the element mirrors it to the DOM. */
-	onWordGrab: ((id: number) => void) | null = null
-	/** Invoked when a drag is released — with the word id, or `null` when every
-	 * drag was released at once. The word is already unlocked when this fires. */
-	onWordRelease: ((id: number | null) => void) | null = null
 
 	constructor() {
 		this.#engine = Engine.create()
@@ -260,41 +249,6 @@ export class WordCloudSimulation {
 		this.#spacingModel.setSpacing(spacing)
 	}
 
-	/** Creates the `MouseConstraint` from a `Mouse` the element created and wires
-	 * its own grab/release handlers. Not added to the world until
-	 * {@link setMouseEnabled} is called. */
-	attachMouse(mouse: Mouse) {
-		this.#mouseConstraint = MouseConstraint.create(this.#engine, {
-			mouse,
-			constraint: { stiffness: 0.3, render: { visible: true } },
-			// Only grab real word bodies — never the oversized sensors.
-			collisionFilter: {
-				category: WORD_COLLISION_CATEGORY,
-				mask: WORD_COLLISION_CATEGORY,
-				group: 0,
-			},
-		})
-		Events.on(this.#mouseConstraint, "startdrag", this.#handleStartDrag)
-		Events.on(this.#mouseConstraint, "enddrag", this.#handleEndDrag)
-	}
-
-	/**
-	 * Adds or removes the mouse constraint from the world. Disabling unlocks
-	 * any active drag.
-	 */
-	setMouseEnabled(enabled: boolean) {
-		if (this.#mouseConstraint == null) return
-		if (enabled) {
-			if (this.#mouseEnabled) return
-			this.#mouseEnabled = true
-			Composite.add(this.#engine.world, this.#mouseConstraint)
-		} else {
-			this.#mouseEnabled = false
-			this.unlockAllDrags()
-			Composite.remove(this.#engine.world, this.#mouseConstraint, true)
-		}
-	}
-
 	/**
 	 * Locks a word's drag: freezes its rotational inertia and disables its
 	 * collisions. No-op if already locked.
@@ -318,13 +272,6 @@ export class WordCloudSimulation {
 		Body.setAngularVelocity(entry.body, 0)
 		entry.dragLock = null
 		this.#applyWordMask(id)
-	}
-
-	/** Unlocks every drag-locked word and notifies via {@link onWordRelease}
-	 * with `null` ("all released"). */
-	unlockAllDrags() {
-		for (const id of this.#words.keys()) this.unlockDrag(id)
-		this.onWordRelease?.(null)
 	}
 
 	/**
@@ -457,27 +404,5 @@ export class WordCloudSimulation {
 
 	#handleTick = () => {
 		this.onTick?.(this.#runner.frameDelta)
-	}
-
-	/** Locks the grabbed word's drag, then notifies the element to mirror it. */
-	#handleStartDrag = (event: IEvent<MouseConstraint>) => {
-		if (!this.#mouseEnabled) return
-		const body = event.source.body
-		if (body == null) return
-		this.lockDrag(body.id)
-		this.onWordGrab?.(body.id)
-	}
-
-	/** Unlocks the released word (or all, when no body is reported), then
-	 * notifies the element. */
-	#handleEndDrag = (event: IEvent<MouseConstraint>) => {
-		if (!this.#mouseEnabled) return
-		const body = event.source.body
-		if (body != null) {
-			this.unlockDrag(body.id)
-			this.onWordRelease?.(body.id)
-		} else {
-			this.unlockAllDrags()
-		}
 	}
 }
