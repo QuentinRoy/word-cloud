@@ -46,12 +46,13 @@ jobs:
           PAGES_BASE_PATH: /word-cloud/pr-preview/pr-${{ github.event.pull_request.number }}/
 
       - name: Deploy preview
+        if: github.event.action != 'closed'
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: dist-demo
           preview-branch: gh-pages
           umbrella-dir: pr-preview
-          action: auto
+          action: deploy
           comment: false
           wait-for-pages-deployment: true
 
@@ -92,6 +93,15 @@ jobs:
               description: "PR preview deployed",
               auto_inactive: false,
             });
+
+      - name: Remove preview
+        if: github.event.action == 'closed'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          action: remove
+          comment: false
 
       - name: Mark closed PR preview deployment inactive
         if: github.event.action == 'closed'
