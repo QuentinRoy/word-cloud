@@ -11,6 +11,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  deployments: write
 
 jobs:
   deploy-preview:
@@ -51,5 +52,38 @@ jobs:
           preview-branch: gh-pages
           umbrella-dir: pr-preview
           action: auto
-          comment: true
+          comment: false
           wait-for-pages-deployment: true
+
+      - name: Record preview deployment
+        if: github.event.action != 'closed'
+        uses: actions/github-script@v8
+        env:
+          PREVIEW_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.pull_request.number }}/
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pullRequest = context.payload.pull_request;
+
+            const deployment = await github.rest.repos.createDeployment({
+              owner,
+              repo,
+              ref: pullRequest.head.sha,
+              environment: `preview/pr-${pullRequest.number}`,
+              description: `Preview for PR #${pullRequest.number}`,
+              auto_merge: false,
+              required_contexts: [],
+              transient_environment: true,
+              production_environment: false,
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deployment.data.id,
+              state: "success",
+              environment_url: process.env.PREVIEW_URL,
+              log_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: "PR preview deployed",
+              auto_inactive: false,
+            });
