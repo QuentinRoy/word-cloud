@@ -1,5 +1,10 @@
 # DOM-free simulation seam, tested in node with a real Matter engine
 
+> **Update:** [ADR-0002](0002-dom-driven-kinematic-drag.md) replaces the drag
+> mechanism described below — the element's `Mouse` and the sim's
+> `MouseConstraint` are gone, superseded by a DOM `DragController` driving
+> kinematic verbs. The DOM-free seam itself stands and in fact tightens.
+
 We are extracting the Matter.js world out of `HTMLWordCloudElement` into a
 `WordCloudSimulation` that touches no DOM: the element stays the adapter that
 measures word sizes (`getComputedStyle`), writes positions back as CSS

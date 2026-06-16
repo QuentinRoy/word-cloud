@@ -15,6 +15,26 @@ _Avoid_: entry, chip, item, label
 **Word cloud**:
 The container element that owns the simulation and hosts the words.
 
+**Drag**:
+Holding a word and moving it with the pointer. A dragged word follows the
+pointer exactly and is otherwise inert — it passes over other words without
+colliding with them, repelling them, or being repelled, and the simulation does
+not move it. It rejoins the simulation only on _release_.
+_Avoid_: grab (that names the start of a drag), pin
+
+**Release**:
+The end of a _drag_, when the word rejoins the simulation. A release while the
+simulation is running imparts a _throw_; a release while it is paused places the
+word with no momentum.
+_Avoid_: drop, let go
+
+**Throw**:
+The velocity a word carries away on _release_, reflecting the pointer's recent
+motion so the word keeps moving in the direction and speed it was flicked — not
+the word's own motion while dragged, which is none. A paused _release_ imparts
+no throw.
+_Avoid_: fling, momentum (that's the result, not the act)
+
 **Spacing**:
 The configured soft-repulsion distance, in pixels, that keeps a word clear of
 something else: _word spacing_ (other words), _edge spacing_ (the frame), and
