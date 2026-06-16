@@ -227,14 +227,14 @@ A `WordHandle` is a live handle to a word in the cloud, returned by `add`
 and `getWords`. Its properties are always up to date — they read directly from
 the underlying physics body and DOM element.
 
-| Property / method | Description                                              |
-| ----------------- | -------------------------------------------------------- |
-| `handle.word`     | The displayed text, readable and writable.               |
-| `handle.x`        | Current horizontal center position in pixels.            |
-| `handle.y`        | Current vertical center position in pixels.              |
-| `handle.angle`    | Current rotation in radians.                             |
-| `handle.checked`  | Checked state — readable and writable.                   |
-| `handle.remove()` | Removes the word from the cloud and fires `word-delete`. |
+| Property / method | Description | Settable? |
+| ----------------- | ----------- | --------- |
+| `handle.word` | Displayed text. Setting it updates the rendered word and fires `word-change` if the value changes. | Yes |
+| `handle.checked` | Checked state. Setting it updates the rendered state and fires `word-check` if the value changes. | Yes |
+| `handle.x` | Current horizontal center position in pixels. | No |
+| `handle.y` | Current vertical center position in pixels. | No |
+| `handle.angle` | Current rotation in radians. | No |
+| `handle.remove()` | Removes the word from the cloud and fires `word-delete`. | — |
 
 ```ts
 const handle = wordCloud.add({ word: "Hello", x: 100, y: 100 })
