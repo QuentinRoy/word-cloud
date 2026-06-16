@@ -1,11 +1,13 @@
 # Plan: DOM-driven kinematic drag (fix #66 and #39)
 
-> **Status:** active — not started.
+> **Status:** complete
 > **See also:** [`docs/adr/0002-dom-driven-kinematic-drag.md`](../../adr/0002-dom-driven-kinematic-drag.md)
 > (the decision + rejected alternatives),
 > [`docs/adr/0001-dom-free-simulation-seam.md`](../../adr/0001-dom-free-simulation-seam.md)
 > (the seam this builds on), [`CONTEXT.md`](../../../CONTEXT.md) (glossary — adds
-> _Drag_, _Release_, _Throw_). Fixes
+> _Grab_, _Drag_, _Release_, _Throw_),
+> [`docs/plans/active/2026-06-16-grab-anchored-word-scaling.md`](./2026-06-16-grab-anchored-word-scaling.md)
+> (DOM visual follow-up for scaling from the local grab point). Fixes
 > [#66](https://github.com/QuentinRoy/word-cloud/issues/66) and
 > [#39](https://github.com/QuentinRoy/word-cloud/issues/39).
 
@@ -21,6 +23,27 @@ Unlike the behaviour-preserving extraction/seam refactors that enabled it, this
 change is **consumer-facing** — it fixes #39 and #66 and defines drag-while-paused
 — so it ships **with a changeset**.
 
+## Progress snapshot
+
+All steps shipped:
+
+- `CONTEXT.md` now distinguishes _Grab_ (local contact/anchor) from _Drag_ (full
+  gesture), matching this plan's language.
+- Element-facing visual state was aligned from `dragged` to `grabbed`
+  (`HTMLWordElement` attribute + CSS selectors/variables).
+- This plan now links the DOM-only visual follow-up
+  (`2026-06-16-grab-anchored-word-scaling.md`) that builds on the same grab
+  semantics.
+- **Step 1 (9997673):** `WordCloudSimulation` gained `grabWord`/`moveWord`/`releaseWord`;
+  node tests cover all three verbs plus drag-lock invariants.
+- **Step 2 (a76afc4):** `DragController` added; element rewired through it; `Mouse`/
+  `MouseConstraint`/`attachMouse`/`setMouseEnabled`/`onWordGrab`/`onWordRelease` deleted;
+  browser gesture tests added. Changeset included.
+- **Fix (8291f79 + current):** `resolveWord` switched from `event.target` to
+  `elementFromPoint(clientX, clientY)` — the event-target approach silently failed
+  when pointer events are dispatched on the container (synthetic tests and real
+  bubbling). Hit-testing by coordinates is robust in both cases.
+
 ### The two bugs, and why this fixes them
 
 - **#39 — grab offset.** `MouseConstraint` runs its own geometric hit-test on the
@@ -35,15 +58,10 @@ change is **consumer-facing** — it fixes #39 and #66 and defines drag-while-pa
 
 ## Steps
 
-| Step | What | Changeset |
-|------|------|-----------|
-| 1 | Sim gains the kinematic drag API (`grabWord`/`moveWord`/`releaseWord`) with node tests; the `MouseConstraint` path stays in place | no |
-| 2 | Add `DragController`; rewire the element to drive the sim through it; delete `Mouse`/`MouseConstraint`/`attachMouse`/`setMouseEnabled`/`onWordGrab`/`onWordRelease`; browser gesture tests | yes |
-
-Step 1 lands the node-testable kinematic core (closing the extraction plan's
-"drag motion is untested" follow-up). Step 2 flips the input model. They can
-collapse into one PR if the transient unused-verbs state in Step 1 isn't worth
-the split.
+| Step | What | Changeset | Status |
+|------|------|-----------|--------|
+| 1 | Sim gains the kinematic drag API (`grabWord`/`moveWord`/`releaseWord`) with node tests; the `MouseConstraint` path stays in place | no | ✓ done (9997673) |
+| 2 | Add `DragController`; rewire the element to drive the sim through it; delete `Mouse`/`MouseConstraint`/`attachMouse`/`setMouseEnabled`/`onWordGrab`/`onWordRelease`; browser gesture tests | yes | ✓ done (a76afc4) |
 
 ## Decisions
 
@@ -51,9 +69,11 @@ the split.
   **never leaving the world**. Its paired sensor keeps tracking it harmlessly and
   release needs no reconciliation. "Removed from the simulation" means *inert*,
   not literally removed.
-- **Grab is DOM-initiated** on the `x-word` host (`event.target` through the closed
-  shadow roots), on press, pointer-captured, with the **grab offset preserved** so
-  the word does not lurch to the pointer.
+- **Grab is DOM-initiated** via `elementFromPoint(clientX, clientY)` on `pointerdown`,
+  pointer-captured, with the **grab offset preserved** so the word does not lurch to
+  the pointer. (`event.target` was discarded — it equals the container when pointer
+  events are dispatched on the container, which breaks both synthetic tests and real
+  bubbling. Coordinate hit-test is robust in all cases.)
 - **The throw crosses the seam as px/ms**; the sim converts (`· 1000/60`) and gates
   it on `#isRunning`. The body carries **zero velocity during a drag** (`grabWord`
   zeroes the linear velocity so the pin can't drift), so the release velocity is
@@ -100,10 +120,12 @@ estimate (computed in container space), `setPointerCapture`, and
 Element-side port handlers:
 
 - `onGrab` — record `offset = body.position − point`; `sim.grabWord(id)`;
-  `element.dragged = true`; host `active` state. (Replaces today's `#handleWordGrab`.)
+  `element.grabbed = true`; host `active` state. The same grab point can later
+  feed DOM-only visual state such as local transform origin without crossing the
+  simulation seam. (Replaces today's `#handleWordGrab`.)
 - `onMove` — `sim.moveWord(id, point + offset)` **and** paint that word — always,
   so paused-drag works; the tick's redraw agrees when running.
-- `onRelease` — `sim.releaseWord(id, velocityPxPerMs)`; clear `dragged` + `active`.
+- `onRelease` — `sim.releaseWord(id, velocityPxPerMs)`; clear `grabbed` + `active`.
   (Replaces today's `#handleWordRelease`.)
 
 ## Invariants to preserve
