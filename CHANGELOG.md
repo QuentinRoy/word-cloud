@@ -1,5 +1,16 @@
 # @quentinroy/word-cloud
 
+## 0.15.0
+
+### Minor Changes
+
+- aa6948b: Rename `--word-dragged-*` CSS custom properties to `--word-grabbed-*` and the `dragged` attribute on word chips to `grabbed`.
+
+### Patch Changes
+
+- 1ca894a: Stop words from freezing mid-rotation: a tilted word now always settles back to horizontal instead of occasionally coming to rest at an angle.
+- aa6948b: Fix drag: a grabbed word now tracks the pointer accurately from the exact point you grabbed it (#39) and is thrown in the direction of the drag gesture on release (#66). Dragging also works while physics is paused.
+
 ## 0.14.0
 
 ### Minor Changes
