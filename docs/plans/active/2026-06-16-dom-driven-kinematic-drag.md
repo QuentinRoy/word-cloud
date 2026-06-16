@@ -84,7 +84,7 @@ read-back + framerate); `engine` stays (debug `Render`).
 
 ```ts
 new DragController(container, {
-  resolveWord(target): WordRef | null,        // closest x-word → registry
+  resolveWord(clientX, clientY): WordRef | null, // hit-test x-word → registry
   toContainerPoint(clientX, clientY): Point,  // rect + scale (today's #updateMouseScale math)
   onGrab(word, point),
   onMove(word, point),

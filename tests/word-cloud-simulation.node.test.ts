@@ -1,5 +1,5 @@
 import { Composite, Engine } from "matter-js"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
 
 /**
@@ -358,21 +358,32 @@ describe("WordCloudSimulation", () => {
 		})
 
 		it("releaseWord applies throw velocity (× 1000/60) while running", () => {
-			sim.start()
-			const body = sim.addWord({
-				x: 100,
-				y: 100,
-				width: WORD_WIDTH,
-				height: WORD_HEIGHT,
+			// start() drives Matter's rAF-based Runner; node lacks
+			// window.requestAnimationFrame. A no-op stub flips #isRunning without
+			// advancing frames (onFrame's first call has no time, so no tick).
+			vi.stubGlobal("window", {
+				requestAnimationFrame: () => 0,
+				cancelAnimationFrame: () => {},
 			})
-			sim.grabWord(body.id)
+			try {
+				sim.start()
+				const body = sim.addWord({
+					x: 100,
+					y: 100,
+					width: WORD_WIDTH,
+					height: WORD_HEIGHT,
+				})
+				sim.grabWord(body.id)
 
-			sim.releaseWord(body.id, { x: 1, y: -2 })
-			sim.stop()
+				sim.releaseWord(body.id, { x: 1, y: -2 })
+				sim.stop()
 
-			expect(body.inertia).not.toBe(Infinity)
-			expect(body.velocity.x).toBeCloseTo(1000 / 60, 5)
-			expect(body.velocity.y).toBeCloseTo(-2 * (1000 / 60), 5)
+				expect(body.inertia).not.toBe(Infinity)
+				expect(body.velocity.x).toBeCloseTo(1000 / 60, 5)
+				expect(body.velocity.y).toBeCloseTo(-2 * (1000 / 60), 5)
+			} finally {
+				vi.unstubAllGlobals()
+			}
 		})
 
 		it("releaseWord zeroes velocity while stopped", () => {

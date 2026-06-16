@@ -639,9 +639,14 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 
 	#setupDragController() {
 		this.#dragController = new DragController<Word>(this.#container, {
-			resolveWord: (target) => {
-				if (!(target instanceof HTMLWordElement)) return null
-				return this.#words.getByElement(target) ?? null
+			resolveWord: (clientX, clientY) => {
+				const root = this.#container.getRootNode()
+				const hit =
+					root instanceof Document || root instanceof ShadowRoot
+						? root.elementFromPoint(clientX, clientY)
+						: null
+				if (!(hit instanceof HTMLWordElement)) return null
+				return this.#words.getByElement(hit) ?? null
 			},
 			toContainerPoint: (clientX, clientY) =>
 				this.#toContainerPoint(clientX, clientY),

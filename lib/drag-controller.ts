@@ -12,7 +12,7 @@ interface PointerSample {
 const VELOCITY_SAMPLE_MS = 50
 
 export interface DragControllerOptions<W> {
-	resolveWord(target: EventTarget | null): W | null
+	resolveWord(clientX: number, clientY: number): W | null
 	toContainerPoint(clientX: number, clientY: number): Point
 	onGrab(word: W, point: Point): void
 	onMove(word: W, point: Point): void
@@ -57,7 +57,7 @@ export class DragController<W> {
 
 	#handlePointerDown = (event: PointerEvent) => {
 		if (!this.#enabled || this.#drag != null || event.button !== 0) return
-		const word = this.#options.resolveWord(event.target)
+		const word = this.#options.resolveWord(event.clientX, event.clientY)
 		if (word == null) return
 		event.preventDefault()
 		const point = this.#options.toContainerPoint(event.clientX, event.clientY)
