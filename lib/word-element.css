@@ -37,7 +37,7 @@ label {
 	filter: drop-shadow(0px 0px 0px transparent);
 	transition:
 		all var(--word-state-transition-duration, 0s) ease-out,
-		transform var(--word-dragged-scaling-duration, 0s) ease-out,
+		transform var(--word-grabbed-scaling-duration, 0s) ease-out,
 		filter var(--word-state-transition-duration, 0s) ease-out;
 	animation: none;
 }
@@ -128,15 +128,15 @@ input:focus-visible ~ label {
 	}
 }
 
-:host([dragged]) label {
-	color: var(--word-dragged-text-color);
-	background-color: var(--word-dragged-background-color);
-	border-color: var(--word-dragged-border-color);
+:host([grabbed]) label {
+	color: var(--word-grabbed-text-color);
+	background-color: var(--word-grabbed-background-color);
+	border-color: var(--word-grabbed-border-color);
 	filter: drop-shadow(
-		0px 0px var(--word-dragged-shadow-blur, 0)
-			var(--word-dragged-shadow-color, transparent)
+		0px 0px var(--word-grabbed-shadow-blur, 0)
+			var(--word-grabbed-shadow-color, transparent)
 	);
-	transform: scale(var(--word-dragged-scale-factor, 1));
+	transform: scale(var(--word-grabbed-scale-factor, 1));
 	transition-timing-function: ease-out;
 }
 

@@ -84,7 +84,7 @@ export type WordElementExitAnimation = "fade"
 export class HTMLWordElement extends WithAttributeProps(HTMLElement, {
 	checked: boolean(),
 	deleted: boolean(),
-	dragged: boolean(),
+	grabbed: boolean(),
 	action: pickList({ values: ["check", "delete"] }),
 	value: string({ default: "" }),
 }) {

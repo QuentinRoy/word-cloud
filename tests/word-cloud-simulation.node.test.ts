@@ -1,5 +1,5 @@
-import { Composite, Engine, Mouse } from "matter-js"
-import { beforeEach, describe, expect, it } from "vitest"
+import { Composite, Engine } from "matter-js"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
 
 /**
@@ -14,21 +14,6 @@ const WORD_HEIGHT = 20
 
 function step(engine: Engine, times = 1) {
 	for (let i = 0; i < times; i++) Engine.update(engine, 1000 / 60)
-}
-
-/**
- * The element creates a DOM-bound `Mouse` and hands it to the sim. In node
- * there is no DOM, so this is the minimal surface `Mouse.create` touches
- * (`getAttribute` for the pixel ratio, `addEventListener` to bind handlers
- * that never fire here).
- */
-function createStubMouse(): Mouse {
-	const element = {
-		getAttribute: () => null,
-		addEventListener: () => {},
-		removeEventListener: () => {},
-	} as unknown as HTMLElement
-	return Mouse.create(element)
 }
 
 describe("WordCloudSimulation", () => {
@@ -265,33 +250,6 @@ describe("WordCloudSimulation", () => {
 			expect(a.inertia).not.toBe(Infinity)
 		})
 
-		it("unlocks every locked word via unlockAllDrags", () => {
-			const a = sim.addWord({
-				x: 100,
-				y: 100,
-				width: WORD_WIDTH,
-				height: WORD_HEIGHT,
-			})
-			const b = sim.addWord({
-				x: 200,
-				y: 100,
-				width: WORD_WIDTH,
-				height: WORD_HEIGHT,
-			})
-			sim.lockDrag(a.id)
-			sim.lockDrag(b.id)
-
-			const released: (number | null)[] = []
-			sim.onWordRelease = (id) => released.push(id)
-
-			sim.unlockAllDrags()
-
-			expect(a.inertia).not.toBe(Infinity)
-			expect(b.inertia).not.toBe(Infinity)
-			// One "all released" notification, not one per word.
-			expect(released).toEqual([null])
-		})
-
 		it("keeps the body frozen across a resize while locked", () => {
 			const body = sim.addWord({
 				x: 100,
@@ -350,53 +308,99 @@ describe("WordCloudSimulation", () => {
 		})
 	})
 
-	describe("mouse", () => {
-		it("adds no constraint to the world until the mouse is enabled", () => {
-			sim.attachMouse(createStubMouse())
-			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(0)
+	describe("kinematic drag", () => {
+		it("grabWord freezes rotation and zeroes linear velocity", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+				velocity: { x: 5, y: -3 },
+			})
+
+			sim.grabWord(body.id)
+
+			expect(body.inertia).toBe(Infinity)
+			expect(body.velocity.x).toBeCloseTo(0, 5)
+			expect(body.velocity.y).toBeCloseTo(0, 5)
 		})
 
-		it("adds and removes the constraint as it is enabled and disabled", () => {
-			sim.attachMouse(createStubMouse())
-
-			sim.setMouseEnabled(true)
-			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(1)
-
-			sim.setMouseEnabled(false)
-			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(0)
-		})
-
-		it("unlocks active drags when the mouse is disabled", () => {
-			sim.attachMouse(createStubMouse())
-			sim.setMouseEnabled(true)
+		it("grabWord wakes a sleeping body", () => {
 			const body = sim.addWord({
 				x: 100,
 				y: 100,
 				width: WORD_WIDTH,
 				height: WORD_HEIGHT,
 			})
-			sim.lockDrag(body.id)
-			expect(body.inertia).toBe(Infinity)
+			step(sim.engine, 300)
+			expect(body.isSleeping).toBe(true)
 
-			sim.setMouseEnabled(false)
+			sim.grabWord(body.id)
+
+			expect(body.isSleeping).toBe(false)
+		})
+
+		it("moveWord pins position without adding velocity", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			sim.grabWord(body.id)
+
+			sim.moveWord(body.id, { x: 200, y: 250 })
+
+			expect(body.position.x).toBeCloseTo(200, 5)
+			expect(body.position.y).toBeCloseTo(250, 5)
+			expect(body.velocity.x).toBeCloseTo(0, 5)
+			expect(body.velocity.y).toBeCloseTo(0, 5)
+		})
+
+		it("releaseWord applies throw velocity (× 1000/60) while running", () => {
+			// start() drives Matter's rAF-based Runner; node lacks
+			// window.requestAnimationFrame. A no-op stub flips #isRunning without
+			// advancing frames (onFrame's first call has no time, so no tick).
+			vi.stubGlobal("window", {
+				requestAnimationFrame: () => 0,
+				cancelAnimationFrame: () => {},
+			})
+			try {
+				sim.start()
+				const body = sim.addWord({
+					x: 100,
+					y: 100,
+					width: WORD_WIDTH,
+					height: WORD_HEIGHT,
+				})
+				sim.grabWord(body.id)
+
+				sim.releaseWord(body.id, { x: 1, y: -2 })
+				sim.stop()
+
+				expect(body.inertia).not.toBe(Infinity)
+				expect(body.velocity.x).toBeCloseTo(1000 / 60, 5)
+				expect(body.velocity.y).toBeCloseTo(-2 * (1000 / 60), 5)
+			} finally {
+				vi.unstubAllGlobals()
+			}
+		})
+
+		it("releaseWord zeroes velocity while stopped", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+				velocity: { x: 5, y: 5 },
+			})
+			sim.grabWord(body.id)
+
+			sim.releaseWord(body.id, { x: 3, y: 4 })
 
 			expect(body.inertia).not.toBe(Infinity)
-		})
-
-		it("notifies onWordRelease(null) when the mouse is disabled", () => {
-			sim.attachMouse(createStubMouse())
-			sim.setMouseEnabled(true)
-			const released: (number | null)[] = []
-			sim.onWordRelease = (id) => released.push(id)
-
-			sim.setMouseEnabled(false)
-
-			expect(released).toEqual([null])
-		})
-
-		it("is a no-op to enable the mouse before one is attached", () => {
-			expect(() => sim.setMouseEnabled(true)).not.toThrow()
-			expect(Composite.allConstraints(sim.engine.world)).toHaveLength(0)
+			expect(body.velocity.x).toBeCloseTo(0, 5)
+			expect(body.velocity.y).toBeCloseTo(0, 5)
 		})
 	})
 

@@ -117,6 +117,28 @@ function getAllWordElements(element: HTMLWordCloudElement) {
 	) as HTMLElement[]
 }
 
+// DragController binds its pointer listeners directly to the container.
+// Dispatching synthetic PointerEvents drives the grab path deterministically,
+// without depending on the browser runner's pointer plumbing through the
+// test iframe.
+function firePointer(
+	container: HTMLElement,
+	type: string,
+	clientX: number,
+	clientY: number,
+) {
+	container.dispatchEvent(
+		new PointerEvent(type, {
+			bubbles: true,
+			button: 0,
+			clientX,
+			clientY,
+			pointerId: 1,
+			isPrimary: true,
+		}),
+	)
+}
+
 afterEach(async () => {
 	document.body.innerHTML = ""
 	// Reset the real cursor so CSS :hover doesn't bleed into the next test.
@@ -495,7 +517,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		// Mirror the DOM state applied while dragging so we can snapshot
 		// grabbed visuals deterministically. We snapshot the transformed label
 		// directly so scale is fully visible and not clipped by the host box.
-		wordElement.setAttribute("dragged", "")
+		wordElement.setAttribute("grabbed", "")
 		await flushFrames(1)
 		await expect.element(locator).toMatchScreenshot("word-drag-grabbed.png")
 	})
@@ -520,28 +542,103 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const centerX = rect.left + rect.width / 2
 		const centerY = rect.top + rect.height / 2
 
-		// Matter binds its mouse listeners directly to the container and derives
-		// the pointer position from the event's page coordinates. Dispatching a
-		// synthetic MouseEvent therefore drives the real grab path deterministically,
-		// without depending on the browser runner's pointer plumbing (which never
-		// reliably reaches Matter's element-bound listeners through the test iframe).
-		const fire = (type: string, clientX: number, clientY: number) =>
-			container.dispatchEvent(
-				new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY }),
-			)
-
-		fire("mousemove", centerX, centerY)
-		fire("mousedown", centerX, centerY)
-		await flushFrames(3) // let the MouseConstraint grab on the next engine tick
-
-		// The pointer maps into the container frame, so the visual center grabs the
-		// body. Before the fix the pointer was measured from the host border-box and
-		// landed ~60px (border + padding) past the body, so the grab never happened.
-		expect(wordElement.hasAttribute("dragged")).toBe(true)
-
-		fire("mouseup", centerX, centerY)
+		firePointer(container, "pointerdown", centerX, centerY)
 		await flushFrames(2)
-		expect(wordElement.hasAttribute("dragged")).toBe(false)
+
+		// toContainerPoint maps the pointer into the container frame, so the visual
+		// center grabs the word. Before the fix the pointer was measured from the
+		// host border-box and landed ~60px past the body, so the grab never happened.
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
+
+		firePointer(container, "pointerup", centerX, centerY)
+		await flushFrames(2)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
+	})
+
+	it("drag gesture: grab sets dragged, release clears it", async () => {
+		const { element } = await createCloudElement()
+		element.setAttribute("word-action", "drag")
+		await flushFrames(2)
+		element.add({ word: "Drag", x: 300, y: 200, entryAnimation: "none" })
+		await flushFrames(3)
+
+		const container = getCloudContainer(element)
+		const wordElement = getFirstWordElement(element)
+		const rect = wordElement.getBoundingClientRect()
+		const cx = rect.left + rect.width / 2
+		const cy = rect.top + rect.height / 2
+
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
+		firePointer(container, "pointerdown", cx, cy)
+		await flushFrames(2)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
+
+		firePointer(container, "pointermove", cx + 30, cy)
+		await flushFrames(1)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
+
+		firePointer(container, "pointerup", cx + 30, cy)
+		await flushFrames(2)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
+	})
+
+	it("drag is cancelled when word-action switches away from drag mid-gesture", async () => {
+		const { element } = await createCloudElement()
+		element.setAttribute("word-action", "drag")
+		await flushFrames(2)
+		element.add({ word: "Cancel", x: 300, y: 200, entryAnimation: "none" })
+		await flushFrames(3)
+
+		const container = getCloudContainer(element)
+		const wordElement = getFirstWordElement(element)
+		const rect = wordElement.getBoundingClientRect()
+		const cx = rect.left + rect.width / 2
+		const cy = rect.top + rect.height / 2
+
+		firePointer(container, "pointerdown", cx, cy)
+		await flushFrames(2)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
+
+		// Switching away from "drag" disables the controller and cancels the gesture.
+		element.setAttribute("word-action", "none")
+		await flushFrames(2)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
+	})
+
+	it("drag-while-paused moves the word without throwing it (#66 paused case)", async () => {
+		const { element } = await createCloudElement()
+		element.setAttribute("word-action", "drag")
+		element.physicsPaused = true
+		await flushFrames(2)
+		const handle = element.add({
+			word: "Paused",
+			x: 300,
+			y: 200,
+			entryAnimation: "none",
+		})
+		await flushFrames(3)
+
+		const container = getCloudContainer(element)
+		const containerRect = container.getBoundingClientRect()
+		const wordElement = getFirstWordElement(element)
+		const rect = wordElement.getBoundingClientRect()
+		const cx = rect.left + rect.width / 2
+		const cy = rect.top + rect.height / 2
+		const targetClientX = containerRect.left + 100
+		const targetClientY = containerRect.top + 100
+
+		firePointer(container, "pointerdown", cx, cy)
+		await flushFrames(2)
+		firePointer(container, "pointermove", targetClientX, targetClientY)
+		await flushFrames(2)
+		firePointer(container, "pointerup", targetClientX, targetClientY)
+		await flushFrames(2)
+
+		// The drop point in container space. The grab offset is ~zero because the
+		// pointer was at the word's visual centre (body.position ≈ pointer in
+		// container coords), so the body should land near (100, 100).
+		expect(handle.x).toBeCloseTo(targetClientX - containerRect.left, 0)
+		expect(handle.y).toBeCloseTo(targetClientY - containerRect.top, 0)
 	})
 
 	it("sizes the word body to match the rendered chip so the body stays centered on it (#39)", async () => {
