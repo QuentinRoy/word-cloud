@@ -112,10 +112,7 @@ export class DragController<W> {
 		const first = samples[0]
 		const dt = last.t - first.t
 		if (dt <= 0) return { x: 0, y: 0 }
-		return {
-			x: (last.x - first.x) / dt,
-			y: (last.y - first.y) / dt,
-		}
+		return { x: (last.x - first.x) / dt, y: (last.y - first.y) / dt }
 	}
 
 	#cancel() {
