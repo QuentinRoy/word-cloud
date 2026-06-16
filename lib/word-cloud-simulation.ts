@@ -8,6 +8,7 @@ import {
 	type Mouse,
 	MouseConstraint,
 	Runner,
+	Sleeping,
 } from "matter-js"
 import {
 	FRAME_COLLISION_CATEGORY,
@@ -324,6 +325,43 @@ export class WordCloudSimulation {
 	unlockAllDrags() {
 		for (const id of this.#words.keys()) this.unlockDrag(id)
 		this.onWordRelease?.(null)
+	}
+
+	/**
+	 * Kinematic grab: wakes the body, locks drag, and zeroes linear velocity
+	 * so the pin cannot drift. No-op for an unknown id.
+	 */
+	grabWord(id: number) {
+		const entry = this.#words.get(id)
+		if (entry == null) return
+		Sleeping.set(entry.body, false)
+		this.lockDrag(id)
+		Body.setVelocity(entry.body, { x: 0, y: 0 })
+	}
+
+	/**
+	 * Kinematic move: pins the word body to the given point. No velocity is
+	 * set. No-op for an unknown id.
+	 */
+	moveWord(id: number, { x, y }: { x: number; y: number }) {
+		const entry = this.#words.get(id)
+		if (entry == null) return
+		Body.setPosition(entry.body, { x, y })
+	}
+
+	/**
+	 * Kinematic release: unlocks drag and applies the throw velocity.
+	 * Velocity is given in px/ms and converted to px/frame (× 1000/60).
+	 * Zeroed when the simulation is not running. No-op for an unknown id.
+	 */
+	releaseWord(id: number, vPxPerMs: { x: number; y: number }) {
+		const entry = this.#words.get(id)
+		if (entry == null) return
+		this.unlockDrag(id)
+		const velocity = this.#isRunning
+			? { x: vPxPerMs.x * (1000 / 60), y: vPxPerMs.y * (1000 / 60) }
+			: { x: 0, y: 0 }
+		Body.setVelocity(entry.body, velocity)
 	}
 
 	/** Starts the runner, advancing the simulation each frame. No-op if

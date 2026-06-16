@@ -350,6 +350,91 @@ describe("WordCloudSimulation", () => {
 		})
 	})
 
+	describe("kinematic drag", () => {
+		it("grabWord freezes rotation and zeroes linear velocity", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+				velocity: { x: 5, y: -3 },
+			})
+
+			sim.grabWord(body.id)
+
+			expect(body.inertia).toBe(Infinity)
+			expect(body.velocity.x).toBeCloseTo(0, 5)
+			expect(body.velocity.y).toBeCloseTo(0, 5)
+		})
+
+		it("grabWord wakes a sleeping body", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			step(sim.engine, 300)
+			expect(body.isSleeping).toBe(true)
+
+			sim.grabWord(body.id)
+
+			expect(body.isSleeping).toBe(false)
+		})
+
+		it("moveWord pins position without adding velocity", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			sim.grabWord(body.id)
+
+			sim.moveWord(body.id, { x: 200, y: 250 })
+
+			expect(body.position.x).toBeCloseTo(200, 5)
+			expect(body.position.y).toBeCloseTo(250, 5)
+			expect(body.velocity.x).toBeCloseTo(0, 5)
+			expect(body.velocity.y).toBeCloseTo(0, 5)
+		})
+
+		it("releaseWord applies throw velocity (× 1000/60) while running", () => {
+			sim.start()
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+			})
+			sim.grabWord(body.id)
+
+			sim.releaseWord(body.id, { x: 1, y: -2 })
+			sim.stop()
+
+			expect(body.inertia).not.toBe(Infinity)
+			expect(body.velocity.x).toBeCloseTo(1000 / 60, 5)
+			expect(body.velocity.y).toBeCloseTo(-2 * (1000 / 60), 5)
+		})
+
+		it("releaseWord zeroes velocity while stopped", () => {
+			const body = sim.addWord({
+				x: 100,
+				y: 100,
+				width: WORD_WIDTH,
+				height: WORD_HEIGHT,
+				velocity: { x: 5, y: 5 },
+			})
+			sim.grabWord(body.id)
+
+			sim.releaseWord(body.id, { x: 3, y: 4 })
+
+			expect(body.inertia).not.toBe(Infinity)
+			expect(body.velocity.x).toBeCloseTo(0, 5)
+			expect(body.velocity.y).toBeCloseTo(0, 5)
+		})
+	})
+
 	describe("mouse", () => {
 		it("adds no constraint to the world until the mouse is enabled", () => {
 			sim.attachMouse(createStubMouse())
