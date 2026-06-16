@@ -517,7 +517,7 @@ describe("HTMLWordCloudElement user interactions", () => {
 		// Mirror the DOM state applied while dragging so we can snapshot
 		// grabbed visuals deterministically. We snapshot the transformed label
 		// directly so scale is fully visible and not clipped by the host box.
-		wordElement.setAttribute("dragged", "")
+		wordElement.setAttribute("grabbed", "")
 		await flushFrames(1)
 		await expect.element(locator).toMatchScreenshot("word-drag-grabbed.png")
 	})
@@ -548,11 +548,11 @@ describe("HTMLWordCloudElement user interactions", () => {
 		// toContainerPoint maps the pointer into the container frame, so the visual
 		// center grabs the word. Before the fix the pointer was measured from the
 		// host border-box and landed ~60px past the body, so the grab never happened.
-		expect(wordElement.hasAttribute("dragged")).toBe(true)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
 
 		firePointer(container, "pointerup", centerX, centerY)
 		await flushFrames(2)
-		expect(wordElement.hasAttribute("dragged")).toBe(false)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
 	})
 
 	it("drag gesture: grab sets dragged, release clears it", async () => {
@@ -568,18 +568,18 @@ describe("HTMLWordCloudElement user interactions", () => {
 		const cx = rect.left + rect.width / 2
 		const cy = rect.top + rect.height / 2
 
-		expect(wordElement.hasAttribute("dragged")).toBe(false)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
 		firePointer(container, "pointerdown", cx, cy)
 		await flushFrames(2)
-		expect(wordElement.hasAttribute("dragged")).toBe(true)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
 
 		firePointer(container, "pointermove", cx + 30, cy)
 		await flushFrames(1)
-		expect(wordElement.hasAttribute("dragged")).toBe(true)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
 
 		firePointer(container, "pointerup", cx + 30, cy)
 		await flushFrames(2)
-		expect(wordElement.hasAttribute("dragged")).toBe(false)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
 	})
 
 	it("drag is cancelled when word-action switches away from drag mid-gesture", async () => {
@@ -597,12 +597,12 @@ describe("HTMLWordCloudElement user interactions", () => {
 
 		firePointer(container, "pointerdown", cx, cy)
 		await flushFrames(2)
-		expect(wordElement.hasAttribute("dragged")).toBe(true)
+		expect(wordElement.hasAttribute("grabbed")).toBe(true)
 
 		// Switching away from "drag" disables the controller and cancels the gesture.
 		element.setAttribute("word-action", "none")
 		await flushFrames(2)
-		expect(wordElement.hasAttribute("dragged")).toBe(false)
+		expect(wordElement.hasAttribute("grabbed")).toBe(false)
 	})
 
 	it("drag-while-paused moves the word without throwing it (#66 paused case)", async () => {
