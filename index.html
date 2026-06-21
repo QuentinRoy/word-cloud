@@ -1,12 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<link rel="icon" type="image/svg+xml" href="/word-cloud/assets/favicon-DsBLySRp.svg">
+		<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Word Cloud Demo</title>
-		<script type="module" crossorigin src="/word-cloud/assets/index-D9rSuFOn.js"></script>
-		<link rel="stylesheet" crossorigin href="/word-cloud/assets/index-BA9PkPyd.css">
+		<link rel="stylesheet" href="./assets/main.css">
+		<script type="importmap">
+		{
+			"imports": {
+				"@quentinroy/word-cloud": "./assets/index.js",
+				"@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
+				"matter-js": "https://esm.sh/matter-js@0.20.0",
+				"valibot": "https://esm.sh/valibot@1.4.1?exports=array,boolean,number,object,optional,safeParse,string"
+			}
+		}
+		</script>
+		<script type="module" src="./main.js"></script>
 	</head>
 	<body>
 		<x-word-cloud word-action="drag" word-input show-framerate></x-word-cloud>
@@ -15,7 +25,7 @@
 				<a href="https://github.com/QuentinRoy/word-cloud" id="lib-name">@quentinroy/word-cloud</a>
 				<span id="version">
 					<span id="lib-version">v0.15.0</span>
-					<span id="commit-hash">(5e68e15)</span></span
+					<span id="commit-hash">(142447f)</span></span
 				>
 			</div>
 			<form id="controls">
@@ -66,7 +76,7 @@
 				<div><button type="button" id="clear" value="Clear">Clear</button></div>
 			</form>
 			<a id="github-link" href="https://github.com/QuentinRoy/word-cloud"
-				><img src="data:image/svg+xml,%3csvg%20width='98'%20height='96'%20viewBox='0%200%2098%2096'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%20%3e%3ctitle%3eGitHub%20Logo%3c/title%3e%3cg%20clip-path='url(%23clip0_730_27136)'%3e%3cpath%20d='M41.4395%2069.3848C28.8066%2067.8535%2019.9062%2058.7617%2019.9062%2046.9902C19.9062%2042.2051%2021.6289%2037.0371%2024.5%2033.5918C23.2559%2030.4336%2023.4473%2023.7344%2024.8828%2020.959C28.7109%2020.4805%2033.8789%2022.4902%2036.9414%2025.2656C40.5781%2024.1172%2044.4062%2023.543%2049.0957%2023.543C53.7852%2023.543%2057.6133%2024.1172%2061.0586%2025.1699C64.0254%2022.4902%2069.2891%2020.4805%2073.1172%2020.959C74.457%2023.543%2074.6484%2030.2422%2073.4043%2033.4961C76.4668%2037.1328%2078.0937%2042.0137%2078.0937%2046.9902C78.0937%2058.7617%2069.1934%2067.6621%2056.3691%2069.2891C59.623%2071.3945%2061.8242%2075.9883%2061.8242%2081.252L61.8242%2091.2051C61.8242%2094.0762%2064.2168%2095.7031%2067.0879%2094.5547C84.4102%2087.9512%2098%2070.6289%2098%2049.1914C98%2022.1074%2075.9883%206.69539e-07%2048.9043%204.309e-07C21.8203%201.92261e-07%20-1.9479e-07%2022.1074%20-4.3343e-07%2049.1914C-6.20631e-07%2070.4375%2013.4941%2088.0469%2031.6777%2094.6504C34.2617%2095.6074%2036.75%2093.8848%2036.75%2091.3008L36.75%2083.6445C35.4102%2084.2188%2033.6875%2084.6016%2032.1562%2084.6016C25.8398%2084.6016%2022.1074%2081.1563%2019.4277%2074.7441C18.375%2072.1602%2017.2266%2070.6289%2015.0254%2070.3418C13.877%2070.2461%2013.4941%2069.7676%2013.4941%2069.1934C13.4941%2068.0449%2015.4082%2067.1836%2017.3223%2067.1836C20.0977%2067.1836%2022.4902%2068.9063%2024.9785%2072.4473C26.8926%2075.2227%2028.9023%2076.4668%2031.2949%2076.4668C33.6875%2076.4668%2035.2187%2075.6055%2037.4199%2073.4043C39.0469%2071.7773%2040.291%2070.3418%2041.4395%2069.3848Z'%20fill='white'%20/%3e%3c/g%3e%3cdefs%3e%3cclipPath%20id='clip0_730_27136'%3e%3crect%20width='98'%20height='96'%20fill='white'%20/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e" alt="GitHub"></a
+				><img src="./assets/github.svg" alt="GitHub"></a
 			>
 		</footer>
 	</body>
