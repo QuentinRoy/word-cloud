@@ -9,19 +9,12 @@ import { htmlTemplatePlugin } from "./plugins/html-template-plugin.ts"
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url))
 let gitVersionResult = execSync("git rev-parse --short HEAD").toString().trim()
 
-function normalizeBasePath(basePath: string | undefined) {
-	if (!basePath || basePath === "/") {
-		return "/"
-	}
-	return `/${basePath.replace(/^\/+|\/+$/g, "")}/`
-}
-
 function createTemplatePlugins({ minify }: { minify: boolean }) {
 	return [cssStylesheetPlugin({ minify }), htmlTemplatePlugin({ minify })]
 }
 
-export default defineConfig(({ command, mode }) => {
-	const plugins = createTemplatePlugins({ minify: true })
+export default defineConfig(({ command }) => {
+	const plugins = [...createTemplatePlugins({ minify: true })]
 
 	const define = {
 		"import.meta.env.VITE_LIB_VERSION": JSON.stringify(pkg.version),
@@ -31,18 +24,13 @@ export default defineConfig(({ command, mode }) => {
 	}
 
 	if (command !== "build") {
-		return { plugins, define }
-	}
-
-	if (mode === "demo") {
 		return {
 			plugins,
 			define,
-			base: normalizeBasePath(process.env.PAGES_BASE_PATH),
-			build: {
-				sourcemap: true,
-				outDir: "dist-demo",
-				rollupOptions: { input: resolve(workspaceRoot, "index.html") },
+			resolve: {
+				alias: {
+					"@quentinroy/word-cloud": resolve(workspaceRoot, "lib/index.ts"),
+				},
 			},
 		}
 	}

@@ -79,6 +79,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Demo Build Smoke Checks
+        run: pnpm run test:demo-smoke
+
+      - name: Verify demo artifact contract
+        run: pnpm run verify:demo
+
       - name: Run Browser Tests
         id: run_tests
         run: pnpm run test --reporter=json --outputFile=test-results.json
@@ -172,8 +178,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build demo site
-        env:
-          PAGES_BASE_PATH: /${{ github.event.repository.name }}/
         run: pnpm build:demo
 
       - name: Deploy demo to GitHub Pages branch

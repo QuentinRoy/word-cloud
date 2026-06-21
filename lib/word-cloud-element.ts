@@ -4,7 +4,7 @@ import {
 	pickList,
 	WithAttributeProps,
 } from "@quentinroy/custom-element-mixins"
-import { Render } from "matter-js"
+import Matter from "matter-js"
 import { DragController } from "./drag-controller.ts"
 import {
 	PhysicsPauseEvent,
@@ -176,7 +176,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		}
 	})
 	#internals = this.attachInternals()
-	#debugRender: Render | null = null
+	#debugRender: Matter.Render | null = null
 
 	/**
 	 * Creates a word cloud instance and initializes its shadow DOM, physics
@@ -702,7 +702,7 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		this.#sim.start()
 		if (USE_DEBUG_RENDERER && this.#debugRender == null) {
 			this.#debugRender =
-				Render?.create({
+				Matter.Render.create({
 					engine: this.#sim.engine,
 					element: queryStrict(
 						this.#container,
@@ -716,13 +716,13 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 						showAngleIndicator: true,
 					},
 				}) ?? null
-			if (this.#debugRender != null) Render?.run(this.#debugRender)
+			if (this.#debugRender != null) Matter.Render.run(this.#debugRender)
 		}
 	}
 
 	#stop() {
 		this.#sim.stop()
-		if (this.#debugRender != null) Render?.stop(this.#debugRender)
+		if (this.#debugRender != null) Matter.Render.stop(this.#debugRender)
 	}
 }
 

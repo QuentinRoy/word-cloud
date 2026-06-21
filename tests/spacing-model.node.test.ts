@@ -1,4 +1,4 @@
-import { Bodies, Body, Composite, Engine, Events } from "matter-js"
+import Matter from "matter-js"
 import { beforeEach, describe, expect, it } from "vitest"
 import {
 	DEFAULT_WORD_COLLISION_MASK,
@@ -21,7 +21,7 @@ const WORD_WIDTH = 40
 const WORD_HEIGHT = 20
 
 function createEngine() {
-	const engine = Engine.create()
+	const engine = Matter.Engine.create()
 	engine.gravity.y = 0
 	engine.gravity.scale = 0
 	// Disabled for deterministic separation: a word receiving repulsion never
@@ -35,8 +35,8 @@ function makeWordBody(
 	x: number,
 	y: number,
 	{ width = WORD_WIDTH, height = WORD_HEIGHT } = {},
-): Body {
-	return Bodies.rectangle(x, y, width, height, {
+): Matter.Body {
+	return Matter.Bodies.rectangle(x, y, width, height, {
 		frictionAir: 0.04,
 		restitution: 0.2,
 		collisionFilter: {
@@ -46,20 +46,20 @@ function makeWordBody(
 	})
 }
 
-function step(engine: Engine, times = 1) {
-	for (let i = 0; i < times; i++) Engine.update(engine, 1000 / 60)
+function step(engine: Matter.Engine, times = 1) {
+	for (let i = 0; i < times; i++) Matter.Engine.update(engine, 1000 / 60)
 }
 
 describe("SpacingModel", () => {
-	let engine: Engine
-	let inputVolumeBody: Body
+	let engine: Matter.Engine
+	let inputVolumeBody: Matter.Body
 	let model: SpacingModel
 
 	beforeEach(() => {
 		engine = createEngine()
 		// A standalone identity for the input-volume side; tests that exercise it
 		// add it to the world themselves.
-		inputVolumeBody = Bodies.rectangle(0, 0, 50, 50, {
+		inputVolumeBody = Matter.Bodies.rectangle(0, 0, 50, 50, {
 			isStatic: true,
 			collisionFilter: {
 				category: INPUT_VOLUME_COLLISION_CATEGORY,
@@ -67,12 +67,12 @@ describe("SpacingModel", () => {
 			},
 		})
 		model = new SpacingModel(engine, { inputVolumeBody })
-		Events.on(engine, "beforeUpdate", () => model.applyForces())
+		Matter.Events.on(engine, "beforeUpdate", () => model.applyForces())
 	})
 
 	/** Adds a word body to both the world and the model, mirroring the element. */
 	function addWord(
-		body: Body,
+		body: Matter.Body,
 		{
 			isRepellable = () => true,
 			ignoresInputVolume = () => false,
@@ -85,7 +85,7 @@ describe("SpacingModel", () => {
 			height?: number
 		} = {},
 	) {
-		Composite.add(engine.world, body)
+		Matter.Composite.add(engine.world, body)
 		model.addWord(body, { width, height, isRepellable, ignoresInputVolume })
 	}
 
@@ -148,7 +148,7 @@ describe("SpacingModel", () => {
 		addWord(b)
 
 		model.removeWord(b.id)
-		Composite.remove(engine.world, b)
+		Matter.Composite.remove(engine.world, b)
 
 		step(engine, 60)
 		expect(a.position.x).toBeCloseTo(100, 5)
@@ -158,14 +158,14 @@ describe("SpacingModel", () => {
 		const word = makeWordBody(100, 100)
 		addWord(word)
 		// A static wall just past the word's right edge (1px gap), within edge reach.
-		const wall = Bodies.rectangle(126, 100, 10, 200, {
+		const wall = Matter.Bodies.rectangle(126, 100, 10, 200, {
 			isStatic: true,
 			collisionFilter: {
 				category: FRAME_COLLISION_CATEGORY,
 				mask: FRAME_COLLISION_MASK,
 			},
 		})
-		Composite.add(engine.world, wall)
+		Matter.Composite.add(engine.world, wall)
 
 		step(engine, 60)
 
@@ -178,11 +178,11 @@ describe("SpacingModel", () => {
 		let ignoring = true
 		const word = makeWordBody(100, 100)
 		// Input volume centred just past the word's right edge, within reach.
-		Body.setPosition(inputVolumeBody, { x: 126, y: 100 })
-		Body.setStatic(inputVolumeBody, true)
+		Matter.Body.setPosition(inputVolumeBody, { x: 126, y: 100 })
+		Matter.Body.setStatic(inputVolumeBody, true)
 		// Resize so its left edge (≈121) overlaps the word's sensor.
-		Body.scale(inputVolumeBody, 10 / 50, 200 / 50)
-		Composite.add(engine.world, inputVolumeBody)
+		Matter.Body.scale(inputVolumeBody, 10 / 50, 200 / 50)
+		Matter.Composite.add(engine.world, inputVolumeBody)
 		addWord(word, {
 			ignoresInputVolume: () => ignoring,
 			// Spawned overlapping the input volume: ignore the body collision too.
@@ -214,8 +214,8 @@ describe("SpacingModel", () => {
 		// Grow both bodies to 56 wide and tell the model: the 66-wide sensors now
 		// overlap (centres 60 apart) while the 56-wide bodies stay 4px apart, so
 		// the pair forms from sensor overlap alone and repels.
-		Body.scale(a, 56 / WORD_WIDTH, 1)
-		Body.scale(b, 56 / WORD_WIDTH, 1)
+		Matter.Body.scale(a, 56 / WORD_WIDTH, 1)
+		Matter.Body.scale(b, 56 / WORD_WIDTH, 1)
 		model.setWordSize(a.id, { width: 56, height: WORD_HEIGHT })
 		model.setWordSize(b.id, { width: 56, height: WORD_HEIGHT })
 

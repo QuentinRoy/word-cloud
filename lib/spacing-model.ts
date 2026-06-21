@@ -1,16 +1,9 @@
-import {
-	Bodies,
-	Body,
-	Composite,
-	type Engine,
-	Events,
-	type IEventCollision,
-	type Pair,
-} from "matter-js"
+import Matter from "matter-js"
 import {
 	SENSOR_COLLISION_CATEGORY,
 	SENSOR_COLLISION_MASK,
 } from "./collision.ts"
+
 import { getRepulsionStrength } from "./physics-utils.ts"
 
 /** The default spacing margin, in pixels, for every spacing channel. */
@@ -38,13 +31,13 @@ interface AddWordOptions {
 }
 
 interface SpacingEntry {
-	body: Body
+	body: Matter.Body
 	bodySize: Size
 	/**
 	 * An oversized, non-resolving body that tracks {@link body}. Its overlaps,
 	 * reported by Matter's broadphase, drive the short-range repulsion forces.
 	 */
-	sensorBody: Body
+	sensorBody: Matter.Body
 	sensorSize: Size
 	isRepellable: () => boolean
 	ignoresInputVolume: () => boolean
@@ -65,25 +58,28 @@ interface SpacingEntry {
  * are read through accessors passed at {@link addWord}.
  */
 export class SpacingModel {
-	#engine: Engine
-	#inputVolumeBody: Body
+	#engine: Matter.Engine
+	#inputVolumeBody: Matter.Body
 	/** Word entries keyed by their word body id. */
 	#entries: Map<number, SpacingEntry> = new Map()
 	/** Word entries keyed by their sensor body id, for collision-pair lookup. */
 	#entriesBySensorId: Map<number, SpacingEntry> = new Map()
 	/** Currently-overlapping sensor pairs, maintained from collision events. */
-	#sensorPairs: Set<Pair> = new Set()
+	#sensorPairs: Set<Matter.Pair> = new Set()
 	/** How far each sensor extends past its word on every side, in pixels. */
 	#reach = REPULSION_MARGIN
 	#wordSpacing = REPULSION_MARGIN
 	#edgeSpacing = REPULSION_MARGIN
 	#inputSpacing = REPULSION_MARGIN
 
-	constructor(engine: Engine, { inputVolumeBody }: { inputVolumeBody: Body }) {
+	constructor(
+		engine: Matter.Engine,
+		{ inputVolumeBody }: { inputVolumeBody: Matter.Body },
+	) {
 		this.#engine = engine
 		this.#inputVolumeBody = inputVolumeBody
-		Events.on(engine, "collisionStart", this.#handleCollisionStart)
-		Events.on(engine, "collisionEnd", this.#handleCollisionEnd)
+		Matter.Events.on(engine, "collisionStart", this.#handleCollisionStart)
+		Matter.Events.on(engine, "collisionEnd", this.#handleCollisionEnd)
 	}
 
 	/**
@@ -91,12 +87,12 @@ export class SpacingModel {
 	 * the word. The sensor is created at the word body's current position/angle.
 	 */
 	addWord(
-		body: Body,
+		body: Matter.Body,
 		{ width, height, isRepellable, ignoresInputVolume }: AddWordOptions,
 	) {
 		const bodySize = { width, height }
 		const sensorSize = this.#getSensorSize(bodySize)
-		const sensorBody = Bodies.rectangle(
+		const sensorBody = Matter.Bodies.rectangle(
 			body.position.x,
 			body.position.y,
 			sensorSize.width,
@@ -123,7 +119,7 @@ export class SpacingModel {
 		}
 		this.#entries.set(body.id, entry)
 		this.#entriesBySensorId.set(sensorBody.id, entry)
-		Composite.add(this.#engine.world, sensorBody)
+		Matter.Composite.add(this.#engine.world, sensorBody)
 	}
 
 	/** Updates the tracked word size and rescales its sensor to match. */
@@ -147,7 +143,7 @@ export class SpacingModel {
 				this.#sensorPairs.delete(pair)
 			}
 		}
-		Composite.remove(this.#engine.world, entry.sensorBody)
+		Matter.Composite.remove(this.#engine.world, entry.sensorBody)
 	}
 
 	/**
@@ -217,8 +213,12 @@ export class SpacingModel {
 
 	/** Unsubscribes from engine collision events. */
 	dispose() {
-		Events.off(this.#engine, "collisionStart", this.#handleCollisionStart)
-		Events.off(this.#engine, "collisionEnd", this.#handleCollisionEnd)
+		Matter.Events.off(
+			this.#engine,
+			"collisionStart",
+			this.#handleCollisionStart,
+		)
+		Matter.Events.off(this.#engine, "collisionEnd", this.#handleCollisionEnd)
 	}
 
 	/** The sensor dimensions for a word of the given size at the current reach. */
@@ -235,7 +235,7 @@ export class SpacingModel {
 		const target = this.#getSensorSize(entry.bodySize)
 		const { width: current, height: currentHeight } = entry.sensorSize
 		if (target.width === current && target.height === currentHeight) return
-		Body.scale(
+		Matter.Body.scale(
 			entry.sensorBody,
 			target.width / current,
 			target.height / currentHeight,
@@ -256,8 +256,8 @@ export class SpacingModel {
 		for (const entry of this.#entries.values()) {
 			const { body, sensorBody } = entry
 			if (body.isSleeping) continue
-			Body.setPosition(sensorBody, body.position)
-			Body.setAngle(sensorBody, body.angle)
+			Matter.Body.setPosition(sensorBody, body.position)
+			Matter.Body.setAngle(sensorBody, body.angle)
 		}
 	}
 
@@ -269,7 +269,7 @@ export class SpacingModel {
 	 * `wordA`/`wordB` marks the static frame or input side, which is not pushed.
 	 */
 	#applyPairRepulsion(
-		pair: Pair,
+		pair: Matter.Pair,
 		{
 			margin,
 			inflation,
@@ -311,20 +311,23 @@ export class SpacingModel {
 		// Applied at each word's centre: a pure separating push, leaving
 		// orientation entirely to the angular restoring torque.
 		if (wordA != null) {
-			Body.applyForce(wordA.body, wordA.body.position, { x: -fx, y: -fy })
+			Matter.Body.applyForce(wordA.body, wordA.body.position, {
+				x: -fx,
+				y: -fy,
+			})
 		}
 		if (wordB != null) {
-			Body.applyForce(wordB.body, wordB.body.position, { x: fx, y: fy })
+			Matter.Body.applyForce(wordB.body, wordB.body.position, { x: fx, y: fy })
 		}
 	}
 
-	#handleCollisionStart = (event: IEventCollision<Engine>) => {
+	#handleCollisionStart = (event: Matter.IEventCollision<Matter.Engine>) => {
 		for (const pair of event.pairs) {
 			if (pair.isSensor) this.#sensorPairs.add(pair)
 		}
 	}
 
-	#handleCollisionEnd = (event: IEventCollision<Engine>) => {
+	#handleCollisionEnd = (event: Matter.IEventCollision<Matter.Engine>) => {
 		for (const pair of event.pairs) {
 			if (pair.isSensor) this.#sensorPairs.delete(pair)
 		}

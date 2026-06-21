@@ -1,4 +1,4 @@
-import { Bodies, Body, Composite, type Engine } from "matter-js"
+import Matter from "matter-js"
 import {
 	INPUT_VOLUME_COLLISION_CATEGORY,
 	INPUT_VOLUME_COLLISION_MASK,
@@ -29,19 +29,19 @@ interface Rect extends Size {
  * grace ends, so the simulation stays the single writer of a word's mask.
  */
 export class InputVolume {
-	#engine: Engine
-	#body: Body
+	#engine: Matter.Engine
+	#body: Matter.Body
 	#bodySize: Size = {
 		width: INPUT_VOLUME_MIN_SIZE,
 		height: INPUT_VOLUME_MIN_SIZE,
 	}
 	#enabled = false
 	/** Word bodies still in input grace, keyed by their body id. */
-	#grace: Map<number, Body> = new Map()
+	#grace: Map<number, Matter.Body> = new Map()
 
-	constructor(engine: Engine) {
+	constructor(engine: Matter.Engine) {
 		this.#engine = engine
-		this.#body = Bodies.rectangle(
+		this.#body = Matter.Bodies.rectangle(
 			0,
 			0,
 			INPUT_VOLUME_MIN_SIZE,
@@ -58,7 +58,7 @@ export class InputVolume {
 
 	/** The static input-volume body. {@link SpacingModel} classifies word↔input
 	 * pairs by identity against this body. */
-	get body(): Body {
+	get body(): Matter.Body {
 		return this.#body
 	}
 
@@ -75,7 +75,7 @@ export class InputVolume {
 	setRect(rect: Rect | null): number[] {
 		if (rect == null) {
 			if (!this.#enabled) return []
-			Composite.remove(this.#engine.world, this.#body)
+			Matter.Composite.remove(this.#engine.world, this.#body)
 			this.#enabled = false
 			return this.#clearGrace()
 		}
@@ -85,13 +85,13 @@ export class InputVolume {
 		const scaleX = width / this.#bodySize.width
 		const scaleY = height / this.#bodySize.height
 		if (scaleX !== 1 || scaleY !== 1) {
-			Body.scale(this.#body, scaleX, scaleY)
+			Matter.Body.scale(this.#body, scaleX, scaleY)
 			this.#bodySize = { width, height }
 		}
-		Body.setPosition(this.#body, { x: rect.x, y: rect.y })
+		Matter.Body.setPosition(this.#body, { x: rect.x, y: rect.y })
 
 		if (!this.#enabled) {
-			Composite.add(this.#engine.world, this.#body)
+			Matter.Composite.add(this.#engine.world, this.#body)
 			this.#enabled = true
 		}
 		return []
@@ -99,7 +99,7 @@ export class InputVolume {
 
 	/** Puts a freshly-spawned word into input grace: it ignores the input volume
 	 * until it has left it once. */
-	beginGrace(body: Body) {
+	beginGrace(body: Matter.Body) {
 		this.#grace.set(body.id, body)
 	}
 
@@ -137,7 +137,7 @@ export class InputVolume {
 	}
 
 	/** AABB overlap of a word body's bounds against the input-volume body. */
-	#overlaps(body: Body): boolean {
+	#overlaps(body: Matter.Body): boolean {
 		const a = body.bounds
 		const b = this.#body.bounds
 		return (

@@ -9,6 +9,9 @@
 
 		/* Bundler mode */
 		"moduleResolution": "bundler",
+		"paths": {
+			"@quentinroy/word-cloud": ["./lib/index.ts"]
+		},
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
 		"moduleDetection": "force",

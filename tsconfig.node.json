@@ -4,5 +4,5 @@
 		"types": ["node"],
 		"resolveJsonModule": true
 	},
-	"include": ["plugins", "vite.config.ts", "vitest.config.ts"]
+	"include": ["plugins", "scripts", "vite.config.ts", "vitest.config.ts"]
 }

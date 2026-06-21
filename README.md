@@ -478,7 +478,15 @@ The demo lives in `demo/` and is served by `index.html` during local development
 pnpm build
 ```
 
-This produces the publishable library in `dist/`.
+This produces the publishable library in `dist/` and the deployable demo artifacts in `dist-demo/`.
+
+Use these focused commands when needed:
+
+```sh
+pnpm build:lib      # library output only (dist/)
+pnpm build:demo     # library + demo artifacts + demo contract checks
+pnpm verify:demo    # validate dist-demo artifact contract
+```
 
 ## Development
 

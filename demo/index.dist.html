@@ -2,20 +2,30 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<link rel="icon" type="image/svg+xml" href="/demo/favicon.svg">
+		<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Word Cloud Demo</title>
-		<link rel="stylesheet" href="/demo/main.css">
-		<script type="module" src="/demo/main.ts"></script>
+		<link rel="stylesheet" href="./assets/main.css">
+		<script type="importmap">
+		{
+			"imports": {
+				"@quentinroy/word-cloud": "./assets/index.js",
+				"@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
+				"matter-js": "https://esm.sh/matter-js@0.20.0",
+				"valibot": "https://esm.sh/valibot@1.4.1?exports=array,boolean,number,object,optional,safeParse,string"
+			}
+		}
+		</script>
+		<script type="module" src="./main.js"></script>
 	</head>
 	<body>
 		<x-word-cloud word-action="drag" word-input show-framerate></x-word-cloud>
 		<footer>
 			<div id="lib-info">
-				<a href="%VITE_LIB_HOMEPAGE%" id="lib-name">%VITE_LIB_NAME%</a>
+				<a href="%DEMO_LIB_HOMEPAGE%" id="lib-name">%DEMO_LIB_NAME%</a>
 				<span id="version">
-					<span id="lib-version">v%VITE_LIB_VERSION%</span>
-					<span id="commit-hash">(%VITE_GIT_COMMIT_HASH%)</span></span
+					<span id="lib-version">v%DEMO_LIB_VERSION%</span>
+					<span id="commit-hash">(%DEMO_GIT_COMMIT_HASH%)</span></span
 				>
 			</div>
 			<form id="controls">
@@ -65,8 +75,8 @@
 				</div>
 				<div><button type="button" id="clear" value="Clear">Clear</button></div>
 			</form>
-			<a id="github-link" href="%VITE_LIB_HOMEPAGE%"
-				><img src="/demo/github.svg" alt="GitHub"></a
+			<a id="github-link" href="%DEMO_LIB_HOMEPAGE%"
+				><img src="./assets/github.svg" alt="GitHub"></a
 			>
 		</footer>
 	</body>

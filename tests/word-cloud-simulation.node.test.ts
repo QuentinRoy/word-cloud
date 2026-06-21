@@ -1,4 +1,4 @@
-import { Composite, Engine } from "matter-js"
+import Matter from "matter-js"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { normalizeAngle } from "../lib/utils.ts"
 import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
@@ -13,8 +13,8 @@ import { WordCloudSimulation } from "../lib/word-cloud-simulation.ts"
 const WORD_WIDTH = 40
 const WORD_HEIGHT = 20
 
-function step(engine: Engine, times = 1) {
-	for (let i = 0; i < times; i++) Engine.update(engine, 1000 / 60)
+function step(engine: Matter.Engine, times = 1) {
+	for (let i = 0; i < times; i++) Matter.Engine.update(engine, 1000 / 60)
 }
 
 describe("WordCloudSimulation", () => {
@@ -32,10 +32,10 @@ describe("WordCloudSimulation", () => {
 			width: WORD_WIDTH,
 			height: WORD_HEIGHT,
 		})
-		expect(Composite.allBodies(sim.engine.world)).toContain(body)
+		expect(Matter.Composite.allBodies(sim.engine.world)).toContain(body)
 
 		sim.removeWord(body.id)
-		expect(Composite.allBodies(sim.engine.world)).not.toContain(body)
+		expect(Matter.Composite.allBodies(sim.engine.world)).not.toContain(body)
 	})
 
 	it("applies the initial velocity to a newly added word", () => {
@@ -100,7 +100,7 @@ describe("WordCloudSimulation", () => {
 		// sleeps after ~60 low-motion frames, and a lone narrow word rotates back
 		// slowly enough to dip under the motion threshold while still tilted.
 		for (let i = 0; i < 600; i++) {
-			Engine.update(sim.engine, 1000 / 60)
+			Matter.Engine.update(sim.engine, 1000 / 60)
 			// Invariant: a sleeping word is always aligned. 0.01 comfortably
 			// exceeds the simulation's rest epsilon (0.001) while still being far
 			// below the 0.3 starting tilt, so a body frozen mid-rotation would trip
@@ -189,11 +189,15 @@ describe("WordCloudSimulation", () => {
 	describe("input volume", () => {
 		it("adds and removes the input-volume body from the world", () => {
 			sim.setInputVolume({ x: 200, y: 150, width: 50, height: 30 })
-			expect(Composite.allBodies(sim.engine.world).length).toBeGreaterThan(4)
+			expect(
+				Matter.Composite.allBodies(sim.engine.world).length,
+			).toBeGreaterThan(4)
 
-			const before = Composite.allBodies(sim.engine.world).length
+			const before = Matter.Composite.allBodies(sim.engine.world).length
 			sim.setInputVolume(null)
-			expect(Composite.allBodies(sim.engine.world).length).toBe(before - 1)
+			expect(Matter.Composite.allBodies(sim.engine.world).length).toBe(
+				before - 1,
+			)
 		})
 
 		it("uses the input spacing to repel a non-ignoring word", () => {

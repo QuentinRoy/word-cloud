@@ -1,4 +1,4 @@
-import { Bodies, Body } from "matter-js"
+import Matter from "matter-js"
 import { describe, expect, it } from "vitest"
 import {
 	applyAngularRestoringTorque,
@@ -59,7 +59,7 @@ const TORQUE_OPTIONS = {
 const BODY_SIZE = { width: 100, height: 40 }
 
 function makeBody({ angle = 0, isStatic = false } = {}) {
-	return Bodies.rectangle(0, 0, BODY_SIZE.width, BODY_SIZE.height, {
+	return Matter.Bodies.rectangle(0, 0, BODY_SIZE.width, BODY_SIZE.height, {
 		angle,
 		isStatic,
 	})
@@ -123,7 +123,7 @@ describe("applyAngularRestoringTorque", () => {
 	it("adds a damping torque linear in angular velocity and independent of the angle error", () => {
 		const dampingTorque = (angle: number, angularVelocity: number) => {
 			const spun = makeBody({ angle })
-			Body.setAngularVelocity(spun, angularVelocity)
+			Matter.Body.setAngularVelocity(spun, angularVelocity)
 			applyAngularRestoringTorque({
 				body: spun,
 				bodySize: BODY_SIZE,
@@ -148,7 +148,7 @@ describe("applyAngularRestoringTorque", () => {
 		const angle = 0.5
 		const torqueAt = (angularVelocity: number) => {
 			const body = makeBody({ angle })
-			Body.setAngularVelocity(body, angularVelocity)
+			Matter.Body.setAngularVelocity(body, angularVelocity)
 			applyAngularRestoringTorque({
 				body,
 				bodySize: BODY_SIZE,
@@ -175,7 +175,7 @@ describe("applyAngularRestoringTorque", () => {
 
 	it("does not damp inside the dead zone even when spinning", () => {
 		const body = makeBody({ angle: 0.0005 })
-		Body.setAngularVelocity(body, 5)
+		Matter.Body.setAngularVelocity(body, 5)
 		applyAngularRestoringTorque({
 			body,
 			bodySize: BODY_SIZE,

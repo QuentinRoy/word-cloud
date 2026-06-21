@@ -1,12 +1,4 @@
-import {
-	Bodies,
-	Body,
-	Composite,
-	Engine,
-	Events,
-	Runner,
-	Sleeping,
-} from "matter-js"
+import Matter from "matter-js"
 import {
 	FRAME_COLLISION_CATEGORY,
 	FRAME_COLLISION_MASK,
@@ -56,7 +48,7 @@ interface DragLock {
 }
 
 interface WordEntry {
-	body: Body
+	body: Matter.Body
 	bodySize: Size
 	dragLock: DragLock | null
 }
@@ -87,9 +79,14 @@ export interface AddWordOptions {
  * supplies measured sizes and drives drag through the kinematic verbs.
  */
 export class WordCloudSimulation {
-	#engine: Engine
-	#runner: Runner
-	#frameBodies: { left: Body; right: Body; top: Body; bottom: Body }
+	#engine: Matter.Engine
+	#runner: Matter.Runner
+	#frameBodies: {
+		left: Matter.Body
+		right: Matter.Body
+		top: Matter.Body
+		bottom: Matter.Body
+	}
 	#frameBodySize = { horizontalLength: 1, verticalLength: 1 }
 	#inputVolume: InputVolume
 	#spacingModel: SpacingModel
@@ -101,7 +98,7 @@ export class WordCloudSimulation {
 	onTick: ((frameDelta: number) => void) | null = null
 
 	constructor() {
-		this.#engine = Engine.create()
+		this.#engine = Matter.Engine.create()
 		this.#engine.gravity.y = 0
 		this.#engine.gravity.scale = 0
 		// Once a region of the cloud settles, Matter sleeps those bodies and the
@@ -116,21 +113,21 @@ export class WordCloudSimulation {
 		// the torque then skips it. #gateSleepingByAlignment closes that gap by
 		// keeping a word awake until it is actually horizontal.
 		this.#engine.enableSleeping = true
-		this.#runner = Runner.create()
+		this.#runner = Matter.Runner.create()
 		this.#frameBodies = this.#setupFrameBodies()
 		this.#inputVolume = new InputVolume(this.#engine)
 		this.#spacingModel = new SpacingModel(this.#engine, {
 			inputVolumeBody: this.#inputVolume.body,
 		})
-		Events.on(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
-		Events.on(this.#runner, "tick", this.#handleTick)
+		Matter.Events.on(this.#engine, "beforeUpdate", this.#handleBeforeUpdate)
+		Matter.Events.on(this.#runner, "tick", this.#handleTick)
 	}
 
 	/** The Matter engine, exposed read-only as the one escape hatch for the
 	 * element's dev-flagged debug `Render`. Everything else crosses the seam as
 	 * intent ({@link onTick}/{@link onWordGrab}/{@link onWordRelease}) so the
 	 * element never names a Matter event. */
-	get engine(): Engine {
+	get engine(): Matter.Engine {
 		return this.#engine
 	}
 
@@ -147,16 +144,16 @@ export class WordCloudSimulation {
 		angle = 0,
 		velocity,
 		ignoreInputVolumeUntilExit = false,
-	}: AddWordOptions): Body {
-		const body = Bodies.rectangle(x, y, width, height, {
+	}: AddWordOptions): Matter.Body {
+		const body = Matter.Bodies.rectangle(x, y, width, height, {
 			chamfer: { radius: CHAMFER_RADIUS },
 			angle,
 			frictionAir: WORD_AIR_FRICTION,
 			restitution: WORD_RESTITUTION,
 			collisionFilter: { category: WORD_COLLISION_CATEGORY },
 		})
-		if (velocity) Body.setVelocity(body, velocity)
-		Composite.add(this.#engine.world, body)
+		if (velocity) Matter.Body.setVelocity(body, velocity)
+		Matter.Composite.add(this.#engine.world, body)
 
 		const entry: WordEntry = {
 			body,
@@ -183,13 +180,13 @@ export class WordCloudSimulation {
 		this.unlockDrag(id)
 		this.#inputVolume.forget(id)
 		this.#spacingModel.removeWord(id)
-		Composite.remove(this.#engine.world, entry.body)
+		Matter.Composite.remove(this.#engine.world, entry.body)
 		this.#words.delete(id)
 	}
 
 	/**
 	 * Rescales a word's body and sensor to a newly-measured size. While the
-	 * word is drag-locked, its inertia is briefly restored so `Body.scale` can
+	 * word is drag-locked, its inertia is briefly restored so `Matter.Body.scale` can
 	 * recompute it, then re-frozen at the new value.
 	 */
 	setWordSize(id: number, { width, height }: Size) {
@@ -200,10 +197,14 @@ export class WordCloudSimulation {
 
 		const { dragLock } = entry
 		if (dragLock != null) {
-			Body.setInertia(entry.body, dragLock.initialInertia)
+			Matter.Body.setInertia(entry.body, dragLock.initialInertia)
 		}
 
-		Body.scale(entry.body, width / previousWidth, height / previousHeight)
+		Matter.Body.scale(
+			entry.body,
+			width / previousWidth,
+			height / previousHeight,
+		)
 		entry.bodySize = { width, height }
 		this.#spacingModel.setWordSize(id, { width, height })
 
@@ -227,20 +228,26 @@ export class WordCloudSimulation {
 		const scaleVertical = verticalLength / this.#frameBodySize.verticalLength
 
 		if (scaleVertical !== 1) {
-			Body.scale(left, 1, scaleVertical)
-			Body.scale(right, 1, scaleVertical)
+			Matter.Body.scale(left, 1, scaleVertical)
+			Matter.Body.scale(right, 1, scaleVertical)
 		}
 		if (scaleHorizontal !== 1) {
-			Body.scale(top, scaleHorizontal, 1)
-			Body.scale(bottom, scaleHorizontal, 1)
+			Matter.Body.scale(top, scaleHorizontal, 1)
+			Matter.Body.scale(bottom, scaleHorizontal, 1)
 		}
 
 		this.#frameBodySize = { horizontalLength, verticalLength }
 
-		Body.setPosition(left, { x: -FRAME_THICKNESS / 2, y: height / 2 })
-		Body.setPosition(right, { x: width + FRAME_THICKNESS / 2, y: height / 2 })
-		Body.setPosition(top, { x: width / 2, y: -FRAME_THICKNESS / 2 })
-		Body.setPosition(bottom, { x: width / 2, y: height + FRAME_THICKNESS / 2 })
+		Matter.Body.setPosition(left, { x: -FRAME_THICKNESS / 2, y: height / 2 })
+		Matter.Body.setPosition(right, {
+			x: width + FRAME_THICKNESS / 2,
+			y: height / 2,
+		})
+		Matter.Body.setPosition(top, { x: width / 2, y: -FRAME_THICKNESS / 2 })
+		Matter.Body.setPosition(bottom, {
+			x: width / 2,
+			y: height + FRAME_THICKNESS / 2,
+		})
 	}
 
 	/**
@@ -281,8 +288,8 @@ export class WordCloudSimulation {
 	unlockDrag(id: number) {
 		const entry = this.#words.get(id)
 		if (entry == null || entry.dragLock == null) return
-		Body.setInertia(entry.body, entry.dragLock.initialInertia)
-		Body.setAngularVelocity(entry.body, 0)
+		Matter.Body.setInertia(entry.body, entry.dragLock.initialInertia)
+		Matter.Body.setAngularVelocity(entry.body, 0)
 		entry.dragLock = null
 		this.#applyWordMask(id)
 	}
@@ -294,9 +301,9 @@ export class WordCloudSimulation {
 	grabWord(id: number) {
 		const entry = this.#words.get(id)
 		if (entry == null) return
-		Sleeping.set(entry.body, false)
+		Matter.Sleeping.set(entry.body, false)
 		this.lockDrag(id)
-		Body.setVelocity(entry.body, { x: 0, y: 0 })
+		Matter.Body.setVelocity(entry.body, { x: 0, y: 0 })
 	}
 
 	/**
@@ -306,7 +313,7 @@ export class WordCloudSimulation {
 	moveWord(id: number, { x, y }: { x: number; y: number }) {
 		const entry = this.#words.get(id)
 		if (entry == null) return
-		Body.setPosition(entry.body, { x, y })
+		Matter.Body.setPosition(entry.body, { x, y })
 	}
 
 	/**
@@ -321,7 +328,7 @@ export class WordCloudSimulation {
 		const velocity = this.#isRunning
 			? { x: vPxPerMs.x * (1000 / 60), y: vPxPerMs.y * (1000 / 60) }
 			: { x: 0, y: 0 }
-		Body.setVelocity(entry.body, velocity)
+		Matter.Body.setVelocity(entry.body, velocity)
 	}
 
 	/** Starts the runner, advancing the simulation each frame. No-op if
@@ -329,14 +336,14 @@ export class WordCloudSimulation {
 	start() {
 		if (this.#isRunning) return
 		this.#isRunning = true
-		Runner.run(this.#runner, this.#engine)
+		Matter.Runner.run(this.#runner, this.#engine)
 	}
 
 	/** Stops the runner. No-op if not running. */
 	stop() {
 		if (!this.#isRunning) return
 		this.#isRunning = false
-		Runner.stop(this.#runner)
+		Matter.Runner.stop(this.#runner)
 	}
 
 	#setupFrameBodies() {
@@ -345,24 +352,24 @@ export class WordCloudSimulation {
 			mask: FRAME_COLLISION_MASK,
 		}
 		const frameBodies = {
-			left: Bodies.rectangle(0, 0, FRAME_THICKNESS, 1, {
+			left: Matter.Bodies.rectangle(0, 0, FRAME_THICKNESS, 1, {
 				isStatic: true,
 				collisionFilter,
 			}),
-			right: Bodies.rectangle(0, 0, FRAME_THICKNESS, 1, {
+			right: Matter.Bodies.rectangle(0, 0, FRAME_THICKNESS, 1, {
 				isStatic: true,
 				collisionFilter,
 			}),
-			top: Bodies.rectangle(0, 0, 1, FRAME_THICKNESS, {
+			top: Matter.Bodies.rectangle(0, 0, 1, FRAME_THICKNESS, {
 				isStatic: true,
 				collisionFilter,
 			}),
-			bottom: Bodies.rectangle(0, 0, 1, FRAME_THICKNESS, {
+			bottom: Matter.Bodies.rectangle(0, 0, 1, FRAME_THICKNESS, {
 				isStatic: true,
 				collisionFilter,
 			}),
 		}
-		Composite.add(this.#engine.world, [
+		Matter.Composite.add(this.#engine.world, [
 			frameBodies.left,
 			frameBodies.right,
 			frameBodies.top,
@@ -385,9 +392,9 @@ export class WordCloudSimulation {
 
 	/** Pins a body's rotation while it is drag-locked: infinite inertia so it
 	 * can't be spun, and any residual spin zeroed out. */
-	#freezeRotation(body: Body) {
-		Body.setInertia(body, Infinity)
-		Body.setAngularVelocity(body, 0)
+	#freezeRotation(body: Matter.Body) {
+		Matter.Body.setInertia(body, Infinity)
+		Matter.Body.setAngularVelocity(body, 0)
 	}
 
 	/**
@@ -407,7 +414,7 @@ export class WordCloudSimulation {
 				body.sleepThreshold = DEFAULT_SLEEP_THRESHOLD
 			} else {
 				body.sleepThreshold = Infinity
-				if (body.isSleeping) Sleeping.set(body, false)
+				if (body.isSleeping) Matter.Sleeping.set(body, false)
 			}
 		}
 	}
