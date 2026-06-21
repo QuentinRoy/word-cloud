@@ -4,7 +4,8 @@
 		"noEmit": false,
 		"outDir": "./dist-demo",
 		"rootDir": "./demo",
-		"rewriteRelativeImportExtensions": true
+		"rewriteRelativeImportExtensions": true,
+		"paths": {}
 	},
 	"include": ["demo"]
 }
