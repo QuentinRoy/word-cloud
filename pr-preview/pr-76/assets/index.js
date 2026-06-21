@@ -1197,4 +1197,4 @@ var oe = class i extends e(HTMLElement, {
 //#endregion
 export { oe as HTMLWordCloudElement, p as PhysicsPauseEvent, d as WordActionChangeEvent, s as WordAddEvent, l as WordChangeEvent, c as WordCheckEvent, u as WordDeleteEvent, N as WordHandle, f as WordInputToggleEvent, se as version };
 
-//# sourceMappingURL=word-cloud.js.map
+//# sourceMappingURL=index.js.map
