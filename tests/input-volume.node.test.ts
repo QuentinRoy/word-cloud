@@ -1,4 +1,4 @@
-import { Bodies, Body, Engine } from "matter-js"
+import Matter from "matter-js"
 import { beforeEach, describe, expect, it } from "vitest"
 import { InputVolume } from "../lib/input-volume.ts"
 
@@ -8,16 +8,16 @@ import { InputVolume } from "../lib/input-volume.ts"
  * from the body's real bounds, exactly as the simulation drives it each tick.
  */
 
-function wordBody(x: number, y: number): Body {
-	return Bodies.rectangle(x, y, 40, 20)
+function wordBody(x: number, y: number): Matter.Body {
+	return Matter.Bodies.rectangle(x, y, 40, 20)
 }
 
 describe("InputVolume", () => {
-	let engine: Engine
+	let engine: Matter.Engine
 	let inputVolume: InputVolume
 
 	beforeEach(() => {
-		engine = Engine.create()
+		engine = Matter.Engine.create()
 		inputVolume = new InputVolume(engine)
 	})
 
@@ -46,7 +46,7 @@ describe("InputVolume", () => {
 		expect(inputVolume.ignores(body.id)).toBe(true)
 
 		// Move it clear of the volume: released, and reported once.
-		Body.setPosition(body, { x: 300, y: 300 })
+		Matter.Body.setPosition(body, { x: 300, y: 300 })
 		expect(inputVolume.releaseExitedWords()).toEqual([body.id])
 		expect(inputVolume.ignores(body.id)).toBe(false)
 		expect(inputVolume.releaseExitedWords()).toEqual([])
