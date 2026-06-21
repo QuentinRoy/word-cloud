@@ -73,10 +73,7 @@ writeFileSync(
 const builtLibraryMapSource = readFileSync(builtLibraryMapPath, "utf8")
 writeFileSync(
 	outputLibraryMapPath,
-	builtLibraryMapSource.replace(
-		'"file":"index.js"',
-		'"file":"word-cloud.js"',
-	),
+	builtLibraryMapSource.replace('"file":"index.js"', '"file":"word-cloud.js"'),
 	"utf8",
 )
 
