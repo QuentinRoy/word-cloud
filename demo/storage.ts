@@ -1,39 +1,55 @@
-import { type } from "arktype"
-import { toPrecision } from "../lib/utils"
+import {
+	array,
+	boolean,
+	type InferInput,
+	type InferOutput,
+	number,
+	object,
+	optional,
+	safeParse,
+	string,
+} from "valibot"
 
-let wordSchema = type({
-	word: "string",
-	x: "number",
-	y: "number",
-	angle: "number = 0",
-	checked: "boolean = false",
-}).array()
+const wordSchema = array(
+	object({
+		word: string(),
+		x: number(),
+		y: number(),
+		angle: optional(number(), 0),
+		checked: optional(boolean(), false),
+	}),
+)
 
-export function getSavedWords(key: string): typeof wordSchema.inferOut {
-	let savedWordsString = window.localStorage.getItem(key)
-	let parsedWords: unknown = []
+function toPrecision(number: number, precision: number): number {
+	const factor = 10 ** Math.floor(precision)
+	return Math.round(number * factor) / factor
+}
+
+export function getSavedWords(key: string): InferOutput<typeof wordSchema> {
+	const savedWordsString = window.localStorage.getItem(key)
+	let parsedWords: unknown
 	try {
 		parsedWords = JSON.parse(savedWordsString ?? "[]")
 	} catch (e) {
 		console.error("Failed to parse saved words from localStorage:", e)
 		return []
 	}
-	let validationResult = wordSchema(parsedWords)
-	if (validationResult instanceof type.errors) {
+	const validationResult = safeParse(wordSchema, parsedWords)
+	if (!validationResult.success) {
 		console.error(
 			"Saved words in localStorage have invalid format:",
-			validationResult.summary,
+			validationResult.issues,
 		)
 		return []
 	}
-	return validationResult
+	return validationResult.output
 }
 
 export function saveWords(
 	key: string,
-	words: Iterable<(typeof wordSchema.inferIn)[number]>,
+	words: Iterable<InferInput<typeof wordSchema>[number]>,
 ) {
-	let wordArray = Array.from(words, ({ word, x, y, angle, checked }) => {
+	const wordArray = Array.from(words, ({ word, x, y, angle, checked }) => {
 		return {
 			word,
 			x: toPrecision(x, 1),

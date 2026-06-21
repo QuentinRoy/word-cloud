@@ -1,4 +1,4 @@
-import { Body, Vector } from "matter-js"
+import Matter from "matter-js"
 import { normalizeAngle } from "./utils.ts"
 
 /**
@@ -52,7 +52,7 @@ export function applyAngularRestoringTorque({
 	dampingCoefficient,
 	springWidthReference,
 }: {
-	body: Body
+	body: Matter.Body
 	bodySize: { width: number; height: number }
 	restAngle: number
 	restAngleEpsilon: number
@@ -72,11 +72,17 @@ export function applyAngularRestoringTorque({
 	if (forceArm <= 0) return
 
 	const forceMagnitude = torque / (2 * forceArm)
-	const bodyAxis = Vector.rotate(Vector.create(1, 0), body.angle)
-	const pointA = Vector.add(body.position, Vector.mult(bodyAxis, forceArm))
-	const pointB = Vector.add(body.position, Vector.mult(bodyAxis, -forceArm))
-	const force = Vector.mult(Vector.perp(bodyAxis), forceMagnitude)
+	const bodyAxis = Matter.Vector.rotate(Matter.Vector.create(1, 0), body.angle)
+	const pointA = Matter.Vector.add(
+		body.position,
+		Matter.Vector.mult(bodyAxis, forceArm),
+	)
+	const pointB = Matter.Vector.add(
+		body.position,
+		Matter.Vector.mult(bodyAxis, -forceArm),
+	)
+	const force = Matter.Vector.mult(Matter.Vector.perp(bodyAxis), forceMagnitude)
 
-	Body.applyForce(body, pointA, force)
-	Body.applyForce(body, pointB, Vector.neg(force))
+	Matter.Body.applyForce(body, pointA, force)
+	Matter.Body.applyForce(body, pointB, Matter.Vector.neg(force))
 }

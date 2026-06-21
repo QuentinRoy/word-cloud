@@ -11,7 +11,18 @@
 		"enabled": true,
 		"rules": {
 			"style": {
-				"useConst": "off"
+				"useConst": "off",
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"paths": {
+							"matter-js": {
+								"allowImportNames": ["default"],
+								"message": "Use `import Matter from \"matter-js\"` and access APIs as `Matter.Body`, `Matter.Vector`, etc. Named imports are incompatible with the externalized CDN build."
+							}
+						}
+					}
+				}
 			}
 		}
 	},

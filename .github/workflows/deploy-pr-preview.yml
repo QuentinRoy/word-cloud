@@ -42,8 +42,6 @@ jobs:
       - name: Build demo
         if: github.event.action != 'closed'
         run: pnpm run build:demo
-        env:
-          PAGES_BASE_PATH: /word-cloud/pr-preview/pr-${{ github.event.pull_request.number }}/
 
       - name: Deploy preview
         if: github.event.action != 'closed'
