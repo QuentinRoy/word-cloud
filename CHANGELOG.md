@@ -1,5 +1,12 @@
 # @quentinroy/word-cloud
 
+## 0.15.1
+
+### Patch Changes
+
+- dd064cd: Publish the library entry as `word-cloud.js`/`word-cloud.d.ts` instead of `index.js`/`index.d.ts`. Imports via the `@quentinroy/word-cloud` package name are unaffected.
+- 142447f: Fix matter-js import without bundling or ts module interop.
+
 ## 0.15.0
 
 ### Minor Changes
