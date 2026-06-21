@@ -13,7 +13,7 @@ interface DependencySpec {
 }
 
 const distIndexPath = join(workspaceRoot, "dist-demo", "index.html")
-const demoTemplatePath = join(workspaceRoot, "demo", "index.dist.html")
+const demoTemplatePath = join(workspaceRoot, "demo", "demo.html")
 
 function fail(message: string): never {
 	console.error(`[verify:demo] ${message}`)
@@ -102,20 +102,13 @@ const depSpecs = {
 
 const demoTemplateHtml = readFileSync(demoTemplatePath, "utf8")
 const distIndexHtml = readFileSync(distIndexPath, "utf8")
-const demoTemplateMap = parseInlineImportMap(
-	demoTemplateHtml,
-	"demo/index.dist.html",
-)
+const demoTemplateMap = parseInlineImportMap(demoTemplateHtml, "demo/demo.html")
 
 // prepare-demo copies the import map into the built page verbatim (it only
 // stamps the footer placeholders), so version drift can only originate in the
 // template — checking it there is enough. The built page's own contract (no
 // unresolved placeholders) is asserted below.
-verifyImportMapVersions(
-	"demo/index.dist.html",
-	demoTemplateMap.imports,
-	depSpecs,
-)
+verifyImportMapVersions("demo/demo.html", demoTemplateMap.imports, depSpecs)
 
 if (/%(?:VITE|DEMO)_[A-Z_]+%/.test(distIndexHtml)) {
 	fail("dist-demo/index.html still contains unresolved metadata placeholders")

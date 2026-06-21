@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process"
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { extname, join } from "node:path"
 import {
 	distDemoDir,
 	distDir,
@@ -9,21 +9,11 @@ import {
 	workspaceRoot,
 } from "./utils.ts"
 
-const distDemoAssetsDir = join(distDemoDir, "assets")
+const demoDir = join(workspaceRoot, "demo")
+const indexTemplatePath = join(demoDir, "demo.html")
 
-const indexTemplatePath = join(workspaceRoot, "demo", "index.dist.html")
-const demoCssPath = join(workspaceRoot, "demo", "main.css")
-const demoFaviconPath = join(workspaceRoot, "demo", "favicon.svg")
-const demoGithubLogoPath = join(workspaceRoot, "demo", "github.svg")
 const builtLibraryPath = join(distDir, "word-cloud.js")
 const builtLibraryMapPath = join(distDir, "word-cloud.js.map")
-
-const outputIndexPath = join(distDemoDir, "index.html")
-const outputDemoCssPath = join(distDemoAssetsDir, "main.css")
-const outputFaviconPath = join(distDemoAssetsDir, "favicon.svg")
-const outputGithubLogoPath = join(distDemoAssetsDir, "github.svg")
-const outputLibraryPath = join(distDemoAssetsDir, "word-cloud.js")
-const outputLibraryMapPath = join(distDemoAssetsDir, "word-cloud.js.map")
 
 function getGitCommitHash(): string {
 	try {
@@ -52,16 +42,29 @@ function stampDemoIndex(template: string, packageJson: PackageJson): string {
 	return html
 }
 
+function shouldCopyDemoFile(source: string): boolean {
+	const extension = extname(source)
+
+	// Keep directories so `cpSync` can traverse them.
+	if (!extension) {
+		return true
+	}
+
+	return extension !== ".html" && extension !== ".ts"
+}
+
 const packageJson = await getPackageJson()
 const template = readFileSync(indexTemplatePath, "utf8")
-const stampedIndex = stampDemoIndex(template, packageJson)
 
-mkdirSync(distDemoAssetsDir, { recursive: true })
+mkdirSync(distDemoDir, { recursive: true })
 
-cpSync(demoCssPath, outputDemoCssPath)
-cpSync(demoFaviconPath, outputFaviconPath)
-cpSync(demoGithubLogoPath, outputGithubLogoPath)
-cpSync(builtLibraryPath, outputLibraryPath)
-cpSync(builtLibraryMapPath, outputLibraryMapPath)
+cpSync(demoDir, distDemoDir, { recursive: true, filter: shouldCopyDemoFile })
 
-writeFileSync(outputIndexPath, stampedIndex, "utf8")
+cpSync(builtLibraryPath, join(distDemoDir, "word-cloud.js"))
+cpSync(builtLibraryMapPath, join(distDemoDir, "word-cloud.js.map"))
+
+writeFileSync(
+	join(distDemoDir, "index.html"),
+	stampDemoIndex(template, packageJson),
+	"utf8",
+)

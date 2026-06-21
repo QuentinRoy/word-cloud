@@ -2,21 +2,21 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Word Cloud Demo</title>
-		<link rel="stylesheet" href="./assets/main.css">
+		<link rel="stylesheet" href="./demo.css">
 		<script type="importmap">
 		{
 			"imports": {
-				"@quentinroy/word-cloud": "./assets/word-cloud.js",
+				"@quentinroy/word-cloud": "./word-cloud.js",
 				"@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
 				"matter-js": "https://esm.sh/matter-js@0.20.0",
 				"valibot": "https://esm.sh/valibot@1.4.1?exports=array,boolean,number,object,optional,safeParse,string"
 			}
 		}
 		</script>
-		<script type="module" src="./main.js"></script>
+		<script type="module" src="./demo.js"></script>
 	</head>
 	<body>
 		<x-word-cloud word-action="drag" word-input show-framerate></x-word-cloud>
@@ -76,7 +76,7 @@
 				<div><button type="button" id="clear" value="Clear">Clear</button></div>
 			</form>
 			<a id="github-link" href="%DEMO_LIB_HOMEPAGE%"
-				><img src="./assets/github.svg" alt="GitHub"></a
+				><img src="./github.svg" alt="GitHub"></a
 			>
 		</footer>
 	</body>
