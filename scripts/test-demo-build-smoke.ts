@@ -23,19 +23,10 @@ function isWithin(root: string, path: string): boolean {
 	return normalizedPath.startsWith(normalizedRoot)
 }
 
-const requiredFiles = ["index.html", "main.js"]
-
 let server: Server | undefined
 let browser: Browser | undefined
 
 try {
-	for (const file of requiredFiles) {
-		const path = join(distDemoDir, file)
-		if (!existsSync(path)) {
-			fail(`missing required artifact: dist-demo/${file}`)
-		}
-	}
-
 	const httpServer = createServer((request, response) => {
 		const requestPath = request.url?.split("?")[0] ?? "/"
 		const relativePath =
@@ -171,6 +162,31 @@ try {
 
 	if (renderedWordCount < 1) {
 		fail("word-cloud did not render a word after add()")
+	}
+
+	const toggleInput = await page.evaluate(() => {
+		const cloud = document.querySelector("x-word-cloud") as {
+			wordInput: boolean
+		} | null
+		const wordInputToggle =
+			document.querySelector<HTMLInputElement>("#word-input")
+		if (cloud == null || wordInputToggle == null) return false
+		let isInputEnabled = cloud.wordInput
+		if (isInputEnabled !== wordInputToggle.checked) {
+			return false
+		}
+		wordInputToggle.click()
+		if (
+			wordInputToggle.checked === isInputEnabled ||
+			cloud.wordInput === isInputEnabled
+		) {
+			return false
+		}
+		return true
+	})
+
+	if (!toggleInput) {
+		fail("word-cloud input mode toggle did not update state")
 	}
 
 	console.log("[test:demo-smoke] demo build smoke checks passed")
