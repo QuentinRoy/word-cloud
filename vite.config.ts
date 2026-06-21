@@ -29,7 +29,7 @@ export default defineConfig(({ command }) => {
 			define,
 			resolve: {
 				alias: {
-					"@quentinroy/word-cloud": resolve(workspaceRoot, "lib/index.ts"),
+					"@quentinroy/word-cloud": resolve(workspaceRoot, "lib/word-cloud.ts"),
 				},
 			},
 		}
@@ -40,9 +40,9 @@ export default defineConfig(({ command }) => {
 		define,
 		build: {
 			lib: {
-				entry: resolve(workspaceRoot, "lib/index.ts"),
+				entry: resolve(workspaceRoot, "lib/word-cloud.ts"),
 				formats: ["es"],
-				fileName: "index",
+				fileName: "word-cloud",
 			},
 			sourcemap: true,
 			rollupOptions: {

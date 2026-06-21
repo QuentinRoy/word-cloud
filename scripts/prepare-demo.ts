@@ -15,15 +15,15 @@ const indexTemplatePath = join(workspaceRoot, "demo", "index.dist.html")
 const demoCssPath = join(workspaceRoot, "demo", "main.css")
 const demoFaviconPath = join(workspaceRoot, "demo", "favicon.svg")
 const demoGithubLogoPath = join(workspaceRoot, "demo", "github.svg")
-const builtLibraryPath = join(distDir, "index.js")
-const builtLibraryMapPath = join(distDir, "index.js.map")
+const builtLibraryPath = join(distDir, "word-cloud.js")
+const builtLibraryMapPath = join(distDir, "word-cloud.js.map")
 
 const outputIndexPath = join(distDemoDir, "index.html")
 const outputDemoCssPath = join(distDemoAssetsDir, "main.css")
 const outputFaviconPath = join(distDemoAssetsDir, "favicon.svg")
 const outputGithubLogoPath = join(distDemoAssetsDir, "github.svg")
-const outputLibraryPath = join(distDemoAssetsDir, "index.js")
-const outputLibraryMapPath = join(distDemoAssetsDir, "index.js.map")
+const outputLibraryPath = join(distDemoAssetsDir, "word-cloud.js")
+const outputLibraryMapPath = join(distDemoAssetsDir, "word-cloud.js.map")
 
 function getGitCommitHash(): string {
 	try {
