@@ -1,4 +1,4 @@
-import type { Body } from "matter-js"
+import type Matter from "matter-js"
 import type { WordRemoveOptions } from "./word-cloud-element.ts"
 import type { HTMLWordElement } from "./word-element.ts"
 import {
@@ -30,7 +30,7 @@ export interface WordCallbacks {
 
 export interface WordOptions extends WordCallbacks {
 	/** The Matter body that drives this word's position and angle. */
-	body: Body
+	body: Matter.Body
 	/** The DOM element rendering this word. */
 	element: HTMLWordElement
 	/** The measured layout size of {@link element}, tracked separately. */
@@ -50,7 +50,7 @@ export interface WordOptions extends WordCallbacks {
 export class Word {
 	/** The word's id, shared with its Matter body. */
 	readonly id: number
-	readonly body: Body
+	readonly body: Matter.Body
 	readonly element: HTMLWordElement
 	/** The live, consumer-facing handle for this word. */
 	readonly handle: WordHandle
