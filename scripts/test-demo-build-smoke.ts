@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { createServer } from "node:http"
-import { extname, join, normalize } from "node:path"
+import { extname, join, normalize, sep } from "node:path"
 import { chromium } from "playwright"
 import { distDemoDir } from "./utils.ts"
 
@@ -19,7 +19,7 @@ const mimeByExtension: Record<string, string> = {
 }
 
 function isWithin(root: string, path: string): boolean {
-	const normalizedRoot = `${normalize(root)}${root.endsWith("/") ? "" : "/"}`
+	const normalizedRoot = `${normalize(root)}${root.endsWith(sep) ? "" : sep}`
 	const normalizedPath = normalize(path)
 	return normalizedPath.startsWith(normalizedRoot)
 }

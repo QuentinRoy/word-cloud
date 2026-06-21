@@ -186,7 +186,7 @@ export class WordCloudSimulation {
 
 	/**
 	 * Rescales a word's body and sensor to a newly-measured size. While the
-	 * word is drag-locked, its inertia is briefly restored so `matter.Body.scale` can
+	 * word is drag-locked, its inertia is briefly restored so `Matter.Body.scale` can
 	 * recompute it, then re-frozen at the new value.
 	 */
 	setWordSize(id: number, { width, height }: Size) {

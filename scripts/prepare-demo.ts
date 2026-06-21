@@ -61,7 +61,23 @@ mkdirSync(distDemoAssetsDir, { recursive: true })
 cpSync(demoCssPath, outputDemoCssPath)
 cpSync(demoFaviconPath, outputFaviconPath)
 cpSync(demoGithubLogoPath, outputGithubLogoPath)
-cpSync(builtLibraryPath, outputLibraryPath)
-cpSync(builtLibraryMapPath, outputLibraryMapPath)
+const builtLibrarySource = readFileSync(builtLibraryPath, "utf8")
+writeFileSync(
+	outputLibraryPath,
+	builtLibrarySource.replace(
+		"//# sourceMappingURL=index.js.map",
+		"//# sourceMappingURL=word-cloud.js.map",
+	),
+	"utf8",
+)
+const builtLibraryMapSource = readFileSync(builtLibraryMapPath, "utf8")
+writeFileSync(
+	outputLibraryMapPath,
+	builtLibraryMapSource.replace(
+		'"file":"index.js"',
+		'"file":"word-cloud.js"',
+	),
+	"utf8",
+)
 
 writeFileSync(outputIndexPath, stampedIndex, "utf8")
