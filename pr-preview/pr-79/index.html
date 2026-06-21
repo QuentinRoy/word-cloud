@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Word Cloud Demo</title>
+		<link rel="stylesheet" href="./demo.css">
+		<script type="importmap">
+		{
+			"imports": {
+				"@quentinroy/word-cloud": "./word-cloud.js",
+				"@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
+				"matter-js": "https://esm.sh/matter-js@0.20.0",
+				"valibot": "https://esm.sh/valibot@1.4.1?exports=array,boolean,number,object,optional,safeParse,string"
+			}
+		}
+		</script>
+		<script type="module" src="./demo.js"></script>
+	</head>
+	<body>
+		<x-word-cloud word-action="drag" word-input show-framerate></x-word-cloud>
+		<footer>
+			<div id="lib-info">
+				<a href="https://github.com/QuentinRoy/word-cloud" id="lib-name">@quentinroy/word-cloud</a>
+				<span id="version">
+					<span id="lib-version">v0.15.0</span>
+					<span id="commit-hash">(0305e55)</span></span
+				>
+			</div>
+			<form id="controls">
+				<div class="control-group">
+					<div>
+						<input
+							type="radio"
+							name="word-action"
+							value="drag"
+							id="word-action-drag"
+							checked
+						>
+						<label for="word-action-drag"
+							>Drag <span class="hotkey"><kbd>G</kbd></span></label
+						>
+					</div>
+					<div>
+						<input
+							type="radio"
+							name="word-action"
+							value="check"
+							id="word-action-check"
+						>
+						<label for="word-action-check"
+							>Check <span class="hotkey"><kbd>C</kbd></span></label
+						>
+					</div>
+					<div>
+						<input
+							type="radio"
+							name="word-action"
+							value="delete"
+							id="word-action-delete"
+						>
+						<label for="word-action-delete"
+							>Delete <span class="hotkey"><kbd>D</kbd></span></label
+						>
+					</div>
+				</div>
+				<div class="control-group">
+					<div>
+						<input type="checkbox" name="word-input" id="word-input" checked>
+						<label for="word-input"
+							>Input <span class="hotkey"><kbd>I</kbd></span></label
+						>
+					</div>
+				</div>
+				<div><button type="button" id="clear" value="Clear">Clear</button></div>
+			</form>
+			<a id="github-link" href="https://github.com/QuentinRoy/word-cloud"
+				><img src="./github.svg" alt="GitHub"></a
+			>
+		</footer>
+	</body>
+</html>
