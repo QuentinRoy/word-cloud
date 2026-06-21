@@ -22,8 +22,8 @@ const outputIndexPath = join(distDemoDir, "index.html")
 const outputDemoCssPath = join(distDemoAssetsDir, "main.css")
 const outputFaviconPath = join(distDemoAssetsDir, "favicon.svg")
 const outputGithubLogoPath = join(distDemoAssetsDir, "github.svg")
-const outputLibraryPath = join(distDemoAssetsDir, "word-cloud.js")
-const outputLibraryMapPath = join(distDemoAssetsDir, "word-cloud.js.map")
+const outputLibraryPath = join(distDemoAssetsDir, "index.js")
+const outputLibraryMapPath = join(distDemoAssetsDir, "index.js.map")
 
 function getGitCommitHash(): string {
 	try {
@@ -61,20 +61,7 @@ mkdirSync(distDemoAssetsDir, { recursive: true })
 cpSync(demoCssPath, outputDemoCssPath)
 cpSync(demoFaviconPath, outputFaviconPath)
 cpSync(demoGithubLogoPath, outputGithubLogoPath)
-const builtLibrarySource = readFileSync(builtLibraryPath, "utf8")
-writeFileSync(
-	outputLibraryPath,
-	builtLibrarySource.replace(
-		"//# sourceMappingURL=index.js.map",
-		"//# sourceMappingURL=word-cloud.js.map",
-	),
-	"utf8",
-)
-const builtLibraryMapSource = readFileSync(builtLibraryMapPath, "utf8")
-writeFileSync(
-	outputLibraryMapPath,
-	builtLibraryMapSource.replace('"file":"index.js"', '"file":"word-cloud.js"'),
-	"utf8",
-)
+cpSync(builtLibraryPath, outputLibraryPath)
+cpSync(builtLibraryMapPath, outputLibraryMapPath)
 
 writeFileSync(outputIndexPath, stampedIndex, "utf8")

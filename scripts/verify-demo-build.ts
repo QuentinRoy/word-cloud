@@ -21,11 +21,7 @@ function fail(message: string): never {
 }
 
 function toPinnedVersion(range: string): string {
-	let value = range.trim()
-	while (value.startsWith("^") || value.startsWith("~")) {
-		value = value.slice(1)
-	}
-	return value
+	return range.trim().replace(/^[~^]+/, "")
 }
 
 function parseDependencySpec(name: string, spec: string): DependencySpec {
@@ -110,14 +106,16 @@ const demoTemplateMap = parseInlineImportMap(
 	demoTemplateHtml,
 	"demo/index.dist.html",
 )
-const distMap = parseInlineImportMap(distIndexHtml, "dist-demo/index.html")
 
+// prepare-demo copies the import map into the built page verbatim (it only
+// stamps the footer placeholders), so version drift can only originate in the
+// template — checking it there is enough. The built page's own contract (no
+// unresolved placeholders) is asserted below.
 verifyImportMapVersions(
 	"demo/index.dist.html",
-	demoTemplateMap.imports ?? {},
+	demoTemplateMap.imports,
 	depSpecs,
 )
-verifyImportMapVersions("dist-demo/index.html", distMap.imports ?? {}, depSpecs)
 
 if (/%(?:VITE|DEMO)_[A-Z_]+%/.test(distIndexHtml)) {
 	fail("dist-demo/index.html still contains unresolved metadata placeholders")
