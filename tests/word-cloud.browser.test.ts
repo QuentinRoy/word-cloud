@@ -5,7 +5,7 @@ import {
 	WordAddEvent,
 	WordCheckEvent,
 	WordDeleteEvent,
-} from "../lib/index.ts"
+} from "../lib/word-cloud.ts"
 
 declare module "vitest/browser" {
 	interface BrowserCommands {

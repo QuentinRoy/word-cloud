@@ -10,7 +10,7 @@
 		/* Bundler mode */
 		"moduleResolution": "bundler",
 		"paths": {
-			"@quentinroy/word-cloud": ["./lib/index.ts"]
+			"@quentinroy/word-cloud": ["./lib/word-cloud.ts"]
 		},
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
