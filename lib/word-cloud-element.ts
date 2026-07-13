@@ -369,7 +369,15 @@ export class HTMLWordCloudElement extends WithAttributeProps(HTMLElement, {
 		entryAnimation = "fade",
 		ignoreInputVolumeUntilExit = false,
 	}: AddWordOptions): WordHandle {
-		let element = document.createElement(wordElementTagName) as HTMLWordElement
+		// Pass the scoped registry (when available) so the element upgrades to
+		// HTMLWordElement. Plain document.createElement uses the global registry,
+		// where x-word is only defined in the fallback path.
+		let element = document.createElement(
+			wordElementTagName,
+			scopedElementRegistry == null
+				? undefined
+				: { customElementRegistry: scopedElementRegistry },
+		) as HTMLWordElement
 		// It seems we need to add element before setting the checked property
 		// otherwise it does not update the attribute properly.
 		this.#container.appendChild(element)
