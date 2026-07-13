@@ -1014,7 +1014,7 @@ var oe = class i extends e(HTMLElement, {
 		});
 	}
 	#h({ word: e, x: t, y: n, angle: r = 0, checked: a = !1, velocity: o, entryAnimation: u = "fade", ignoreInputVolumeUntilExit: d = !1 }) {
-		let f = document.createElement(Z);
+		let f = document.createElement(Z, X == null ? void 0 : { customElementRegistry: X });
 		this.#i.appendChild(f), f.value = e, f.checked = a, u !== "none" && f.animateEntry(u), f.classList.add("word"), f.action = i.#e[this.wordAction];
 		let { width: p, height: m } = i.#t(f), h, g = (e = {}) => {
 			e.exitAnimation = e.exitAnimation ?? "fade", this.#g(h, e);
