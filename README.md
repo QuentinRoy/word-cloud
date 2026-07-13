@@ -29,6 +29,35 @@ deno add npm:@quentinroy/word-cloud
 bun add @quentinroy/word-cloud
 ```
 
+## Use without a bundler
+
+The package can be loaded directly from browser modules without bundling. Because its published JavaScript uses bare module specifiers, provide an import map for the package and its dependencies.
+
+Update the version numbers in the example below as needed.
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.15.2",
+    "@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
+    "matter-js": "https://esm.sh/matter-js@0.20.0",
+    "valibot": "https://esm.sh/valibot@1.4.1?exports=array,boolean,number,object,optional,safeParse,string"
+  }
+}
+</script>
+
+<script type="module">
+  import { HTMLWordCloudElement } from "@quentinroy/word-cloud"
+
+  customElements.define("x-word-cloud", HTMLWordCloudElement)
+</script>
+
+<x-word-cloud word-action="drag" word-input></x-word-cloud>
+```
+
+The [online demo](https://quentinroy.github.io/word-cloud/) uses the same no-bundler structure, although it loads the locally built library artifact rather than the published npm package.
+
 ## Register the element
 
 Consumers are expected to register their own custom element tag:
