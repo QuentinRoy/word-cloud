@@ -161,6 +161,25 @@ describe("HTMLWordCloudElement API", () => {
 		expect(getAllWordElements(element)).toHaveLength(1)
 	})
 
+	it("add upgrades the word element so the default fade entry animation runs", async () => {
+		const { element } = await createCloudElement()
+		// This add() omits entryAnimation, so it defaults to "fade" and calls
+		// element.animateEntry(...). Regression guard for scoped custom element
+		// registries: the word element must be created against the scoped
+		// registry so it upgrades to HTMLWordElement. Chromium >= 150 no longer
+		// upgrades a globally-created element inside a scoped-registry shadow
+		// tree, which threw "animateEntry is not a function". (Chromium < 150,
+		// including the Chromium currently bundled with Playwright, upgrades
+		// leniently and does not exercise the regression.)
+		expect(() => element.add({ word: "Fade", x: 100, y: 100 })).not.toThrow()
+		await flushFrames(2)
+
+		const word = getFirstWordElement(element)
+		expect(
+			typeof (word as unknown as { animateEntry?: unknown }).animateEntry,
+		).toBe("function")
+	})
+
 	it("add with an iterable returns an array of WordHandles", async () => {
 		const { element } = await createCloudElement()
 		const handles = element.add([
