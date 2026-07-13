@@ -2,7 +2,7 @@
 
 The package can be loaded directly from browser modules without bundling. Because its published JavaScript uses bare module specifiers, provide an import map for the package and its dependencies.
 
-The version numbers below match the package dependencies at the time this example was written. Update them when using newer package or dependency versions.
+Update the version numbers in the example below as needed.
 
 ```html
 <script type="importmap">
