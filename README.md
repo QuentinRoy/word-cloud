@@ -41,8 +41,7 @@ Update the version numbers in the example below as needed.
   "imports": {
     "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.15.2",
     "@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
-    "matter-js": "https://esm.sh/matter-js@0.20.0",
-    "valibot": "https://esm.sh/valibot@1.4.1?exports=array,boolean,number,object,optional,safeParse,string"
+    "matter-js": "https://esm.sh/matter-js@0.20.0"
   }
 }
 </script>
