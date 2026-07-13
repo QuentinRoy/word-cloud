@@ -1193,7 +1193,7 @@ var oe = class i extends e(HTMLElement, {
 	#P() {
 		this.#a.stop(), this.#m != null && a.Render.stop(this.#m);
 	}
-}, se = "0.15.1";
+}, se = "0.15.2";
 //#endregion
 export { oe as HTMLWordCloudElement, p as PhysicsPauseEvent, d as WordActionChangeEvent, s as WordAddEvent, l as WordChangeEvent, c as WordCheckEvent, u as WordDeleteEvent, N as WordHandle, f as WordInputToggleEvent, se as version };
 
