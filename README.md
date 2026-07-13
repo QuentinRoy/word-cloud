@@ -29,6 +29,34 @@ deno add npm:@quentinroy/word-cloud
 bun add @quentinroy/word-cloud
 ```
 
+## Use without a bundler
+
+The package can be loaded directly from browser modules without bundling. Because its published JavaScript uses bare module specifiers, provide an import map for the package and its dependencies.
+
+Update the version numbers in the example below as needed.
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.15.2",
+    "@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
+    "matter-js": "https://esm.sh/matter-js@0.20.0"
+  }
+}
+</script>
+
+<script type="module">
+  import { HTMLWordCloudElement } from "@quentinroy/word-cloud"
+
+  customElements.define("x-word-cloud", HTMLWordCloudElement)
+</script>
+
+<x-word-cloud word-action="drag" word-input></x-word-cloud>
+```
+
+The [online demo](https://quentinroy.github.io/word-cloud/) uses the same no-bundler structure, although it loads the locally built library artifact rather than the published npm package.
+
 ## Register the element
 
 Consumers are expected to register their own custom element tag:
@@ -82,8 +110,6 @@ The element uses four independent attributes:
 - `physics-paused`: boolean, pauses the physics runner while leaving the rendered state intact. Note that while other functions will continue to work, dragging and velocity changes won't have any effect while physics is paused.
 - `show-framerate`: boolean, controls whether the framerate display is shown.
 
-
-
 Supported `word-action` values:
 
 - `none`: default, words are passive.
@@ -96,7 +122,6 @@ Set `word-input` to show the built-in input form:
 ```html
 <x-word-cloud word-action="check" word-input></x-word-cloud>
 ```
-
 
 Each of these can also be read or set via the corresponding property on the element instance. Instance properties use camelCase instead of kebab-case. For example, the above configuration can be achieved with:
 
@@ -138,7 +163,6 @@ wordCloud.inputSpacing = 20
 Adds one or more words to the cloud. Pass a single options object to get back a
 single [`WordHandle`](#wordhandle), or an iterable of options objects to get back
 an array of handles.
-
 
 The optional second argument (`defaults`) provides default values that are merged into each word before creation (except `word`, which must always be specified per word).
 Any required field (except `word`) becomes optional in each word if provided in `defaults`.
@@ -265,7 +289,6 @@ handle.remove({ exitAnimation: "none" })
 Supported options:
 
 - `exitAnimation` _(optional)_: exit animation to run when the words are removed. Supported values are `"fade"`, and `"none"`. Defaults to `"fade"`.
-
 
 ## WordData
 
