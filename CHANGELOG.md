@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.15.2
+
+### Patch Changes
+
+- 1888424: Fix words failing to appear in recent Chromium versions ("animateEntry is not a function").
+
 ## 0.15.1
 
 ### Patch Changes
