@@ -52,7 +52,7 @@
 		"cssnano": "^8.0.2",
 		"cssnano-preset-default": "^8.0.2",
 		"html-minifier-terser": "^7.2.0",
-		"playwright": "^1.60.0",
+		"playwright": "^1.61.1",
 		"postcss": "^8.5.15",
 		"type-fest": "^5.7.0",
 		"typescript": "~6.0.3",
