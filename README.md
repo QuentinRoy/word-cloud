@@ -111,8 +111,6 @@ The element uses four independent attributes:
 - `physics-paused`: boolean, pauses the physics runner while leaving the rendered state intact. Note that while other functions will continue to work, dragging and velocity changes won't have any effect while physics is paused.
 - `show-framerate`: boolean, controls whether the framerate display is shown.
 
-
-
 Supported `word-action` values:
 
 - `none`: default, words are passive.
@@ -125,7 +123,6 @@ Set `word-input` to show the built-in input form:
 ```html
 <x-word-cloud word-action="check" word-input></x-word-cloud>
 ```
-
 
 Each of these can also be read or set via the corresponding property on the element instance. Instance properties use camelCase instead of kebab-case. For example, the above configuration can be achieved with:
 
@@ -167,7 +164,6 @@ wordCloud.inputSpacing = 20
 Adds one or more words to the cloud. Pass a single options object to get back a
 single [`WordHandle`](#wordhandle), or an iterable of options objects to get back
 an array of handles.
-
 
 The optional second argument (`defaults`) provides default values that are merged into each word before creation (except `word`, which must always be specified per word).
 Any required field (except `word`) becomes optional in each word if provided in `defaults`.
@@ -294,7 +290,6 @@ handle.remove({ exitAnimation: "none" })
 Supported options:
 
 - `exitAnimation` _(optional)_: exit animation to run when the words are removed. Supported values are `"fade"`, and `"none"`. Defaults to `"fade"`.
-
 
 ## WordData
 
