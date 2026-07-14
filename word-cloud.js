@@ -1,7 +1,6 @@
-import { WithAttributeProps as e, boolean as t, number as n, pickList as r, string as i } from "@quentinroy/custom-element-mixins";
-import a from "matter-js";
+import e from "matter-js";
 //#region lib/events.ts
-var o = class extends Event {
+var t = class extends Event {
 	#e;
 	constructor({ type: e, handle: t }, n) {
 		super(e, {
@@ -13,7 +12,7 @@ var o = class extends Event {
 	get handle() {
 		return this.#e;
 	}
-}, s = class e extends o {
+}, n = class e extends t {
 	static get type() {
 		return "word-add";
 	}
@@ -23,7 +22,7 @@ var o = class extends Event {
 			handle: t
 		});
 	}
-}, c = class e extends o {
+}, r = class e extends t {
 	#e;
 	static get type() {
 		return "word-check";
@@ -37,7 +36,7 @@ var o = class extends Event {
 	get checked() {
 		return this.#e;
 	}
-}, l = class e extends o {
+}, i = class e extends t {
 	#e;
 	#t;
 	static get type() {
@@ -55,7 +54,7 @@ var o = class extends Event {
 	get oldValue() {
 		return this.#t;
 	}
-}, u = class e extends o {
+}, a = class e extends t {
 	static get type() {
 		return "word-delete";
 	}
@@ -65,7 +64,7 @@ var o = class extends Event {
 			handle: t
 		});
 	}
-}, d = class e extends Event {
+}, o = class e extends Event {
 	#e;
 	#t;
 	static get type() {
@@ -83,7 +82,7 @@ var o = class extends Event {
 	get oldWordAction() {
 		return this.#t;
 	}
-}, f = class e extends Event {
+}, s = class e extends Event {
 	#e;
 	#t;
 	static get type() {
@@ -101,7 +100,7 @@ var o = class extends Event {
 	get oldWordInput() {
 		return this.#t;
 	}
-}, p = class e extends Event {
+}, c = class e extends Event {
 	#e;
 	#t;
 	static get type() {
@@ -119,7 +118,104 @@ var o = class extends Event {
 	get oldPhysicsPaused() {
 		return this.#t;
 	}
-}, m = 50, h = class {
+};
+//#endregion
+//#region node_modules/.pnpm/@jsr+quentinroy__custom-element-mixins@0.4.2/node_modules/@jsr/quentinroy__custom-element-mixins/source/attribute-serializers.js
+function l({ default: e = null } = {}) {
+	return {
+		parse(t) {
+			if (t == null) return e;
+			let n = Number(t);
+			return Number.isNaN(n) ? e : n;
+		},
+		serialize(e) {
+			return e == null ? null : String(e);
+		}
+	};
+}
+function u({ default: e = null } = {}) {
+	return {
+		parse(t) {
+			return t ?? e;
+		},
+		serialize(e) {
+			return e ?? null;
+		}
+	};
+}
+function d(e = {}) {
+	return {
+		parse(e) {
+			return e != null;
+		},
+		serialize(e) {
+			return e ? "" : null;
+		}
+	};
+}
+function f(e) {
+	let t = new Set(e.values);
+	return {
+		parse(n) {
+			return n == null || !t.has(n) ? e.default ?? null : n;
+		},
+		serialize(e) {
+			return e;
+		}
+	};
+}
+//#endregion
+//#region node_modules/.pnpm/@jsr+quentinroy__custom-element-mixins@0.4.2/node_modules/@jsr/quentinroy__custom-element-mixins/source/with-accessors.js
+function p(e, t) {
+	let n = {};
+	for (let e in t) {
+		let { get: r, set: i } = t[e];
+		n[e] = {
+			get: r,
+			enumerable: !0
+		}, i != null && (n[e].set = i);
+	}
+	return class extends e {
+		constructor(...e) {
+			super(...e), Object.defineProperties(this, n);
+		}
+	};
+}
+//#endregion
+//#region node_modules/.pnpm/@jsr+quentinroy__custom-element-mixins@0.4.2/node_modules/@jsr/quentinroy__custom-element-mixins/source/utils.js
+function m(e) {
+	return e.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+//#endregion
+//#region node_modules/.pnpm/@jsr+quentinroy__custom-element-mixins@0.4.2/node_modules/@jsr/quentinroy__custom-element-mixins/source/with-attribute-props.js
+function h(e, t) {
+	return p(e, g(t));
+}
+function g(e) {
+	let t = {};
+	for (let n in e) {
+		let r = e[n];
+		t[n] = ee(n, r);
+	}
+	return t;
+}
+function ee(e, t) {
+	let n = m(e), { parse: r, serialize: i } = t;
+	if (r == null || i == null) throw Error("parse and serialize must be defined in the serializer.");
+	return {
+		get() {
+			let e = this.getAttribute(n);
+			return r.call(this, e);
+		},
+		set(e) {
+			let t = i.call(this, e);
+			t == null ? this.removeAttribute(n) : this.setAttribute(n, t);
+		}
+	};
+}
+//#endregion
+//#region lib/drag-controller.ts
+var _ = 50, v = class {
 	#e;
 	#t;
 	#n = null;
@@ -180,7 +276,7 @@ var o = class extends Event {
 	};
 	#l(e) {
 		this.#r.push(e);
-		let t = e.t - m;
+		let t = e.t - _;
 		for (; this.#r.length > 1 && this.#r[0].t < t;) this.#r.shift();
 	}
 	#u() {
@@ -213,44 +309,44 @@ var o = class extends Event {
 		this.#e.removeEventListener("pointermove", this.#o), this.#e.removeEventListener("pointerup", this.#s), this.#e.removeEventListener("pointercancel", this.#c);
 	}
 };
-function g({ dragLocked: e, ignoresInput: t }) {
+function te({ dragLocked: e, ignoresInput: t }) {
 	return e ? 0 : t ? 9 : 11;
 }
 //#endregion
 //#region lib/utils.ts
-function _(e, t, n) {
+function y(e, t, n) {
 	let r = e.querySelector(t);
 	if (r instanceof n) return r;
 	throw Error(`Expected ${t} to be an instance of ${n.name}`);
 }
-function v(e, t) {
+function b(e, t) {
 	let n = 10 ** Math.floor(t);
 	return Math.round(e * n) / n;
 }
-function y() {
+function x() {
 	return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
-function b(e) {
+function S(e) {
 	return e %= 2 * Math.PI, e < -Math.PI ? e += 2 * Math.PI : e > Math.PI && (e -= 2 * Math.PI), e;
 }
-function ee(e) {
+function C(e) {
 	return typeof e?.[Symbol.iterator] == "function";
 }
 //#endregion
 //#region lib/physics-utils.ts
-function te({ margin: e, gap: t }) {
+function ne({ margin: e, gap: t }) {
 	return e <= 0 || t >= e ? null : Math.min(1, (e - t) / e);
 }
-function x({ body: e, bodySize: t, restAngle: n, restAngleEpsilon: r, springTorqueStiffness: i, dampingCoefficient: o, springWidthReference: s }) {
-	if (e.isStatic || e.isSleeping) return;
-	let c = b(e.angle) - n;
-	if (Math.abs(c) <= r) return;
-	let l = (-c * i - e.angularVelocity * o) * (t.width / s) ** 2, u = Math.min(t.width, t.height) * .25;
+function re({ body: t, bodySize: n, restAngle: r, restAngleEpsilon: i, springTorqueStiffness: a, dampingCoefficient: o, springWidthReference: s }) {
+	if (t.isStatic || t.isSleeping) return;
+	let c = S(t.angle) - r;
+	if (Math.abs(c) <= i) return;
+	let l = (-c * a - t.angularVelocity * o) * (n.width / s) ** 2, u = Math.min(n.width, n.height) * .25;
 	if (u <= 0) return;
-	let d = l / (2 * u), f = a.Vector.rotate(a.Vector.create(1, 0), e.angle), p = a.Vector.add(e.position, a.Vector.mult(f, u)), m = a.Vector.add(e.position, a.Vector.mult(f, -u)), h = a.Vector.mult(a.Vector.perp(f), d);
-	a.Body.applyForce(e, p, h), a.Body.applyForce(e, m, a.Vector.neg(h));
+	let d = l / (2 * u), f = e.Vector.rotate(e.Vector.create(1, 0), t.angle), p = e.Vector.add(t.position, e.Vector.mult(f, u)), m = e.Vector.add(t.position, e.Vector.mult(f, -u)), h = e.Vector.mult(e.Vector.perp(f), d);
+	e.Body.applyForce(t, p, h), e.Body.applyForce(t, m, e.Vector.neg(h));
 }
-var S = 3e-4, C = class {
+var ie = 3e-4, ae = class {
 	#e;
 	#t;
 	#n = /* @__PURE__ */ new Map();
@@ -260,15 +356,15 @@ var S = 3e-4, C = class {
 	#o = 5;
 	#s = 5;
 	#c = 5;
-	constructor(e, { inputVolumeBody: t }) {
-		this.#e = e, this.#t = t, a.Events.on(e, "collisionStart", this.#p), a.Events.on(e, "collisionEnd", this.#m);
+	constructor(t, { inputVolumeBody: n }) {
+		this.#e = t, this.#t = n, e.Events.on(t, "collisionStart", this.#p), e.Events.on(t, "collisionEnd", this.#m);
 	}
-	addWord(e, { width: t, height: n, isRepellable: r, ignoresInputVolume: i }) {
+	addWord(t, { width: n, height: r, isRepellable: i, ignoresInputVolume: a }) {
 		let o = {
-			width: t,
-			height: n
-		}, s = this.#l(o), c = a.Bodies.rectangle(e.position.x, e.position.y, s.width, s.height, {
-			angle: e.angle,
+			width: n,
+			height: r
+		}, s = this.#l(o), c = e.Bodies.rectangle(t.position.x, t.position.y, s.width, s.height, {
+			angle: t.angle,
 			isSensor: !0,
 			sleepThreshold: Infinity,
 			collisionFilter: {
@@ -276,14 +372,14 @@ var S = 3e-4, C = class {
 				mask: 14
 			}
 		}), l = {
-			body: e,
+			body: t,
 			bodySize: o,
 			sensorBody: c,
 			sensorSize: s,
-			isRepellable: r,
-			ignoresInputVolume: i
+			isRepellable: i,
+			ignoresInputVolume: a
 		};
-		this.#n.set(e.id, l), this.#r.set(c.id, l), a.Composite.add(this.#e.world, c);
+		this.#n.set(t.id, l), this.#r.set(c.id, l), e.Composite.add(this.#e.world, c);
 	}
 	setWordSize(e, { width: t, height: n }) {
 		let r = this.#n.get(e);
@@ -292,12 +388,12 @@ var S = 3e-4, C = class {
 			height: n
 		}, this.#u(r));
 	}
-	removeWord(e) {
-		let t = this.#n.get(e);
-		if (t != null) {
-			this.#r.delete(t.sensorBody.id), this.#n.delete(e);
-			for (let e of this.#i) (e.bodyA === t.sensorBody || e.bodyB === t.sensorBody) && this.#i.delete(e);
-			a.Composite.remove(this.#e.world, t.sensorBody);
+	removeWord(t) {
+		let n = this.#n.get(t);
+		if (n != null) {
+			this.#r.delete(n.sensorBody.id), this.#n.delete(t);
+			for (let e of this.#i) (e.bodyA === n.sensorBody || e.bodyB === n.sensorBody) && this.#i.delete(e);
+			e.Composite.remove(this.#e.world, n.sensorBody);
 		}
 	}
 	setSpacing({ word: e, edge: t, input: n }) {
@@ -334,7 +430,7 @@ var S = 3e-4, C = class {
 		}
 	}
 	dispose() {
-		a.Events.off(this.#e, "collisionStart", this.#p), a.Events.off(this.#e, "collisionEnd", this.#m);
+		e.Events.off(this.#e, "collisionStart", this.#p), e.Events.off(this.#e, "collisionEnd", this.#m);
 	}
 	#l({ width: e, height: t }) {
 		let n = this.#a;
@@ -343,30 +439,30 @@ var S = 3e-4, C = class {
 			height: t + 2 * n
 		};
 	}
-	#u(e) {
-		let t = this.#l(e.bodySize), { width: n, height: r } = e.sensorSize;
-		t.width === n && t.height === r || (a.Body.scale(e.sensorBody, t.width / n, t.height / r), e.sensorSize = t);
+	#u(t) {
+		let n = this.#l(t.bodySize), { width: r, height: i } = t.sensorSize;
+		n.width === r && n.height === i || (e.Body.scale(t.sensorBody, n.width / r, n.height / i), t.sensorSize = n);
 	}
 	#d() {
-		for (let e of this.#n.values()) {
-			let { body: t, sensorBody: n } = e;
-			t.isSleeping || (a.Body.setPosition(n, t.position), a.Body.setAngle(n, t.angle));
+		for (let t of this.#n.values()) {
+			let { body: n, sensorBody: r } = t;
+			n.isSleeping || (e.Body.setPosition(r, n.position), e.Body.setAngle(r, n.angle));
 		}
 	}
-	#f(e, { margin: t, inflation: n, wordA: r, wordB: i }) {
-		if (r != null && !r.isRepellable() || i != null && !i.isRepellable()) return;
-		let o = e.collision, s = te({
-			margin: t,
-			gap: n - o.depth
+	#f(t, { margin: n, inflation: r, wordA: i, wordB: a }) {
+		if (i != null && !i.isRepellable() || a != null && !a.isRepellable()) return;
+		let o = t.collision, s = ne({
+			margin: n,
+			gap: r - o.depth
 		});
 		if (s == null) return;
-		let c = o.normal.x, l = o.normal.y, u = e.bodyB.position.x - e.bodyA.position.x, d = e.bodyB.position.y - e.bodyA.position.y;
+		let c = o.normal.x, l = o.normal.y, u = t.bodyB.position.x - t.bodyA.position.x, d = t.bodyB.position.y - t.bodyA.position.y;
 		c * u + l * d < 0 && (c = -c, l = -l);
-		let f = s * S, p = c * f, m = l * f;
-		r != null && a.Body.applyForce(r.body, r.body.position, {
+		let f = s * ie, p = c * f, m = l * f;
+		i != null && e.Body.applyForce(i.body, i.body.position, {
 			x: -p,
 			y: -m
-		}), i != null && a.Body.applyForce(i.body, i.body.position, {
+		}), a != null && e.Body.applyForce(a.body, a.body.position, {
 			x: p,
 			y: m
 		});
@@ -432,7 +528,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 			composed: !1
 		});
 	}
-}, j = class e extends Event {
+}, oe = class e extends Event {
 	static get type() {
 		return "word-element-deleted-change";
 	}
@@ -446,24 +542,24 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	get deleted() {
 		return this.#e;
 	}
-}, M = class extends e(HTMLElement, {
-	checked: t(),
-	deleted: t(),
-	grabbed: t(),
-	action: r({ values: ["check", "delete"] }),
-	value: i({ default: "" })
+}, j = class extends h(HTMLElement, {
+	checked: d(),
+	deleted: d(),
+	grabbed: d(),
+	action: f({ values: ["check", "delete"] }),
+	value: u({ default: "" })
 }) {
 	#e;
 	#t;
 	#n;
 	#r;
-	#i = y();
+	#i = x();
 	#a = this.attachInternals();
 	constructor() {
 		super(), this.#e = this.attachShadow({
 			mode: "closed",
 			delegatesFocus: !0
-		}), this.#e.adoptedStyleSheets = [E], this.#e.appendChild(D.cloneNode(!0)), this.#t = _(this.#e, "input[name='checked']", HTMLInputElement), this.#t.id = `${this.#i}-checkbox`, this.#n = _(this.#e, "input[name='deleted']", HTMLInputElement), this.#n.id = `${this.#i}-deleted`, this.#r = _(this.#e, "label", HTMLLabelElement);
+		}), this.#e.adoptedStyleSheets = [E], this.#e.appendChild(D.cloneNode(!0)), this.#t = y(this.#e, "input[name='checked']", HTMLInputElement), this.#t.id = `${this.#i}-checkbox`, this.#n = y(this.#e, "input[name='deleted']", HTMLInputElement), this.#n.id = `${this.#i}-deleted`, this.#r = y(this.#e, "label", HTMLLabelElement);
 	}
 	static get observedAttributes() {
 		return [
@@ -514,7 +610,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 		this.dispatchEvent(new O({ checked: this.checked }));
 	}
 	#d() {
-		this.dispatchEvent(new j({ deleted: this.deleted }));
+		this.dispatchEvent(new oe({ deleted: this.deleted }));
 	}
 	#f({ oldValue: e, value: t }) {
 		this.dispatchEvent(new k({
@@ -540,7 +636,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	async animateExit(e = "fade") {
 		this.#a.states.add("exiting"), await Promise.allSettled(this.getAnimations({ subtree: !0 }).map((e) => e.finished)), this.#a.states.delete("exiting");
 	}
-}, N = class {
+}, M = class {
 	#e;
 	constructor(e) {
 		this.#e = e;
@@ -569,7 +665,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	remove(e) {
 		this.#e.remove(e);
 	}
-}, ne = class {
+}, N = class {
 	id;
 	body;
 	element;
@@ -577,7 +673,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	bodySize;
 	#e;
 	constructor({ body: e, element: t, bodySize: n, remove: r, onDelete: i, onCheckedChange: a, onValueChange: o }) {
-		this.id = e.id, this.body = e, this.element = t, this.bodySize = n, this.handle = new N({
+		this.id = e.id, this.body = e, this.element = t, this.bodySize = n, this.handle = new M({
 			getWord: () => t.value ?? "",
 			setWord: (e) => {
 				t.value = e;
@@ -605,7 +701,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	dispose() {
 		this.#e();
 	}
-}, re = class {
+}, P = class {
 	#e = /* @__PURE__ */ new Map();
 	#t = /* @__PURE__ */ new WeakMap();
 	add(e) {
@@ -623,17 +719,17 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	values() {
 		return this.#e.values();
 	}
-}, ie = T(":host{--space-s:0.5rem;--space-m:1rem;--input-padding-y:var(--space-s);--input-padding-x:var(--space-m);--word-padding-y:var(--space-s);--word-padding-x:var(--space-m);--fast-animation:50ms;--slow-animation:150ms;--extra-slow-animation:1s;--line-width:2px;--font-size:1.5rem;--font-family:Arial;--input-text-color:#000;--input-background-color:hwb(0 93% 7%);--input-border-color:hwb(0 27% 73%);--input-hover-text-color:var(--input-text-color);--input-hover-border-color:hwb(0 20% 66%);--input-hover-background-color:hwb(0 96% 4%);--input-hover-shadow-color:transparent;--input-focus-text-color:hwb(212 2% 88%);--input-focus-border-color:hwb(212 16% 22%);--input-focus-shadow-color:hwb(212 76% 0%);--input-focus-background-color:hwb(212 95% 0%);--input-caret-color:var(--input-focus-border-color);--word-focus-outline-color:hwb(212 50% 0%/0.95);--word-focus-outline-width:4px;--word-focus-outline-offset:4px;--word-text-color:hwb(276 2% 80%);--word-background-color:hwb(276 96% 0%);--word-border-color:var(--word-background-color);--word-delete-hover-text-color:hwb(357 45% 11%);--word-delete-hover-background-color:hwb(351 99% 0%);--word-checked-text-color:hwb(276 54% 31%);--word-checked-background-color:hwb(276 98% 0%);--word-checked-hover-text-color:hwb(276 21% 21%);--word-grabbed-background-color:hwb(212 90% 0%);--word-grabbed-border-color:hwb(212 76% 0%);--word-grabbed-text-color:hwb(211 5% 70%);--word-grabbed-shadow-blur:5px;--word-grabbed-shadow-color:hwb(0 0% 100%/0.05);--word-grabbed-scale-factor:1.1;--word-grabbed-scaling-duration:var(--fast-animation);--word-chip-fade-duration:var(--extra-slow-animation);--word-fade-in-duration:var(--slow-animation);--word-fade-out-duration:var(--slow-animation);--word-state-transition-duration:var(--slow-animation);--input-state-transition-duration:var(--slow-animation);display:block}.word-cloud{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:var(--font-size);line-height:1}.word-cloud .word{position:absolute;top:0;left:0;z-index:3;will-change:transform}input[type=text]{padding:var(--input-padding-y) var(--input-padding-x);font-family:var(--font-family);font-size:var(--font-size);color:var(--input-text-color);text-align:center;caret-color:var(--input-caret-color);background-color:var(--input-background-color);border:var(--line-width) solid var(--input-border-color);border-radius:var(--chamfer-radius,0);opacity:var(--opacity,1);transition:color var(--input-state-transition-duration,0s) ease-in,background-color var(--input-state-transition-duration,0s) ease-in,border-color var(--input-state-transition-duration,0s) ease-in,filter var(--input-state-transition-duration,0s) ease-in;&:hover{color:var(--input-hover-text-color);background-color:var(--input-hover-background-color);border-color:var(--input-hover-border-color);filter:drop-shadow(0 0 6px var(--input-hover-shadow-color))}&:focus,&:focus-visible{color:var(--input-focus-text-color);outline:none;background-color:var(--input-focus-background-color);border-color:var(--input-focus-border-color);border-radius:var(--chamfer-radius,0);filter:drop-shadow(0 0 10px var(--input-focus-shadow-color))}&:focus,&:focus-visible,&:hover{transition:color var(--input-state-transition-duration,0s) ease-out,background-color var(--input-state-transition-duration,0s) ease-out,border-color var(--input-state-transition-duration,0s) ease-out,filter var(--input-state-transition-duration,0s) ease-out}}form{z-index:2;display:none;opacity:0;transition:opacity var(--input-state-transition-duration,0s) ease-in-out,display var(--input-state-transition-duration,0s) allow-discrete ease-in-out}:host([word-input]){form{display:block;opacity:1}@starting-style{form{opacity:0}}}:host([word-action=drag]){.word{cursor:grab;user-select:none}.word[grabbed]{z-index:5;cursor:grabbing}}.word:focus{z-index:4}:host(:state(active)){.word,.word-cloud{cursor:grabbing}}.word-cloud-debug{top:0;left:0;z-index:1;width:100%;height:100%}.framerate-display,.word-cloud-debug{position:absolute;pointer-events:none}.framerate-display{right:6px;bottom:4px;display:none;font-family:monospace;font-size:.75rem;color:hwb(0 40% 60%/.7)}:host([show-framerate]) .framerate-display{display:block}"), P = w("<div class=\"word-cloud\"> <div class=\"word-cloud-debug\"></div> <div class=\"framerate-display\"></div> <form><input name=\"word-input\" type=\"text\" autocomplete=\"off\"></form> </div> "), F = 1, I = class {
+}, F = T(":host{--space-s:0.5rem;--space-m:1rem;--input-padding-y:var(--space-s);--input-padding-x:var(--space-m);--word-padding-y:var(--space-s);--word-padding-x:var(--space-m);--fast-animation:50ms;--slow-animation:150ms;--extra-slow-animation:1s;--line-width:2px;--font-size:1.5rem;--font-family:Arial;--input-text-color:#000;--input-background-color:hwb(0 93% 7%);--input-border-color:hwb(0 27% 73%);--input-hover-text-color:var(--input-text-color);--input-hover-border-color:hwb(0 20% 66%);--input-hover-background-color:hwb(0 96% 4%);--input-hover-shadow-color:transparent;--input-focus-text-color:hwb(212 2% 88%);--input-focus-border-color:hwb(212 16% 22%);--input-focus-shadow-color:hwb(212 76% 0%);--input-focus-background-color:hwb(212 95% 0%);--input-caret-color:var(--input-focus-border-color);--word-focus-outline-color:hwb(212 50% 0%/0.95);--word-focus-outline-width:4px;--word-focus-outline-offset:4px;--word-text-color:hwb(276 2% 80%);--word-background-color:hwb(276 96% 0%);--word-border-color:var(--word-background-color);--word-delete-hover-text-color:hwb(357 45% 11%);--word-delete-hover-background-color:hwb(351 99% 0%);--word-checked-text-color:hwb(276 54% 31%);--word-checked-background-color:hwb(276 98% 0%);--word-checked-hover-text-color:hwb(276 21% 21%);--word-grabbed-background-color:hwb(212 90% 0%);--word-grabbed-border-color:hwb(212 76% 0%);--word-grabbed-text-color:hwb(211 5% 70%);--word-grabbed-shadow-blur:5px;--word-grabbed-shadow-color:hwb(0 0% 100%/0.05);--word-grabbed-scale-factor:1.1;--word-grabbed-scaling-duration:var(--fast-animation);--word-chip-fade-duration:var(--extra-slow-animation);--word-fade-in-duration:var(--slow-animation);--word-fade-out-duration:var(--slow-animation);--word-state-transition-duration:var(--slow-animation);--input-state-transition-duration:var(--slow-animation);display:block}.word-cloud{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:var(--font-size);line-height:1}.word-cloud .word{position:absolute;top:0;left:0;z-index:3;will-change:transform}input[type=text]{padding:var(--input-padding-y) var(--input-padding-x);font-family:var(--font-family);font-size:var(--font-size);color:var(--input-text-color);text-align:center;caret-color:var(--input-caret-color);background-color:var(--input-background-color);border:var(--line-width) solid var(--input-border-color);border-radius:var(--chamfer-radius,0);opacity:var(--opacity,1);transition:color var(--input-state-transition-duration,0s) ease-in,background-color var(--input-state-transition-duration,0s) ease-in,border-color var(--input-state-transition-duration,0s) ease-in,filter var(--input-state-transition-duration,0s) ease-in;&:hover{color:var(--input-hover-text-color);background-color:var(--input-hover-background-color);border-color:var(--input-hover-border-color);filter:drop-shadow(0 0 6px var(--input-hover-shadow-color))}&:focus,&:focus-visible{color:var(--input-focus-text-color);outline:none;background-color:var(--input-focus-background-color);border-color:var(--input-focus-border-color);border-radius:var(--chamfer-radius,0);filter:drop-shadow(0 0 10px var(--input-focus-shadow-color))}&:focus,&:focus-visible,&:hover{transition:color var(--input-state-transition-duration,0s) ease-out,background-color var(--input-state-transition-duration,0s) ease-out,border-color var(--input-state-transition-duration,0s) ease-out,filter var(--input-state-transition-duration,0s) ease-out}}form{z-index:2;display:none;opacity:0;transition:opacity var(--input-state-transition-duration,0s) ease-in-out,display var(--input-state-transition-duration,0s) allow-discrete ease-in-out}:host([word-input]){form{display:block;opacity:1}@starting-style{form{opacity:0}}}:host([word-action=drag]){.word{cursor:grab;user-select:none}.word[grabbed]{z-index:5;cursor:grabbing}}.word:focus{z-index:4}:host(:state(active)){.word,.word-cloud{cursor:grabbing}}.word-cloud-debug{top:0;left:0;z-index:1;width:100%;height:100%}.framerate-display,.word-cloud-debug{position:absolute;pointer-events:none}.framerate-display{right:6px;bottom:4px;display:none;font-family:monospace;font-size:.75rem;color:hwb(0 40% 60%/.7)}:host([show-framerate]) .framerate-display{display:block}"), I = w("<div class=\"word-cloud\"> <div class=\"word-cloud-debug\"></div> <div class=\"framerate-display\"></div> <form><input name=\"word-input\" type=\"text\" autocomplete=\"off\"></form> </div> "), L = 1, R = class {
 	#e;
 	#t;
 	#n = {
-		width: F,
-		height: F
+		width: L,
+		height: L
 	};
 	#r = !1;
 	#i = /* @__PURE__ */ new Map();
-	constructor(e) {
-		this.#e = e, this.#t = a.Bodies.rectangle(0, 0, F, F, {
+	constructor(t) {
+		this.#e = t, this.#t = e.Bodies.rectangle(0, 0, L, L, {
 			isStatic: !0,
 			collisionFilter: {
 				category: 2,
@@ -647,16 +743,16 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	get enabled() {
 		return this.#r;
 	}
-	setRect(e) {
-		if (e == null) return this.#r ? (a.Composite.remove(this.#e.world, this.#t), this.#r = !1, this.#a()) : [];
-		let t = Math.max(F, e.width), n = Math.max(F, e.height), r = t / this.#n.width, i = n / this.#n.height;
-		return (r !== 1 || i !== 1) && (a.Body.scale(this.#t, r, i), this.#n = {
-			width: t,
-			height: n
-		}), a.Body.setPosition(this.#t, {
-			x: e.x,
-			y: e.y
-		}), this.#r ||= (a.Composite.add(this.#e.world, this.#t), !0), [];
+	setRect(t) {
+		if (t == null) return this.#r ? (e.Composite.remove(this.#e.world, this.#t), this.#r = !1, this.#a()) : [];
+		let n = Math.max(L, t.width), r = Math.max(L, t.height), i = n / this.#n.width, a = r / this.#n.height;
+		return (i !== 1 || a !== 1) && (e.Body.scale(this.#t, i, a), this.#n = {
+			width: n,
+			height: r
+		}), e.Body.setPosition(this.#t, {
+			x: t.x,
+			y: t.y
+		}), this.#r ||= (e.Composite.add(this.#e.world, this.#t), !0), [];
 	}
 	beginGrace(e) {
 		this.#i.set(e.id, e);
@@ -681,7 +777,7 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 		let t = e.bounds, n = this.#t.bounds;
 		return t.min.x <= n.max.x && t.max.x >= n.min.x && t.min.y <= n.max.y && t.max.y >= n.min.y;
 	}
-}, L = 1e3, R = 0, z = .001, B = .4, V = .2, H = 150, U = 60, W = .04, G = .2, K = class {
+}, z = 1e3, B = 0, V = .001, H = .4, U = .2, W = 150, G = 60, K = .04, se = .2, ce = class {
 	#e;
 	#t;
 	#n;
@@ -695,70 +791,70 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	#s = !1;
 	onTick = null;
 	constructor() {
-		this.#e = a.Engine.create(), this.#e.gravity.y = 0, this.#e.gravity.scale = 0, this.#e.enableSleeping = !0, this.#t = a.Runner.create(), this.#n = this.#c(), this.#i = new I(this.#e), this.#a = new C(this.#e, { inputVolumeBody: this.#i.body }), a.Events.on(this.#e, "beforeUpdate", this.#p), a.Events.on(this.#t, "tick", this.#m);
+		this.#e = e.Engine.create(), this.#e.gravity.y = 0, this.#e.gravity.scale = 0, this.#e.enableSleeping = !0, this.#t = e.Runner.create(), this.#n = this.#c(), this.#i = new R(this.#e), this.#a = new ae(this.#e, { inputVolumeBody: this.#i.body }), e.Events.on(this.#e, "beforeUpdate", this.#p), e.Events.on(this.#t, "tick", this.#m);
 	}
 	get engine() {
 		return this.#e;
 	}
-	addWord({ x: e, y: t, width: n, height: r, angle: i = 0, velocity: o, ignoreInputVolumeUntilExit: s = !1 }) {
-		let c = a.Bodies.rectangle(e, t, n, r, {
+	addWord({ x: t, y: n, width: r, height: i, angle: a = 0, velocity: o, ignoreInputVolumeUntilExit: s = !1 }) {
+		let c = e.Bodies.rectangle(t, n, r, i, {
 			chamfer: { radius: 8 },
-			angle: i,
-			frictionAir: W,
-			restitution: G,
+			angle: a,
+			frictionAir: K,
+			restitution: se,
 			collisionFilter: { category: 1 }
 		});
-		o && a.Body.setVelocity(c, o), a.Composite.add(this.#e.world, c);
+		o && e.Body.setVelocity(c, o), e.Composite.add(this.#e.world, c);
 		let l = {
 			body: c,
 			bodySize: {
-				width: n,
-				height: r
+				width: r,
+				height: i
 			},
 			dragLock: null
 		};
 		return this.#o.set(c.id, l), s && this.#i.beginGrace(c), this.#l(c.id), this.#a.addWord(c, {
-			width: n,
-			height: r,
+			width: r,
+			height: i,
 			isRepellable: () => !c.isStatic && l.dragLock == null,
 			ignoresInputVolume: () => this.#i.ignores(c.id)
 		}), c;
 	}
-	removeWord(e) {
-		let t = this.#o.get(e);
-		t != null && (this.unlockDrag(e), this.#i.forget(e), this.#a.removeWord(e), a.Composite.remove(this.#e.world, t.body), this.#o.delete(e));
+	removeWord(t) {
+		let n = this.#o.get(t);
+		n != null && (this.unlockDrag(t), this.#i.forget(t), this.#a.removeWord(t), e.Composite.remove(this.#e.world, n.body), this.#o.delete(t));
 	}
-	setWordSize(e, { width: t, height: n }) {
-		let r = this.#o.get(e);
-		if (r == null) return;
-		let { width: i, height: o } = r.bodySize;
-		if (t === i && n === o) return;
-		let { dragLock: s } = r;
-		s != null && a.Body.setInertia(r.body, s.initialInertia), a.Body.scale(r.body, t / i, n / o), r.bodySize = {
-			width: t,
-			height: n
-		}, this.#a.setWordSize(e, {
-			width: t,
-			height: n
-		}), s != null && (s.initialInertia = r.body.inertia, this.#u(r.body));
+	setWordSize(t, { width: n, height: r }) {
+		let i = this.#o.get(t);
+		if (i == null) return;
+		let { width: a, height: o } = i.bodySize;
+		if (n === a && r === o) return;
+		let { dragLock: s } = i;
+		s != null && e.Body.setInertia(i.body, s.initialInertia), e.Body.scale(i.body, n / a, r / o), i.bodySize = {
+			width: n,
+			height: r
+		}, this.#a.setWordSize(t, {
+			width: n,
+			height: r
+		}), s != null && (s.initialInertia = i.body.inertia, this.#u(i.body));
 	}
-	setFrameSize({ width: e, height: t }) {
-		let { left: n, right: r, top: i, bottom: o } = this.#n, s = Math.max(1, e + L * 2), c = Math.max(1, t + L * 2), l = s / this.#r.horizontalLength, u = c / this.#r.verticalLength;
-		u !== 1 && (a.Body.scale(n, 1, u), a.Body.scale(r, 1, u)), l !== 1 && (a.Body.scale(i, l, 1), a.Body.scale(o, l, 1)), this.#r = {
+	setFrameSize({ width: t, height: n }) {
+		let { left: r, right: i, top: a, bottom: o } = this.#n, s = Math.max(1, t + z * 2), c = Math.max(1, n + z * 2), l = s / this.#r.horizontalLength, u = c / this.#r.verticalLength;
+		u !== 1 && (e.Body.scale(r, 1, u), e.Body.scale(i, 1, u)), l !== 1 && (e.Body.scale(a, l, 1), e.Body.scale(o, l, 1)), this.#r = {
 			horizontalLength: s,
 			verticalLength: c
-		}, a.Body.setPosition(n, {
+		}, e.Body.setPosition(r, {
 			x: -1e3 / 2,
-			y: t / 2
-		}), a.Body.setPosition(r, {
-			x: e + L / 2,
-			y: t / 2
-		}), a.Body.setPosition(i, {
-			x: e / 2,
+			y: n / 2
+		}), e.Body.setPosition(i, {
+			x: t + z / 2,
+			y: n / 2
+		}), e.Body.setPosition(a, {
+			x: t / 2,
 			y: -1e3 / 2
-		}), a.Body.setPosition(o, {
-			x: e / 2,
-			y: t + L / 2
+		}), e.Body.setPosition(o, {
+			x: t / 2,
+			y: n + z / 2
 		});
 	}
 	setInputVolume(e) {
@@ -771,97 +867,97 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 		let t = this.#o.get(e);
 		t == null || t.dragLock != null || (t.dragLock = { initialInertia: t.body.inertia }, this.#l(e), this.#u(t.body));
 	}
-	unlockDrag(e) {
-		let t = this.#o.get(e);
-		t == null || t.dragLock == null || (a.Body.setInertia(t.body, t.dragLock.initialInertia), a.Body.setAngularVelocity(t.body, 0), t.dragLock = null, this.#l(e));
+	unlockDrag(t) {
+		let n = this.#o.get(t);
+		n == null || n.dragLock == null || (e.Body.setInertia(n.body, n.dragLock.initialInertia), e.Body.setAngularVelocity(n.body, 0), n.dragLock = null, this.#l(t));
 	}
-	grabWord(e) {
-		let t = this.#o.get(e);
-		t != null && (a.Sleeping.set(t.body, !1), this.lockDrag(e), a.Body.setVelocity(t.body, {
+	grabWord(t) {
+		let n = this.#o.get(t);
+		n != null && (e.Sleeping.set(n.body, !1), this.lockDrag(t), e.Body.setVelocity(n.body, {
 			x: 0,
 			y: 0
 		}));
 	}
-	moveWord(e, { x: t, y: n }) {
-		let r = this.#o.get(e);
-		r != null && a.Body.setPosition(r.body, {
-			x: t,
-			y: n
+	moveWord(t, { x: n, y: r }) {
+		let i = this.#o.get(t);
+		i != null && e.Body.setPosition(i.body, {
+			x: n,
+			y: r
 		});
 	}
-	releaseWord(e, t) {
-		let n = this.#o.get(e);
-		if (n == null) return;
-		this.unlockDrag(e);
-		let r = this.#s ? {
-			x: t.x * (1e3 / 60),
-			y: t.y * (1e3 / 60)
+	releaseWord(t, n) {
+		let r = this.#o.get(t);
+		if (r == null) return;
+		this.unlockDrag(t);
+		let i = this.#s ? {
+			x: n.x * (1e3 / 60),
+			y: n.y * (1e3 / 60)
 		} : {
 			x: 0,
 			y: 0
 		};
-		a.Body.setVelocity(n.body, r);
+		e.Body.setVelocity(r.body, i);
 	}
 	start() {
-		this.#s || (this.#s = !0, a.Runner.run(this.#t, this.#e));
+		this.#s || (this.#s = !0, e.Runner.run(this.#t, this.#e));
 	}
 	stop() {
-		this.#s && (this.#s = !1, a.Runner.stop(this.#t));
+		this.#s && (this.#s = !1, e.Runner.stop(this.#t));
 	}
 	#c() {
-		let e = {
+		let t = {
 			category: 8,
 			mask: 5
-		}, t = {
-			left: a.Bodies.rectangle(0, 0, L, 1, {
+		}, n = {
+			left: e.Bodies.rectangle(0, 0, z, 1, {
 				isStatic: !0,
-				collisionFilter: e
+				collisionFilter: t
 			}),
-			right: a.Bodies.rectangle(0, 0, L, 1, {
+			right: e.Bodies.rectangle(0, 0, z, 1, {
 				isStatic: !0,
-				collisionFilter: e
+				collisionFilter: t
 			}),
-			top: a.Bodies.rectangle(0, 0, 1, L, {
+			top: e.Bodies.rectangle(0, 0, 1, z, {
 				isStatic: !0,
-				collisionFilter: e
+				collisionFilter: t
 			}),
-			bottom: a.Bodies.rectangle(0, 0, 1, L, {
+			bottom: e.Bodies.rectangle(0, 0, 1, z, {
 				isStatic: !0,
-				collisionFilter: e
+				collisionFilter: t
 			})
 		};
-		return a.Composite.add(this.#e.world, [
-			t.left,
-			t.right,
-			t.top,
-			t.bottom
-		]), t;
+		return e.Composite.add(this.#e.world, [
+			n.left,
+			n.right,
+			n.top,
+			n.bottom
+		]), n;
 	}
 	#l(e) {
 		let t = this.#o.get(e);
-		t != null && (t.body.collisionFilter.mask = g({
+		t != null && (t.body.collisionFilter.mask = te({
 			dragLocked: t.dragLock != null,
 			ignoresInput: this.#i.ignores(e)
 		}));
 	}
-	#u(e) {
-		a.Body.setInertia(e, Infinity), a.Body.setAngularVelocity(e, 0);
+	#u(t) {
+		e.Body.setInertia(t, Infinity), e.Body.setAngularVelocity(t, 0);
 	}
 	#d() {
-		for (let { body: e } of this.#o.values()) e.isStatic || (Math.abs(b(e.angle) - R) <= z ? e.sleepThreshold = U : (e.sleepThreshold = Infinity, e.isSleeping && a.Sleeping.set(e, !1)));
+		for (let { body: t } of this.#o.values()) t.isStatic || (Math.abs(S(t.angle) - B) <= V ? t.sleepThreshold = G : (t.sleepThreshold = Infinity, t.isSleeping && e.Sleeping.set(t, !1)));
 	}
 	#f() {
-		for (let { body: e, bodySize: { width: t, height: n } } of this.#o.values()) x({
+		for (let { body: e, bodySize: { width: t, height: n } } of this.#o.values()) re({
 			body: e,
 			bodySize: {
 				width: t,
 				height: n
 			},
-			restAngle: R,
-			restAngleEpsilon: z,
-			springTorqueStiffness: B,
-			dampingCoefficient: V,
-			springWidthReference: H
+			restAngle: B,
+			restAngleEpsilon: V,
+			springTorqueStiffness: H,
+			dampingCoefficient: U,
+			springWidthReference: W
 		});
 	}
 	#p = () => {
@@ -872,11 +968,11 @@ var E = T("*{margin:0}*,input{padding:0}input{position:absolute;top:50%;left:50%
 	#m = () => {
 		this.onTick?.(this.#t.frameDelta);
 	};
-}, q = 10, J = 40, Y = 1, ae = 3, X = null, Z = "x-word";
+}, q = 10, J = 40, Y = 1, le = 3, X = null, Z = "x-word";
 try {
-	X = new CustomElementRegistry(), X.define(Z, M);
+	X = new CustomElementRegistry(), X.define(Z, j);
 } catch {
-	Z = `x-word-${y()}`, customElements.define(Z, M);
+	Z = `x-word-${x()}`, customElements.define(Z, j);
 }
 var Q = [
 	"none",
@@ -887,17 +983,17 @@ var Q = [
 function $(e) {
 	return Q.includes(e);
 }
-var oe = class i extends e(HTMLElement, {
-	wordAction: r({
+var ue = class t extends h(HTMLElement, {
+	wordAction: f({
 		values: Q,
 		default: "none"
 	}),
-	wordInput: t(),
-	showFramerate: t(),
-	physicsPaused: t(),
-	wordSpacing: n({ default: 5 }),
-	edgeSpacing: n({ default: 5 }),
-	inputSpacing: n({ default: 5 })
+	wordInput: d(),
+	showFramerate: d(),
+	physicsPaused: d(),
+	wordSpacing: l({ default: 5 }),
+	edgeSpacing: l({ default: 5 }),
+	inputSpacing: l({ default: 5 })
 }) {
 	static #e = {
 		none: null,
@@ -915,8 +1011,8 @@ var oe = class i extends e(HTMLElement, {
 	#n;
 	#r;
 	#i;
-	#a = new K();
-	#o = new re();
+	#a = new ce();
+	#o = new P();
 	#s;
 	#c = {
 		x: 0,
@@ -934,7 +1030,7 @@ var oe = class i extends e(HTMLElement, {
 	});
 	#f = new ResizeObserver((e) => {
 		for (let { target: t } of e) {
-			if (!(t instanceof M)) continue;
+			if (!(t instanceof j)) continue;
 			let e = this.#o.getByElement(t);
 			e != null && this.#b(e);
 		}
@@ -962,7 +1058,7 @@ var oe = class i extends e(HTMLElement, {
 				if (n !== null && !$(n)) this.removeAttribute("word-action");
 				else {
 					let e = t !== null && $(t) ? t : "none", r = n !== null && $(n) ? n : "none";
-					this.#k(), this.#j(), e !== r && this.dispatchEvent(new d({
+					this.#k(), this.#j(), e !== r && this.dispatchEvent(new o({
 						oldWordAction: e,
 						wordAction: r
 					}));
@@ -970,7 +1066,7 @@ var oe = class i extends e(HTMLElement, {
 				break;
 			case "word-input": {
 				let e = t !== null, r = n !== null;
-				this.#S(), e !== r && this.dispatchEvent(new f({
+				this.#S(), e !== r && this.dispatchEvent(new s({
 					oldWordInput: e,
 					wordInput: r
 				}));
@@ -978,7 +1074,7 @@ var oe = class i extends e(HTMLElement, {
 			}
 			case "physics-paused": {
 				let e = t !== null, r = n !== null;
-				r ? (this.#P(), this.#E(0)) : this.#N(), e !== r && this.dispatchEvent(new p({
+				r ? (this.#P(), this.#E(0)) : this.#N(), e !== r && this.dispatchEvent(new c({
 					oldPhysicsPaused: e,
 					physicsPaused: r
 				}));
@@ -1005,7 +1101,7 @@ var oe = class i extends e(HTMLElement, {
 		this.#s.enabled = !1, this.#P(), this.#a.onTick = null;
 	}
 	add(e, t) {
-		return ee(e) ? Array.from(e, (e) => this.#h({
+		return C(e) ? Array.from(e, (e) => this.#h({
 			...t,
 			...e
 		})) : this.#h({
@@ -1013,20 +1109,20 @@ var oe = class i extends e(HTMLElement, {
 			...e
 		});
 	}
-	#h({ word: e, x: t, y: n, angle: r = 0, checked: a = !1, velocity: o, entryAnimation: u = "fade", ignoreInputVolumeUntilExit: d = !1 }) {
+	#h({ word: e, x: a, y: o, angle: s = 0, checked: c = !1, velocity: l, entryAnimation: u = "fade", ignoreInputVolumeUntilExit: d = !1 }) {
 		let f = document.createElement(Z, X == null ? void 0 : { customElementRegistry: X });
-		this.#i.appendChild(f), f.value = e, f.checked = a, u !== "none" && f.animateEntry(u), f.classList.add("word"), f.action = i.#e[this.wordAction];
-		let { width: p, height: m } = i.#t(f), h, g = (e = {}) => {
+		this.#i.appendChild(f), f.value = e, f.checked = c, u !== "none" && f.animateEntry(u), f.classList.add("word"), f.action = t.#e[this.wordAction];
+		let { width: p, height: m } = t.#t(f), h, g = (e = {}) => {
 			e.exitAnimation = e.exitAnimation ?? "fade", this.#g(h, e);
 		};
-		return h = new ne({
+		return h = new N({
 			body: this.#a.addWord({
-				x: t,
-				y: n,
+				x: a,
+				y: o,
 				width: p,
 				height: m,
-				angle: r,
-				velocity: o,
+				angle: s,
+				velocity: l,
 				ignoreInputVolumeUntilExit: d
 			}),
 			element: f,
@@ -1037,22 +1133,22 @@ var oe = class i extends e(HTMLElement, {
 			remove: g,
 			onDelete: () => g(),
 			onCheckedChange: (e) => {
-				this.dispatchEvent(new c({
+				this.dispatchEvent(new r({
 					handle: h.handle,
 					checked: e
 				}));
 			},
 			onValueChange: ({ value: e, oldValue: t }) => {
-				this.dispatchEvent(new l({
+				this.dispatchEvent(new i({
 					handle: h.handle,
 					value: e,
 					oldValue: t
 				}));
 			}
-		}), f.style.transform = this.#O(h), this.#o.add(h), this.#f.observe(f), this.dispatchEvent(new s({ handle: h.handle })), h.handle;
+		}), f.style.transform = this.#O(h), this.#o.add(h), this.#f.observe(f), this.dispatchEvent(new n({ handle: h.handle })), h.handle;
 	}
 	async #g(e, { exitAnimation: t = "none" } = {}) {
-		t === "none" || await e.element.animateExit(t), this.#i.removeChild(e.element), this.dispatchEvent(new u({ handle: e.handle })), this.#y(e), e.dispose(), this.#o.delete(e);
+		t === "none" || await e.element.animateExit(t), this.#i.removeChild(e.element), this.dispatchEvent(new a({ handle: e.handle })), this.#y(e), e.dispose(), this.#o.delete(e);
 	}
 	clear(e) {
 		for (let t of this.#o.values()) this.#g(t, e);
@@ -1071,13 +1167,13 @@ var oe = class i extends e(HTMLElement, {
 			mode: "closed",
 			customElementRegistry: X
 		});
-		e.appendChild(P.cloneNode(!0)), e.adoptedStyleSheets = [ie];
-		let t = _(e, ".word-cloud", HTMLElement);
+		e.appendChild(I.cloneNode(!0)), e.adoptedStyleSheets = [F];
+		let t = y(e, ".word-cloud", HTMLElement);
 		return {
 			container: t,
-			wordForm: _(t, "form", HTMLFormElement),
-			wordInput: _(t, "input", HTMLInputElement),
-			framerateDisplay: _(t, ".framerate-display", HTMLElement)
+			wordForm: y(t, "form", HTMLFormElement),
+			wordInput: y(t, "input", HTMLInputElement),
+			framerateDisplay: y(t, ".framerate-display", HTMLElement)
 		};
 	}
 	#v() {
@@ -1087,8 +1183,8 @@ var oe = class i extends e(HTMLElement, {
 		this.#f.unobserve(e.element), this.#a.removeWord(e.id);
 	}
 	#b(e) {
-		let t = i.#t(e.element), { width: n, height: r } = e.bodySize;
-		t.width === n && t.height === r || (this.#a.setWordSize(e.id, t), e.bodySize = t);
+		let n = t.#t(e.element), { width: r, height: i } = e.bodySize;
+		n.width === r && n.height === i || (this.#a.setWordSize(e.id, n), e.bodySize = n);
 	}
 	#x() {
 		let e = Math.random() * 2 * Math.PI, t = Math.random() * (J - q) + q;
@@ -1146,18 +1242,18 @@ var oe = class i extends e(HTMLElement, {
 		for (let e of this.#o.values()) e.element.style.transform = this.#O(e);
 	}
 	#O({ body: e, bodySize: { width: t, height: n } }) {
-		let r = v(e.angle, ae), i = v(e.position.x - t / 2, Y), a = v(e.position.y - n / 2, Y);
+		let r = b(e.angle, le), i = b(e.position.x - t / 2, Y), a = b(e.position.y - n / 2, Y);
 		return r === 0 ? `translate(${i}px, ${a}px)` : `translate(${i}px, ${a}px) rotate(${r}rad)`;
 	}
 	#k() {
-		let e = i.#e[this.wordAction];
+		let e = t.#e[this.wordAction];
 		for (let { element: t } of this.#o.values()) t.action = e;
 	}
 	#A() {
-		return new h(this.#i, {
+		return new v(this.#i, {
 			resolveWord: (e, t) => {
 				let n = this.#i.getRootNode(), r = n instanceof Document || n instanceof ShadowRoot ? n.elementFromPoint(e, t) : null;
-				return r instanceof M ? this.#o.getByElement(r) ?? null : null;
+				return r instanceof j ? this.#o.getByElement(r) ?? null : null;
 			},
 			toContainerPoint: (e, t) => this.#M(e, t),
 			onGrab: (e, t) => {
@@ -1191,10 +1287,10 @@ var oe = class i extends e(HTMLElement, {
 		this.#a.start();
 	}
 	#P() {
-		this.#a.stop(), this.#m != null && a.Render.stop(this.#m);
+		this.#a.stop(), this.#m != null && e.Render.stop(this.#m);
 	}
-}, se = "0.15.2";
+}, de = "0.15.2";
 //#endregion
-export { oe as HTMLWordCloudElement, p as PhysicsPauseEvent, d as WordActionChangeEvent, s as WordAddEvent, l as WordChangeEvent, c as WordCheckEvent, u as WordDeleteEvent, N as WordHandle, f as WordInputToggleEvent, se as version };
+export { ue as HTMLWordCloudElement, c as PhysicsPauseEvent, o as WordActionChangeEvent, n as WordAddEvent, i as WordChangeEvent, r as WordCheckEvent, a as WordDeleteEvent, M as WordHandle, s as WordInputToggleEvent, de as version };
 
 //# sourceMappingURL=word-cloud.js.map
