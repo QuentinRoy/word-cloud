@@ -45,9 +45,7 @@ export default defineConfig(({ command }) => {
 				fileName: "word-cloud",
 			},
 			sourcemap: true,
-			rollupOptions: {
-				external: ["@quentinroy/custom-element-mixins", "matter-js"],
-			},
+			rollupOptions: { external: ["matter-js"] },
 		},
 	}
 })

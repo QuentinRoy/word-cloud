@@ -39,8 +39,7 @@ Update the version numbers in the example below as needed.
 <script type="importmap">
 {
   "imports": {
-    "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.15.2",
-    "@quentinroy/custom-element-mixins": "https://esm.sh/@jsr/quentinroy__custom-element-mixins@0.4.2",
+    "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.16.0",
     "matter-js": "https://esm.sh/matter-js@0.20.0"
   }
 }
