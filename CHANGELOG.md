@@ -1,5 +1,11 @@
 # @quentinroy/word-cloud
 
+## 0.16.0
+
+### Minor Changes
+
+- 78e4aa1: No-bundler consumers no longer need to resolve `@quentinroy/custom-element-mixins` via their import map — only `matter-js` remains an external runtime dependency.
+
 ## 0.15.2
 
 ### Patch Changes
