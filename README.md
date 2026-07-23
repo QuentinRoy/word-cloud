@@ -39,7 +39,7 @@ Update the version numbers in the example below as needed.
 <script type="importmap">
 {
   "imports": {
-    "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.16.0",
+    "@quentinroy/word-cloud": "https://esm.sh/@quentinroy/word-cloud@0.16.0?raw",
     "matter-js": "https://esm.sh/matter-js@0.20.0"
   }
 }
